@@ -377,3 +377,107 @@ export const getVisitCount = query({
     };
   },
 });
+
+// Get public save snapshot (reader mode content)
+export const getPublicSaveSnapshot = query({
+  args: {
+    spaceId: v.id("spaces"),
+    saveId: v.id("saves"),
+    includeContent: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    // Verify the save exists, is public, and belongs to the space
+    const save = await ctx.db.get(args.saveId);
+    if (!save || save.spaceId !== args.spaceId || save.visibility !== "public") {
+      return null;
+    }
+
+    // Get the snapshot
+    const snapshot = await ctx.db
+      .query("saveSnapshots")
+      .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
+      .first();
+
+    if (!snapshot) {
+      return null;
+    }
+
+    // If not including content or no storage id, return just the snapshot metadata
+    if (!args.includeContent || !snapshot.storageId) {
+      return {
+        snapshot: {
+          status: snapshot.status,
+          blockedReason: snapshot.blockedReason ?? null,
+          fetchedAt: snapshot.fetchedAt ?? null,
+          title: snapshot.title ?? null,
+          byline: snapshot.byline ?? null,
+          excerpt: snapshot.excerpt ?? null,
+          wordCount: snapshot.wordCount ?? null,
+          language: snapshot.language ?? null,
+        },
+        content: null,
+      };
+    }
+
+    // Get content from storage
+    try {
+      const storageUrl = await ctx.storage.getUrl(snapshot.storageId);
+      if (!storageUrl) {
+        return {
+          snapshot: {
+            status: snapshot.status,
+            blockedReason: snapshot.blockedReason ?? null,
+            fetchedAt: snapshot.fetchedAt ?? null,
+            title: snapshot.title ?? null,
+            byline: snapshot.byline ?? null,
+            excerpt: snapshot.excerpt ?? null,
+            wordCount: snapshot.wordCount ?? null,
+            language: snapshot.language ?? null,
+          },
+          content: null,
+        };
+      }
+
+      // Fetch content from storage URL (in the browser/runtime)
+      // Note: In Convex actions, you'd fetch this. For queries, we return the URL
+      // and let the client fetch, or we store content inline
+      return {
+        snapshot: {
+          status: snapshot.status,
+          blockedReason: snapshot.blockedReason ?? null,
+          fetchedAt: snapshot.fetchedAt ?? null,
+          title: snapshot.title ?? null,
+          byline: snapshot.byline ?? null,
+          excerpt: snapshot.excerpt ?? null,
+          wordCount: snapshot.wordCount ?? null,
+          language: snapshot.language ?? null,
+        },
+        content: {
+          title: snapshot.title ?? "",
+          byline: snapshot.byline ?? null,
+          content: "", // Content is stored in file, client needs to fetch from storageUrl
+          textContent: "",
+          excerpt: snapshot.excerpt ?? "",
+          siteName: null,
+          length: snapshot.wordCount ?? 0,
+          language: snapshot.language ?? null,
+          storageUrl, // Client can fetch from this URL
+        },
+      };
+    } catch (error) {
+      return {
+        snapshot: {
+          status: snapshot.status,
+          blockedReason: snapshot.blockedReason ?? null,
+          fetchedAt: snapshot.fetchedAt ?? null,
+          title: snapshot.title ?? null,
+          byline: snapshot.byline ?? null,
+          excerpt: snapshot.excerpt ?? null,
+          wordCount: snapshot.wordCount ?? null,
+          language: snapshot.language ?? null,
+        },
+        content: null,
+      };
+    }
+  },
+});

@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Turbopack config for resolving the convex directory
+  turbopack: {
+    resolveAlias: {
+      "@convex": "../../convex",
+    },
+  },
 };
 
 export default nextConfig;

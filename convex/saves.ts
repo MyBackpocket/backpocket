@@ -1,8 +1,69 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
 import { normalizeUrl } from "./lib/validators";
 import { visibilityValidator } from "./schema";
+
+// Helper function to get a formatted save (can be called from queries or mutations)
+async function getSaveById(
+  ctx: QueryCtx | MutationCtx,
+  spaceId: Id<"spaces">,
+  saveId: Id<"saves">
+) {
+  const save = await ctx.db.get(saveId);
+  if (!save || save.spaceId !== spaceId) return null;
+
+  // Get tags and collections
+  const [saveTags, saveCollections] = await Promise.all([
+    ctx.db
+      .query("saveTags")
+      .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+      .collect(),
+    ctx.db
+      .query("saveCollections")
+      .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+      .collect(),
+  ]);
+
+  const [tags, collections] = await Promise.all([
+    Promise.all(saveTags.map((st) => ctx.db.get(st.tagId))),
+    Promise.all(saveCollections.map((sc) => ctx.db.get(sc.collectionId))),
+  ]);
+
+  return {
+    id: save._id,
+    spaceId: save.spaceId,
+    url: save.url,
+    title: save.title,
+    description: save.description,
+    siteName: save.siteName,
+    imageUrl: save.imageUrl,
+    contentType: save.contentType,
+    visibility: save.visibility,
+    isArchived: save.isArchived,
+    isFavorite: save.isFavorite,
+    createdBy: save.createdBy,
+    savedAt: save.savedAt,
+    createdAt: save._creationTime,
+    updatedAt: save._creationTime,
+    tags: tags.filter(Boolean).map((t) => ({
+      id: t!._id,
+      spaceId: t!.spaceId,
+      name: t!.name,
+      createdAt: t!._creationTime,
+      updatedAt: t!._creationTime,
+    })),
+    collections: collections.filter(Boolean).map((c) => ({
+      id: c!._id,
+      spaceId: c!.spaceId,
+      name: c!.name,
+      visibility: c!.visibility,
+      createdAt: c!._creationTime,
+      updatedAt: c!._creationTime,
+    })),
+  };
+}
 
 // List saves with filters and pagination
 export const list = query({
@@ -517,7 +578,7 @@ export const update = mutation({
     }
 
     // Return updated save
-    return await get(ctx, { saveId: args.id });
+    return await getSaveById(ctx, space._id, args.id);
   },
 });
 

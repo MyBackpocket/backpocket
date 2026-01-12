@@ -30,7 +30,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { IS_DEVELOPMENT, ROOT_DOMAIN } from "@/lib/config/public";
 import { routes, savesWithFilter } from "@/lib/constants/routes";
 import { buildSpaceHostname, buildSpaceUrl } from "@/lib/constants/urls";
-import { trpc } from "@/lib/trpc/client";
+import {
+  useDeleteSave,
+  useGetMySpace,
+  useGetStats,
+  useGetVisitCount,
+  useListSaves,
+  useToggleArchive,
+  useToggleFavorite,
+} from "@/lib/convex";
 import { cn, formatNumber } from "@/lib/utils";
 
 function StatCard({
@@ -106,38 +114,51 @@ export default function DashboardClient() {
     title: string | null;
     url: string;
   } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Single query that fetches all dashboard data at once
-  const { data: dashboardData, isLoading } = trpc.space.getDashboardData.useQuery();
-  const utils = trpc.useUtils();
+  // Convex queries - these are reactive and will auto-update
+  const space = useGetMySpace();
+  const stats = useGetStats();
+  const recentSavesData = useListSaves({ limit: 5, isArchived: false });
+  const visitCount = useGetVisitCount(space?.id as any);
 
-  const toggleFavorite = trpc.space.toggleFavorite.useMutation({
-    onSuccess: () => {
-      utils.space.getDashboardData.invalidate();
-      utils.space.getStats.invalidate();
-    },
-  });
+  // Convex mutations
+  const toggleFavorite = useToggleFavorite();
+  const toggleArchive = useToggleArchive();
+  const deleteSaveMutation = useDeleteSave();
 
-  const toggleArchive = trpc.space.toggleArchive.useMutation({
-    onSuccess: () => {
-      utils.space.getDashboardData.invalidate();
-      utils.space.listSaves.invalidate();
-    },
-  });
-
-  const deleteSave = trpc.space.deleteSave.useMutation({
-    onSuccess: () => {
-      setDeleteTarget(null);
-      utils.space.getDashboardData.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.listSaves.invalidate();
-    },
-  });
-
-  const stats = dashboardData?.stats;
-  const space = dashboardData?.space;
-  const recentSaves = dashboardData?.recentSaves;
+  const isLoading = space === undefined || stats === undefined;
+  const recentSaves = recentSavesData?.items;
   const firstName = user?.firstName;
+
+  const handleToggleFavorite = async (saveId: string) => {
+    try {
+      await toggleFavorite({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
+  const handleToggleArchive = async (saveId: string) => {
+    try {
+      await toggleArchive({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle archive:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteSaveMutation({ saveId: deleteTarget.id as any });
+      setDeleteTarget(null);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8">
@@ -175,11 +196,15 @@ export default function DashboardClient() {
           />
           <StatCard
             title="Favorites"
-            value={formatNumber(stats?.favorites ?? 0)}
+            value={formatNumber(stats?.favoriteSaves ?? 0)}
             icon={Star}
             href={savesWithFilter("favorites")}
           />
-          <StatCard title="Visitors" value={formatNumber(stats?.visitCount ?? 0)} icon={Eye} />
+          <StatCard
+            title="Visitors"
+            value={formatNumber(visitCount?.total ?? 0)}
+            icon={Eye}
+          />
         </div>
       )}
 
@@ -224,7 +249,7 @@ export default function DashboardClient() {
             </Link>
           </CardHeader>
           <CardContent>
-            {isLoading ? (
+            {recentSavesData === undefined ? (
               <RecentSavesSkeleton />
             ) : recentSaves && recentSaves.length > 0 ? (
               <div className="space-y-2">
@@ -272,7 +297,7 @@ export default function DashboardClient() {
                           size="icon"
                           onClick={(e) => {
                             e.preventDefault();
-                            toggleArchive.mutate({ saveId: save.id });
+                            handleToggleArchive(save.id);
                           }}
                           className={cn(
                             "h-8 w-8 rounded-lg text-muted-foreground hover:text-denim",
@@ -304,7 +329,7 @@ export default function DashboardClient() {
                         size="icon"
                         onClick={(e) => {
                           e.preventDefault();
-                          toggleFavorite.mutate({ saveId: save.id });
+                          handleToggleFavorite(save.id);
                         }}
                         className={cn(
                           "h-8 w-8 rounded-lg transition-colors",
@@ -338,9 +363,7 @@ export default function DashboardClient() {
         <Card className="mt-8">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2">
-              <CardTitle className="text-base">
-                Your Public {(dashboardData?.customDomains?.length ?? 0) > 0 ? "Spaces" : "Space"}
-              </CardTitle>
+              <CardTitle className="text-base">Your Public Space</CardTitle>
               <Link
                 href={routes.app.settings}
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -350,7 +373,7 @@ export default function DashboardClient() {
             </div>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span>
-                <strong className="text-foreground">{formatNumber(stats?.visitCount ?? 0)}</strong>{" "}
+                <strong className="text-foreground">{formatNumber(visitCount?.total ?? 0)}</strong>{" "}
                 visits
               </span>
               <span>
@@ -382,21 +405,6 @@ export default function DashboardClient() {
                 </span>
                 <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
               </a>
-
-              {/* Custom domains */}
-              {dashboardData?.customDomains?.map((domain) => (
-                <a
-                  key={domain}
-                  href={`https://${domain}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-denim/30 bg-denim/5 px-2.5 py-1.5 text-sm transition-colors hover:bg-denim/10"
-                >
-                  <Globe className="h-3.5 w-3.5 text-denim" />
-                  <span>{domain}</span>
-                  <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
-                </a>
-              ))}
             </div>
           </CardContent>
         </Card>
@@ -418,14 +426,10 @@ export default function DashboardClient() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => {
-                if (deleteTarget) {
-                  deleteSave.mutate({ saveId: deleteTarget.id });
-                }
-              }}
-              disabled={deleteSave.isPending}
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
-              {deleteSave.isPending ? (
+              {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

@@ -227,55 +227,53 @@ export const tokenCache: TokenCache = {
 
 ### Overview
 
-Backpocket uses [tRPC](https://trpc.io) for its API layer. All endpoints follow this pattern:
+Backpocket uses [Convex](https://convex.dev) for its API layer. All functions are defined in the `convex/` directory and are accessed via Convex's client libraries.
 
-```
-POST /api/trpc/<router>.<procedure>
-```
+### Function Namespaces
 
-### Router Namespaces
-
-| Router | Auth Required | Description |
+| Module | Auth Required | Description |
 |--------|---------------|-------------|
-| `space.*` | ✅ Yes | User's personal space operations |
+| `saves.*` | ✅ Yes | Save management operations |
+| `tags.*` | ✅ Yes | Tag management operations |
+| `collections.*` | ✅ Yes | Collection management operations |
+| `spaces.*` | ✅ Yes | Space settings operations |
+| `snapshots.*` | ✅ Yes | Snapshot operations |
 | `public.*` | ❌ No | Public read-only operations |
 
-### Request Format
+### Client Usage
 
-```json
-{
-  "json": {
-    // input data
-  }
-}
+#### React (Web/Mobile)
+
+```typescript
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+// Query (auto-subscribes to real-time updates)
+const saves = useQuery(api.saves.listSaves, { limit: 20 });
+
+// Mutation
+const createSave = useMutation(api.saves.createSave);
+await createSave({ url: "https://example.com" });
 ```
 
-### Response Format
+#### Server/Action
 
-**Success:**
+```typescript
+import { fetchQuery, fetchMutation } from "convex/nextjs";
+import { api } from "../../convex/_generated/api";
 
-```json
-{
-  "result": {
-    "data": { /* response data */ }
-  }
-}
+const saves = await fetchQuery(api.saves.listSaves, { limit: 20 });
 ```
 
-**Error:**
+#### HTTP Client (Extension)
 
-```json
-{
-  "error": {
-    "message": "Error description",
-    "code": -32600,
-    "data": {
-      "code": "UNAUTHORIZED",
-      "httpStatus": 401,
-      "path": "space.createSave"
-    }
-  }
-}
+```typescript
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+
+const client = new ConvexHttpClient(CONVEX_URL);
+client.setAuth(getToken);
+const saves = await client.query(api.saves.listSaves, { limit: 20 });
 ```
 
 ---

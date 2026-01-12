@@ -19,7 +19,6 @@ import {
   Tag,
   Trash2,
   X,
-  Zap,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -40,7 +39,18 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
-import { trpc } from "@/lib/trpc/client";
+import {
+  useCreateCollection,
+  useDeleteSave,
+  useGetSave,
+  useGetSaveSnapshot,
+  useListCollections,
+  useRequestSaveSnapshot,
+  useToggleArchive,
+  useToggleFavorite,
+  useUpdateSave,
+} from "@/lib/convex";
+import type { SnapshotStatus, SnapshotBlockedReason, SnapshotContent } from "@backpocket/types";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
 // ============================================================================
@@ -686,215 +696,156 @@ function MobileEditTip() {
   );
 }
 
-const IS_DEV = process.env.NODE_ENV === "development";
-
 export default function SaveDetailPage({ params }: { params: Promise<{ saveId: string }> }) {
   const { saveId } = use(params);
   const router = useRouter();
-  const { data: save, isLoading } = trpc.space.getSave.useQuery({ saveId });
-  const utils = trpc.useUtils();
+  
+  // Convex queries
+  const save = useGetSave(saveId as any);
+  const allCollections = useListCollections({});
+  const snapshotData = useGetSaveSnapshot(saveId as any, true);
+  
+  // Convex mutations
+  const updateSave = useUpdateSave();
+  const toggleFavorite = useToggleFavorite();
+  const toggleArchive = useToggleArchive();
+  const deleteSaveMutation = useDeleteSave();
+  const createCollection = useCreateCollection();
+  const requestSnapshot = useRequestSaveSnapshot();
+
+  // Loading and mutation states
+  const isLoading = save === undefined;
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Fetch collections for inline editing
-  const { data: allCollections } = trpc.space.listCollections.useQuery();
-
-  const createCollection = trpc.space.createCollection.useMutation({
-    onSuccess: () => {
-      utils.space.listCollections.invalidate();
-    },
-  });
-
-  // Query snapshot data with content
-  const { data: snapshotData, isLoading: isSnapshotLoading } = trpc.space.getSaveSnapshot.useQuery(
-    { saveId, includeContent: true },
-    {
-      enabled: !!save,
-      // Poll every 2 seconds while snapshot is pending/processing
-      refetchInterval: (query) => {
-        const status = query.state.data?.snapshot?.status;
-        if (status === "pending" || status === "processing") {
-          return 2000; // Poll every 2 seconds
-        }
-        return false; // Stop polling when ready/failed/blocked
-      },
-    }
-  );
-
-  const toggleFavorite = trpc.space.toggleFavorite.useMutation({
-    onMutate: async ({ saveId: id }) => {
-      // Cancel outgoing refetches
-      await utils.space.getSave.cancel({ saveId: id });
-
-      // Snapshot previous value
-      const previousSave = utils.space.getSave.getData({ saveId: id });
-
-      // Optimistically update
-      if (previousSave) {
-        utils.space.getSave.setData(
-          { saveId: id },
-          {
-            ...previousSave,
-            isFavorite: !previousSave.isFavorite,
-          }
-        );
-      }
-
-      return { previousSave };
-    },
-    onError: (_err, { saveId: id }, context) => {
-      // Roll back on error
-      if (context?.previousSave) {
-        utils.space.getSave.setData({ saveId: id }, context.previousSave);
-      }
-    },
-    onSettled: () => {
-      utils.space.getSave.invalidate({ saveId });
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
-
-  const toggleArchive = trpc.space.toggleArchive.useMutation({
-    onMutate: async ({ saveId: id }) => {
-      // Cancel outgoing refetches
-      await utils.space.getSave.cancel({ saveId: id });
-
-      // Snapshot previous value
-      const previousSave = utils.space.getSave.getData({ saveId: id });
-
-      // Optimistically update
-      if (previousSave) {
-        utils.space.getSave.setData(
-          { saveId: id },
-          {
-            ...previousSave,
-            isArchived: !previousSave.isArchived,
-          }
-        );
-      }
-
-      return { previousSave };
-    },
-    onError: (_err, { saveId: id }, context) => {
-      // Roll back on error
-      if (context?.previousSave) {
-        utils.space.getSave.setData({ saveId: id }, context.previousSave);
-      }
-    },
-    onSettled: () => {
-      utils.space.getSave.invalidate({ saveId });
-      utils.space.listSaves.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
-
-  const deleteSave = trpc.space.deleteSave.useMutation({
-    onSuccess: () => {
-      // Invalidate caches so lists show updated data immediately
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-      router.push(routes.app.saves);
-    },
-  });
-
-  const updateSave = trpc.space.updateSave.useMutation({
-    onSuccess: () => {
-      // Invalidate caches so lists show updated data immediately
-      utils.space.getSave.invalidate({ saveId });
-      utils.space.listSaves.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
-
   // Inline update handlers
   const handleUpdateTitle = useCallback(
-    (title: string) => {
-      updateSave.mutate({ id: saveId, title: title || undefined });
+    async (title: string) => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, title: title || undefined });
+      } catch (error) {
+        console.error("Failed to update title:", error);
+      } finally {
+        setIsSaving(false);
+      }
     },
     [saveId, updateSave]
   );
 
   const handleUpdateDescription = useCallback(
-    (description: string) => {
-      updateSave.mutate({ id: saveId, description: description || undefined });
+    async (description: string) => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, description: description || undefined });
+      } catch (error) {
+        console.error("Failed to update description:", error);
+      } finally {
+        setIsSaving(false);
+      }
     },
     [saveId, updateSave]
   );
 
   const handleUpdateVisibility = useCallback(
-    (newVisibility: "private" | "public") => {
-      updateSave.mutate({ id: saveId, visibility: newVisibility });
+    async (newVisibility: "private" | "public") => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, visibility: newVisibility });
+      } catch (error) {
+        console.error("Failed to update visibility:", error);
+      } finally {
+        setIsSaving(false);
+      }
     },
     [saveId, updateSave]
   );
 
   const handleUpdateTags = useCallback(
-    (tags: string[]) => {
-      updateSave.mutate({ id: saveId, tagNames: tags });
+    async (tags: string[]) => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, tagNames: tags });
+      } catch (error) {
+        console.error("Failed to update tags:", error);
+      } finally {
+        setIsSaving(false);
+      }
     },
     [saveId, updateSave]
   );
 
   const handleUpdateCollections = useCallback(
-    (collectionIds: string[]) => {
-      updateSave.mutate({ id: saveId, collectionIds });
+    async (collectionIds: string[]) => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, collectionIds: collectionIds as any[] });
+      } catch (error) {
+        console.error("Failed to update collections:", error);
+      } finally {
+        setIsSaving(false);
+      }
     },
     [saveId, updateSave]
   );
 
   const handleCreateCollection = useCallback(
-    (name: string) => {
-      createCollection.mutate({ name });
+    async (name: string) => {
+      setIsCreatingCollection(true);
+      try {
+        await createCollection({ name });
+      } catch (error) {
+        console.error("Failed to create collection:", error);
+      } finally {
+        setIsCreatingCollection(false);
+      }
     },
     [createCollection]
   );
 
-  const handleConfirmDelete = useCallback(() => {
-    deleteSave.mutate({ saveId });
-  }, [saveId, deleteSave]);
-
-  const requestSnapshot = trpc.space.requestSaveSnapshot.useMutation({
-    onSuccess: () => {
-      utils.space.getSaveSnapshot.invalidate({ saveId });
-    },
-  });
-
-  const handleRefreshSnapshot = useCallback(() => {
-    requestSnapshot.mutate({ saveId, force: true });
-  }, [saveId, requestSnapshot]);
-
-  // Dev-only: Direct snapshot trigger (bypasses QStash)
-  const [isDevTriggering, setIsDevTriggering] = useState(false);
-  const [devTriggerResult, setDevTriggerResult] = useState<string | null>(null);
-
-  const handleDevTriggerSnapshot = useCallback(async () => {
-    setIsDevTriggering(true);
-    setDevTriggerResult(null);
+  const handleConfirmDelete = useCallback(async () => {
+    setIsDeleting(true);
     try {
-      const res = await fetch("/api/dev/trigger-snapshot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ saveId }),
-      });
-      const data = await res.json();
-      setDevTriggerResult(
-        data.status === "ready"
-          ? "✓ Snapshot ready!"
-          : `${data.status}: ${data.message || data.reason}`
-      );
-      // Refresh snapshot data
-      utils.space.getSaveSnapshot.invalidate({ saveId });
-      utils.space.getSave.invalidate({ saveId });
-    } catch (err) {
-      setDevTriggerResult(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      await deleteSaveMutation({ saveId: saveId as any });
+      router.push(routes.app.saves);
+    } catch (error) {
+      console.error("Failed to delete:", error);
     } finally {
-      setIsDevTriggering(false);
+      setIsDeleting(false);
     }
-  }, [saveId, utils]);
+  }, [saveId, deleteSaveMutation, router]);
+
+  const handleToggleFavorite = useCallback(async () => {
+    try {
+      await toggleFavorite({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  }, [saveId, toggleFavorite]);
+
+  const handleToggleArchive = useCallback(async () => {
+    try {
+      await toggleArchive({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle archive:", error);
+    }
+  }, [saveId, toggleArchive]);
+
+  const handleRefreshSnapshot = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await requestSnapshot({ saveId: saveId as any, force: true });
+    } catch (error) {
+      console.error("Failed to request snapshot:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [saveId, requestSnapshot]);
 
   if (isLoading) {
     return (
@@ -941,61 +892,6 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           Back to saves
         </Link>
 
-        {/* Dev-only: Dev tools at top for easy access */}
-        {IS_DEV && (
-          <Card className="mb-6 border-dashed border-yellow-500/50 bg-yellow-500/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-yellow-600">
-                <Zap className="h-4 w-4" />
-                Dev Tools
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDevTriggerSnapshot}
-                disabled={isDevTriggering}
-                className="border-yellow-500/50 hover:bg-yellow-500/10"
-              >
-                {isDevTriggering ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Zap className="mr-2 h-4 w-4" />
-                    Trigger Snapshot
-                  </>
-                )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  localStorage.removeItem(MOBILE_TIP_STORAGE_KEY);
-                  window.location.reload();
-                }}
-                className="border-yellow-500/50 hover:bg-yellow-500/10"
-              >
-                <Hand className="mr-2 h-4 w-4" />
-                Reset Mobile Tip
-              </Button>
-              {devTriggerResult && (
-                <span
-                  className={cn(
-                    "text-sm",
-                    devTriggerResult.startsWith("✓") ? "text-green-600" : "text-muted-foreground"
-                  )}
-                >
-                  {devTriggerResult}
-                </span>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         {/* Mobile edit tip - only shows on first visit on mobile */}
         <MobileEditTip />
 
@@ -1019,7 +915,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           value={save.title || ""}
           placeholder={save.url}
           onSave={handleUpdateTitle}
-          isSaving={updateSave.isPending}
+          isSaving={isSaving}
           className="text-2xl font-semibold tracking-tight mb-2"
           inputClassName="text-2xl font-semibold tracking-tight"
           as="h1"
@@ -1040,7 +936,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           <span className="hidden sm:inline">•</span>
           <span className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />
-            {formatDate(save.savedAt)}
+            {formatDate(new Date(save.savedAt))}
           </span>
           <span className="hidden sm:inline">•</span>
           {/* Visibility Toggle */}
@@ -1049,7 +945,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             onClick={() =>
               handleUpdateVisibility(save.visibility === "public" ? "private" : "public")
             }
-            disabled={updateSave.isPending}
+            disabled={isSaving}
             className={cn(
               "relative inline-flex h-7 items-center rounded-full border px-1 transition-all",
               "hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -1098,7 +994,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             >
               {save.visibility === "public" ? "Public" : "Private"}
             </span>
-            {updateSave.isPending && (
+            {isSaving && (
               <Loader2 className="absolute -right-5 h-3 w-3 animate-spin text-muted-foreground" />
             )}
           </button>
@@ -1109,7 +1005,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toggleFavorite.mutate({ saveId: save.id })}
+            onClick={handleToggleFavorite}
             className={cn("gap-2", save.isFavorite && "text-yellow-500")}
           >
             <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
@@ -1118,7 +1014,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           <Button
             variant="outline"
             size="sm"
-            onClick={() => toggleArchive.mutate({ saveId: save.id })}
+            onClick={handleToggleArchive}
             className={cn("gap-2", save.isArchived && "text-primary")}
           >
             <Archive className="h-4 w-4" />
@@ -1141,7 +1037,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             value={save.description || ""}
             placeholder="Click to add a description..."
             onSave={handleUpdateDescription}
-            isSaving={updateSave.isPending}
+            isSaving={isSaving}
           />
         </div>
 
@@ -1151,7 +1047,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           <InlineTagsEditor
             tags={save.tags?.map((t) => t.name) || []}
             onSave={handleUpdateTags}
-            isSaving={updateSave.isPending}
+            isSaving={isSaving}
           />
 
           {/* Collections */}
@@ -1160,20 +1056,20 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             allCollections={allCollections || []}
             onSave={handleUpdateCollections}
             onCreateCollection={handleCreateCollection}
-            isSaving={updateSave.isPending}
-            isCreating={createCollection.isPending}
+            isSaving={isSaving}
+            isCreating={isCreatingCollection}
           />
         </div>
 
         {/* Reader Mode */}
         <div className="mt-6">
           <ReaderMode
-            status={snapshotData?.snapshot?.status ?? null}
-            blockedReason={snapshotData?.snapshot?.blockedReason}
-            content={snapshotData?.content}
-            isLoading={isSnapshotLoading}
+            status={(snapshotData?.snapshot?.status as SnapshotStatus) ?? null}
+            blockedReason={snapshotData?.snapshot?.blockedReason as SnapshotBlockedReason | null}
+            content={snapshotData?.content as SnapshotContent | null}
+            isLoading={snapshotData === undefined}
             onRefresh={handleRefreshSnapshot}
-            isRefreshing={requestSnapshot.isPending}
+            isRefreshing={isRefreshing}
             showRefreshButton={true}
             originalUrl={save.url}
           />
@@ -1196,9 +1092,9 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
               <Button
                 variant="destructive"
                 onClick={handleConfirmDelete}
-                disabled={deleteSave.isPending}
+                disabled={isDeleting}
               >
-                {deleteSave.isPending ? (
+                {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Deleting...

@@ -1,22 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import type { DomainMapping, Space } from "@/lib/types";
+import { useGetMySpace } from "@/lib/convex";
 import { AppSidebar } from "./app-sidebar";
 import { MobileHeader } from "./mobile-header";
 
 interface AppShellProps {
-  space: Space | null;
-  domains?: DomainMapping[];
   children: React.ReactNode;
 }
 
 /**
  * Client-side shell that manages mobile navigation state.
- * Space data is passed from the server to avoid client-side fetch waterfall.
+ * Space data is fetched via Convex (real-time updates).
  */
-export function AppShell({ space, domains = [], children }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const space = useGetMySpace();
+
+  // Transform Convex response to match expected shape
+  const spaceData = space
+    ? {
+        id: space.id,
+        type: space.type as "personal" | "org",
+        slug: space.slug,
+        name: space.name,
+        bio: space.bio,
+        avatarUrl: space.avatarUrl,
+        visibility: space.visibility as "public" | "private",
+        publicLayout: space.publicLayout as "list" | "grid",
+        defaultSaveVisibility: space.defaultSaveVisibility as "public" | "private",
+        createdAt: new Date(space.createdAt),
+        updatedAt: new Date(space.updatedAt),
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,8 +46,8 @@ export function AppShell({ space, domains = [], children }: AppShellProps) {
 
       {/* Sidebar */}
       <AppSidebar
-        space={space}
-        domains={domains}
+        space={spaceData}
+        domains={[]} // Custom domains can be added later if needed
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
       />

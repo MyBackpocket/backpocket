@@ -1,6 +1,5 @@
 "use client";
 
-import { keepPreviousData } from "@tanstack/react-query";
 import {
   Archive,
   Bookmark,
@@ -57,9 +56,16 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
+import {
+  useBulkDeleteSaves,
+  useDeleteSave,
+  useListSaves,
+  useListTags,
+  useToggleArchive,
+  useToggleFavorite,
+} from "@/lib/convex";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { trpc } from "@/lib/trpc/client";
-import type { APISave, SaveVisibility } from "@/lib/types";
+import type { SaveVisibility } from "@/lib/types";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
 type ViewMode = "grid" | "list";
@@ -74,6 +80,20 @@ const FILTER_OPTIONS: { value: FilterOption; label: string; icon: typeof Star }[
   { value: "private", label: "Private", icon: EyeOff },
 ];
 
+interface SaveItem {
+  id: string;
+  url: string;
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  visibility: "public" | "private";
+  isFavorite: boolean;
+  isArchived: boolean;
+  savedAt: string | number;
+  siteName: string | null;
+  tags?: Array<{ id: string; name: string }>;
+}
+
 function SaveListItem({
   save,
   isSelected,
@@ -83,7 +103,7 @@ function SaveListItem({
   onToggleArchive,
   onDelete,
 }: {
-  save: APISave;
+  save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: () => void;
@@ -177,7 +197,7 @@ function SaveListItem({
           </span>
           <span className="flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />
-            {formatDate(save.savedAt)}
+            {formatDate(typeof save.savedAt === 'number' ? new Date(save.savedAt) : save.savedAt)}
           </span>
           {save.tags && save.tags.length > 0 && (
             <div className="flex items-center gap-1.5">
@@ -268,7 +288,7 @@ function SaveGridCard({
   onSelect,
   onToggleFavorite,
 }: {
-  save: APISave;
+  save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: () => void;
@@ -421,7 +441,9 @@ export default function SavesPage() {
   const [tagComboboxOpen, setTagComboboxOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-  const [singleDeleteTarget, setSingleDeleteTarget] = useState<APISave | null>(null);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<SaveItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   // Debounce search to avoid firing on every keystroke (300ms delay)
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -443,8 +465,7 @@ export default function SavesPage() {
       : debouncedFilters.has("private")
         ? ("private" as SaveVisibility)
         : undefined,
-    tagId: tagFilter || undefined,
-    // Reduced from 50 to 20 for faster initial loads
+    tagId: tagFilter as any || undefined,
     limit: 20,
   };
 
@@ -474,46 +495,20 @@ export default function SavesPage() {
     return `${activeFilters.size} filters`;
   };
 
-  const { data, isLoading, isFetching } = trpc.space.listSaves.useQuery(queryOptions, {
-    // Keep previous data visible while fetching new data (avoids UI thrash)
-    placeholderData: keepPreviousData,
-  });
-  const { data: allTags, isLoading: isTagsLoading } = trpc.space.listTags.useQuery();
-  const utils = trpc.useUtils();
+  // Convex queries
+  const data = useListSaves(queryOptions);
+  const allTags = useListTags();
+  const isLoading = data === undefined;
+  const isTagsLoading = allTags === undefined;
 
   // Get the selected tag name for display
   const selectedTagName = tagFilter && allTags?.find((t) => t.id === tagFilter)?.name;
 
-  const toggleFavorite = trpc.space.toggleFavorite.useMutation({
-    onSuccess: () => {
-      // Invalidate list to reflect the change
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-    },
-  });
-
-  const toggleArchive = trpc.space.toggleArchive.useMutation({
-    onSuccess: () => {
-      utils.space.listSaves.invalidate();
-    },
-  });
-
-  const deleteSave = trpc.space.deleteSave.useMutation({
-    onSuccess: () => {
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
-
-  const bulkDeleteSaves = trpc.space.bulkDeleteSaves.useMutation({
-    onSuccess: () => {
-      setSelectedIds(new Set());
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
+  // Convex mutations
+  const toggleFavorite = useToggleFavorite();
+  const toggleArchive = useToggleArchive();
+  const deleteSave = useDeleteSave();
+  const bulkDeleteSaves = useBulkDeleteSaves();
 
   const isSelectionMode = selectedIds.size > 0;
   const allSelected =
@@ -536,7 +531,7 @@ export default function SavesPage() {
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(data.items.map((s: APISave) => s.id)));
+      setSelectedIds(new Set(data.items.map((s) => s.id)));
     }
   };
 
@@ -549,19 +544,49 @@ export default function SavesPage() {
     setShowBulkDeleteDialog(true);
   };
 
-  const confirmBulkDelete = () => {
-    bulkDeleteSaves.mutate({ saveIds: Array.from(selectedIds) });
-    setShowBulkDeleteDialog(false);
+  const confirmBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      await bulkDeleteSaves({ saveIds: Array.from(selectedIds) as any[] });
+      setSelectedIds(new Set());
+      setShowBulkDeleteDialog(false);
+    } catch (error) {
+      console.error("Failed to bulk delete:", error);
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
-  const handleSingleDelete = (save: APISave) => {
+  const handleSingleDelete = (save: SaveItem) => {
     setSingleDeleteTarget(save);
   };
 
-  const confirmSingleDelete = () => {
-    if (singleDeleteTarget) {
-      deleteSave.mutate({ saveId: singleDeleteTarget.id });
+  const confirmSingleDelete = async () => {
+    if (!singleDeleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteSave({ saveId: singleDeleteTarget.id as any });
       setSingleDeleteTarget(null);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleFavorite = async (saveId: string) => {
+    try {
+      await toggleFavorite({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
+  const handleToggleArchive = async (saveId: string) => {
+    try {
+      await toggleArchive({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle archive:", error);
     }
   };
 
@@ -615,10 +640,6 @@ export default function SavesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-10 pl-10 pr-10"
           />
-          {/* Subtle loading indicator for background fetches */}
-          {isFetching && !isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -780,11 +801,11 @@ export default function SavesPage() {
             variant="destructive"
             size="sm"
             onClick={handleBulkDelete}
-            disabled={bulkDeleteSaves.isPending}
+            disabled={isBulkDeleting}
             className="gap-2"
           >
             <Trash2 className="h-4 w-4" />
-            {bulkDeleteSaves.isPending ? "Deleting..." : `Delete ${selectedIds.size}`}
+            {isBulkDeleting ? "Deleting..." : `Delete ${selectedIds.size}`}
           </Button>
 
           <Button variant="ghost" size="sm" onClick={clearSelection} className="gap-2">
@@ -800,29 +821,29 @@ export default function SavesPage() {
       ) : data?.items && data.items.length > 0 ? (
         viewMode === "list" ? (
           <div className="space-y-3">
-            {data.items.map((save: APISave) => (
+            {data.items.map((save) => (
               <SaveListItem
                 key={save.id}
-                save={save}
+                save={save as SaveItem}
                 isSelected={selectedIds.has(save.id)}
                 isSelectionMode={isSelectionMode}
                 onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
-                onToggleArchive={() => toggleArchive.mutate({ saveId: save.id })}
-                onDelete={() => handleSingleDelete(save)}
+                onToggleFavorite={() => handleToggleFavorite(save.id)}
+                onToggleArchive={() => handleToggleArchive(save.id)}
+                onDelete={() => handleSingleDelete(save as SaveItem)}
               />
             ))}
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {data.items.map((save: APISave) => (
+            {data.items.map((save) => (
               <SaveGridCard
                 key={save.id}
-                save={save}
+                save={save as SaveItem}
                 isSelected={selectedIds.has(save.id)}
                 isSelectionMode={isSelectionMode}
                 onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
+                onToggleFavorite={() => handleToggleFavorite(save.id)}
               />
             ))}
           </div>
@@ -868,9 +889,9 @@ export default function SavesPage() {
             <Button
               variant="destructive"
               onClick={confirmBulkDelete}
-              disabled={bulkDeleteSaves.isPending}
+              disabled={isBulkDeleting}
             >
-              {bulkDeleteSaves.isPending ? (
+              {isBulkDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...
@@ -903,9 +924,9 @@ export default function SavesPage() {
             <Button
               variant="destructive"
               onClick={confirmSingleDelete}
-              disabled={deleteSave.isPending}
+              disabled={isDeleting}
             >
-              {deleteSave.isPending ? (
+              {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

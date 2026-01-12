@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { trpc } from "@/lib/trpc/client";
+import { useCreateSave, useGetMySpace, useListCollections } from "@/lib/convex";
 import type { SaveVisibility } from "@/lib/types";
 
 type QuickAddState = "idle" | "loading" | "preview" | "saving" | "success";
@@ -115,8 +115,8 @@ export function QuickAdd() {
   const router = useRouter();
 
   // Get user's default save visibility from settings
-  const { data: space } = trpc.space.getMySpace.useQuery();
-  const defaultVisibility = space?.defaultSaveVisibility ?? "private";
+  const space = useGetMySpace();
+  const defaultVisibility = (space?.defaultSaveVisibility as SaveVisibility) ?? "private";
   const effectiveVisibility = visibility ?? defaultVisibility;
 
   // Prevent hydration mismatch with Radix UI components
@@ -124,40 +124,9 @@ export function QuickAdd() {
     setMounted(true);
   }, []);
 
-  const { data: collections } = trpc.space.listCollections.useQuery(undefined, {
-    enabled: open,
-  });
+  const collections = useListCollections(open ? {} : undefined);
 
-  const utils = trpc.useUtils();
-
-  const createSave = trpc.space.createSave.useMutation({
-    onSuccess: () => {
-      setState("success");
-      // Invalidate caches so the UI updates immediately
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-      // Auto-close after 3 seconds if description data isn't available
-      // (in production this would poll for snapshot, but since we use mock data, just auto-close)
-      const timer = setTimeout(() => {
-        resetAndClose();
-      }, 3000);
-      setAutoCloseTimer(timer);
-    },
-    onError: (error) => {
-      // Check if this is a duplicate error (cause is added by our error formatter)
-      const data = error.data as
-        | { cause?: { type?: string; existingSave?: DuplicateSaveInfo } }
-        | undefined;
-      if (data?.cause?.type === "DUPLICATE_SAVE" && data.cause.existingSave) {
-        setDuplicateSave(data.cause.existingSave);
-        setShowDuplicateModal(true);
-        setState("idle");
-      } else {
-        setState("preview");
-      }
-    },
-  });
+  const createSave = useCreateSave();
 
   const resetAndClose = useCallback(() => {
     if (autoCloseTimer) {
@@ -236,17 +205,37 @@ export function QuickAdd() {
   );
 
   // Handle save
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!metadata) return;
 
     setState("saving");
-    createSave.mutate({
-      url,
-      title: metadata.title,
-      visibility: effectiveVisibility,
-      collectionIds: selectedCollection ? [selectedCollection] : undefined,
-    });
-  }, [url, metadata, effectiveVisibility, selectedCollection, createSave]);
+    try {
+      await createSave({
+        url,
+        title: metadata.title,
+        visibility: effectiveVisibility,
+        collectionIds: selectedCollection ? [selectedCollection as any] : undefined,
+      });
+      setState("success");
+      // Auto-close after 3 seconds
+      const timer = setTimeout(() => {
+        resetAndClose();
+      }, 3000);
+      setAutoCloseTimer(timer);
+    } catch (error: any) {
+      // Check if this is a duplicate error
+      if (error?.message?.includes("already have this link saved") || error?.data?.existingSave) {
+        const existingSave = error?.data?.existingSave;
+        if (existingSave) {
+          setDuplicateSave(existingSave);
+          setShowDuplicateModal(true);
+        }
+        setState("idle");
+      } else {
+        setState("preview");
+      }
+    }
+  }, [url, metadata, effectiveVisibility, selectedCollection, createSave, resetAndClose]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(

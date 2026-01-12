@@ -78,7 +78,8 @@ export interface APISave {
 }
 
 // Forward declare API types
-import type { APICollection, APITag } from "./collections";
+import type { APICollection } from "./collections";
+import type { APITag } from "./tags";
 
 // Public save (for public space viewing)
 export interface PublicSave {

@@ -1,6 +1,5 @@
 "use client";
 
-import { keepPreviousData } from "@tanstack/react-query";
 import {
   Check,
   ChevronsUpDown,
@@ -56,8 +55,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  useCreateCollection,
+  useDeleteCollection,
+  useListCollections,
+  useListTags,
+  useUpdateCollection,
+} from "@/lib/convex";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { trpc } from "@/lib/trpc/client";
 import type { CollectionVisibility } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -330,6 +335,7 @@ export default function CollectionsPage() {
   const [newVisibility, setNewVisibility] = useState<CollectionVisibility>("private");
   const [newDefaultTags, setNewDefaultTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   // Edit modal state (stores the collection being edited)
   const [editCollection, setEditCollection] = useState<{
@@ -341,6 +347,7 @@ export default function CollectionsPage() {
   const [editVisibility, setEditVisibility] = useState<CollectionVisibility>("private");
   const [editDefaultTags, setEditDefaultTags] = useState<string[]>([]);
   const [editTagInput, setEditTagInput] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const queryOptions = {
     query: debouncedSearch || undefined,
@@ -349,63 +356,67 @@ export default function CollectionsPage() {
       : debouncedFilters.has("private")
         ? ("private" as CollectionVisibility)
         : undefined,
-    defaultTagId: tagFilter || undefined,
+    defaultTagId: tagFilter as any || undefined,
   };
 
-  const {
-    data: collections,
-    isLoading,
-    isFetching,
-  } = trpc.space.listCollections.useQuery(queryOptions, {
-    // Keep previous data visible while fetching new data (avoids UI thrash)
-    placeholderData: keepPreviousData,
-  });
-  const { data: allTags, isLoading: isTagsLoading } = trpc.space.listTags.useQuery();
-  const utils = trpc.useUtils();
+  // Convex queries
+  const collections = useListCollections(queryOptions);
+  const allTags = useListTags();
+  const isLoading = collections === undefined;
+  const isTagsLoading = allTags === undefined;
 
-  const createCollection = trpc.space.createCollection.useMutation({
-    onSuccess: () => {
-      utils.space.listCollections.invalidate();
+  // Convex mutations
+  const createCollectionMutation = useCreateCollection();
+  const updateCollectionMutation = useUpdateCollection();
+  const deleteCollectionMutation = useDeleteCollection();
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setIsCreating(true);
+    try {
+      await createCollectionMutation({
+        name: newName,
+        visibility: newVisibility,
+        defaultTagNames: newDefaultTags,
+      });
       setNewCollectionOpen(false);
       setNewName("");
       setNewVisibility("private");
       setNewDefaultTags([]);
       setNewTagInput("");
-    },
-  });
-
-  const updateCollection = trpc.space.updateCollection.useMutation({
-    onSuccess: () => {
-      utils.space.listCollections.invalidate();
-      setEditCollection(null);
-    },
-  });
-
-  const deleteCollection = trpc.space.deleteCollection.useMutation({
-    onSuccess: () => {
-      utils.space.listCollections.invalidate();
-    },
-  });
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName.trim()) return;
-    createCollection.mutate({
-      name: newName,
-      visibility: newVisibility,
-      defaultTagNames: newDefaultTags,
-    });
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+    } finally {
+      setIsCreating(false);
+    }
   };
 
-  const handleEdit = (e: React.FormEvent) => {
+  const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editCollection || !editName.trim()) return;
-    updateCollection.mutate({
-      id: editCollection.id,
-      name: editName,
-      visibility: editVisibility,
-      defaultTagNames: editDefaultTags,
-    });
+    setIsUpdating(true);
+    try {
+      await updateCollectionMutation({
+        id: editCollection.id as any,
+        name: editName,
+        visibility: editVisibility,
+        defaultTagNames: editDefaultTags,
+      });
+      setEditCollection(null);
+    } catch (error) {
+      console.error("Failed to update collection:", error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async (collectionId: string) => {
+    try {
+      await deleteCollectionMutation({ collectionId: collectionId as any });
+    } catch (error) {
+      console.error("Failed to delete collection:", error);
+    }
   };
 
   const openEditModal = (collection: {
@@ -588,7 +599,8 @@ export default function CollectionsPage() {
                 <Button type="button" variant="outline" onClick={() => setNewCollectionOpen(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createCollection.isPending}>
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create
                 </Button>
               </DialogFooter>
@@ -607,10 +619,6 @@ export default function CollectionsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-10 pl-10 pr-10"
           />
-          {/* Subtle loading indicator for background fetches */}
-          {isFetching && !isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -752,9 +760,9 @@ export default function CollectionsPage() {
             {collections.map((collection) => (
               <CollectionListItem
                 key={collection.id}
-                collection={collection}
-                onEdit={() => openEditModal(collection)}
-                onDelete={() => deleteCollection.mutate({ collectionId: collection.id })}
+                collection={collection as CollectionItem}
+                onEdit={() => openEditModal(collection as any)}
+                onDelete={() => handleDelete(collection.id)}
               />
             ))}
           </div>
@@ -763,9 +771,9 @@ export default function CollectionsPage() {
             {collections.map((collection) => (
               <CollectionGridCard
                 key={collection.id}
-                collection={collection}
-                onEdit={() => openEditModal(collection)}
-                onDelete={() => deleteCollection.mutate({ collectionId: collection.id })}
+                collection={collection as CollectionItem}
+                onEdit={() => openEditModal(collection as any)}
+                onDelete={() => handleDelete(collection.id)}
               />
             ))}
           </div>
@@ -873,7 +881,8 @@ export default function CollectionsPage() {
               <Button type="button" variant="outline" onClick={() => setEditCollection(null)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateCollection.isPending}>
+              <Button type="submit" disabled={isUpdating}>
+                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </DialogFooter>

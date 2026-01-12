@@ -62,6 +62,7 @@ export const getSaveSnapshot = query({
         siteName: string | null;
         length: number;
         language: string | null;
+        storageUrl?: string;
       };
     } = {
       snapshot: {
@@ -83,16 +84,28 @@ export const getSaveSnapshot = query({
       },
     };
 
-    // If content requested and snapshot is ready, fetch from storage
+    // If content requested and snapshot is ready, get storage URL
+    // Client will need to fetch content from this URL
     if (args.includeContent && snapshot.status === "ready" && snapshot.storageId) {
       try {
-        const blob = await ctx.storage.get(snapshot.storageId);
-        if (blob) {
-          const text = await blob.text();
-          result.content = JSON.parse(text);
+        const storageUrl = await ctx.storage.getUrl(snapshot.storageId);
+        if (storageUrl) {
+          // For now, return a placeholder - actual content fetching should be done client-side
+          // or via an action that can fetch the blob
+          result.content = {
+            title: snapshot.title ?? "",
+            byline: snapshot.byline ?? null,
+            content: "", // Content is stored in file
+            textContent: "",
+            excerpt: snapshot.excerpt ?? "",
+            siteName: null,
+            length: snapshot.wordCount ?? 0,
+            language: snapshot.language ?? null,
+            storageUrl, // Client can fetch from this URL
+          };
         }
       } catch (err) {
-        console.error("[snapshots] Failed to get content:", err);
+        console.error("[snapshots] Failed to get content URL:", err);
       }
     }
 
@@ -143,6 +156,7 @@ export const getPublicSaveSnapshot = query({
         siteName: string | null;
         length: number;
         language: string | null;
+        storageUrl?: string;
       };
     } = {
       snapshot: {
@@ -159,13 +173,22 @@ export const getPublicSaveSnapshot = query({
 
     if (args.includeContent && snapshot.status === "ready" && snapshot.storageId) {
       try {
-        const blob = await ctx.storage.get(snapshot.storageId);
-        if (blob) {
-          const text = await blob.text();
-          result.content = JSON.parse(text);
+        const storageUrl = await ctx.storage.getUrl(snapshot.storageId);
+        if (storageUrl) {
+          result.content = {
+            title: snapshot.title ?? "",
+            byline: snapshot.byline ?? null,
+            content: "", // Content stored in file
+            textContent: "",
+            excerpt: snapshot.excerpt ?? "",
+            siteName: null,
+            length: snapshot.wordCount ?? 0,
+            language: snapshot.language ?? null,
+            storageUrl, // Client can fetch from this URL
+          };
         }
       } catch (err) {
-        console.error("[snapshots] Failed to get content:", err);
+        console.error("[snapshots] Failed to get content URL:", err);
       }
     }
 
