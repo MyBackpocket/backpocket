@@ -1,0 +1,158 @@
+# Backpocket Project Rules
+
+## Package Manager
+
+**Always use `bun`** for all package management and script execution:
+
+```bash
+# Installing dependencies
+bun install
+bun add <package>
+bun add -d <dev-package>
+
+# Running scripts
+bun run dev
+bun run build
+bun run test
+bun run lint
+
+# Running commands
+bunx <command>
+```
+
+Never use `npm`, `yarn`, or `pnpm` in this project.
+
+---
+
+## Documentation Requirements
+
+When making changes to the codebase, **update the relevant documentation** in `/docs/`:
+
+### API Changes
+
+When adding, modifying, or removing API endpoints:
+
+1. Update **`/docs/PRODUCT-SPEC.md`** Section 4 (API Reference)
+   - Add new endpoints with request/response examples
+   - Update input/output schemas
+   - Add to the quick reference tables
+2. Update the **Changelog** (Section 9) with the change
+
+### Type Changes
+
+When modifying types in `packages/types/`:
+
+1. Update **`/docs/PRODUCT-SPEC.md`** Section 5 (Type Definitions)
+2. Ensure the shared types remain the single source of truth
+
+### New Features
+
+When implementing new features:
+
+1. Update **`/docs/FEATURE-MATRIX.md`** to reflect platform support
+2. Add feature description to **`/docs/PRODUCT-SPEC.md`** Section 6 (Core Features)
+3. If the feature is platform-specific, update Section 7
+
+### Platform-Specific Changes
+
+When making changes to a specific platform:
+
+- **Web (`apps/backpocket-web/`)**: Update Section 7.1
+- **Mobile (`apps/backpocket-mobile/`)**: Update Section 7.2
+- **Extension (`apps/backpocket-browser-extension/`)**: Update Section 7.3
+
+### Planned Features
+
+When completing features from the roadmap:
+
+1. Move item from "Planned" to "Completed" in **`/docs/ROADMAP.md`**
+2. Add to the Changelog with the date
+
+---
+
+## Code Style
+
+### TypeScript
+
+- Use strict TypeScript
+- Import types from `@backpocket/types` for shared types
+- Import utilities from `@backpocket/utils` for shared utilities
+
+### Formatting
+
+- Biome is used for linting and formatting
+- Run `bun run lint:fix` before committing
+
+### Imports
+
+```typescript
+// Good: Use shared packages
+import type { Save, Tag } from "@backpocket/types";
+import { normalizeUrl } from "@backpocket/utils";
+
+// Bad: Don't duplicate types across apps
+```
+
+---
+
+## Monorepo Structure
+
+```
+backpocket/
+├── apps/
+│   ├── backpocket-web/           # Next.js web app
+│   ├── backpocket-mobile/        # Expo React Native app
+│   └── backpocket-browser-extension/  # WXT browser extension
+├── packages/
+│   ├── types/                    # @backpocket/types
+│   ├── utils/                    # @backpocket/utils
+│   └── tsconfig/                 # Shared TS configs
+├── docs/                         # Unified documentation
+│   ├── PRODUCT-SPEC.md           # API, types, features
+│   ├── FEATURE-MATRIX.md         # Platform parity
+│   └── ROADMAP.md                # Planned features
+└── .cursorrules                  # This file
+```
+
+---
+
+## Quick Reference
+
+### Running Apps
+
+```bash
+bun dev              # All apps
+bun dev:web          # Web only
+bun dev:mobile       # Mobile only
+bun dev:extension    # Extension only
+```
+
+### Common Tasks
+
+```bash
+bun install          # Install all dependencies
+bun build            # Build all apps
+bun lint             # Lint all packages
+bun lint:fix         # Lint and auto-fix
+bun format           # Format with Biome
+bun typecheck        # Type check all packages
+bun test             # Run tests
+bun clean            # Clean build artifacts
+```
+
+### Database (Supabase)
+
+```bash
+# From apps/backpocket-web/
+bunx supabase db push          # Apply migrations
+bunx supabase gen types        # Generate types
+```
+
+---
+
+## Reminders
+
+1. **Documentation is part of the feature** — A feature isn't complete until docs are updated
+2. **Use shared packages** — Don't duplicate types or utilities across apps
+3. **Keep feature matrix current** — Update when implementing platform-specific features
+4. **Changelog every release** — Document API changes with dates

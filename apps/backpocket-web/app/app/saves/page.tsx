@@ -1,0 +1,922 @@
+"use client";
+
+import { keepPreviousData } from "@tanstack/react-query";
+import {
+  Archive,
+  Bookmark,
+  Calendar,
+  Check,
+  ChevronsUpDown,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Filter,
+  Globe,
+  Grid3X3,
+  List,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Star,
+  Tag,
+  Trash2,
+  X,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { routes } from "@/lib/constants/routes";
+import { useDebounce } from "@/lib/hooks/use-debounce";
+import { trpc } from "@/lib/trpc/client";
+import type { APISave, SaveVisibility } from "@/lib/types";
+import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
+
+type ViewMode = "grid" | "list";
+
+// Individual filter options (can be combined)
+type FilterOption = "favorites" | "archived" | "public" | "private";
+
+const FILTER_OPTIONS: { value: FilterOption; label: string; icon: typeof Star }[] = [
+  { value: "favorites", label: "Favorites", icon: Star },
+  { value: "archived", label: "Archived", icon: Archive },
+  { value: "public", label: "Public", icon: Eye },
+  { value: "private", label: "Private", icon: EyeOff },
+];
+
+function SaveListItem({
+  save,
+  isSelected,
+  isSelectionMode,
+  onSelect,
+  onToggleFavorite,
+  onToggleArchive,
+  onDelete,
+}: {
+  save: APISave;
+  isSelected: boolean;
+  isSelectionMode: boolean;
+  onSelect: () => void;
+  onToggleFavorite: () => void;
+  onToggleArchive: () => void;
+  onDelete: () => void;
+}) {
+  const visibilityConfig = {
+    public: { icon: Eye, label: "Public", class: "tag-mint" },
+    private: { icon: EyeOff, label: "Private", class: "tag-denim" },
+  };
+
+  const vis = visibilityConfig[save.visibility];
+  const VisIcon = vis.icon;
+
+  return (
+    <div
+      className={cn(
+        "group relative flex gap-4 rounded-xl border bg-card/50 p-4 transition-all duration-200",
+        "hover:bg-card hover:shadow-denim",
+        isSelected && "border-primary/50 bg-primary/5 shadow-denim"
+      )}
+    >
+      {/* Thumbnail with checkbox overlay */}
+      <div className="relative shrink-0">
+        {/* Checkbox overlay on thumbnail */}
+        <div
+          className={cn(
+            "absolute left-2 top-2 z-10 transition-all duration-200",
+            isSelectionMode
+              ? "opacity-100 scale-100"
+              : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+          )}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onSelect}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-background/90 backdrop-blur-sm shadow-sm"
+          />
+        </div>
+
+        <a
+          href={save.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="group/thumb block overflow-hidden rounded-lg"
+        >
+          {save.imageUrl ? (
+            <div className="relative h-20 w-32 overflow-hidden rounded-lg bg-muted">
+              <Image src={save.imageUrl} alt="" fill className="object-cover" />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/thumb:bg-black/20">
+                <ExternalLink className="h-5 w-5 text-white opacity-0 drop-shadow-lg transition-opacity group-hover/thumb:opacity-100" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-20 w-32 items-center justify-center rounded-lg bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted">
+              <Bookmark className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+          )}
+        </a>
+      </div>
+
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge className={cn("shrink-0 gap-1 text-xs", vis.class)}>
+              <VisIcon className="h-3 w-3" />
+              {vis.label}
+            </Badge>
+            <Link
+              href={`/app/saves/${save.id}`}
+              className="font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-1"
+            >
+              {save.title || save.url}
+            </Link>
+          </div>
+
+          {save.description && (
+            <p className="mt-1 text-sm text-muted-foreground line-clamp-1">{save.description}</p>
+          )}
+        </div>
+
+        {/* Meta row */}
+        <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Globe className="h-3 w-3" />
+            {getDomainFromUrl(save.url)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Calendar className="h-3 w-3" />
+            {formatDate(save.savedAt)}
+          </span>
+          {save.tags && save.tags.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              {save.tags.slice(0, 2).map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full bg-secondary/80 px-2 py-0.5 text-secondary-foreground"
+                >
+                  {tag.name}
+                </span>
+              ))}
+              {save.tags.length > 2 && (
+                <span className="text-muted-foreground">+{save.tags.length - 2}</span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.preventDefault();
+            onToggleFavorite();
+          }}
+          className={cn(
+            "h-8 w-8 rounded-lg",
+            save.isFavorite && "bg-amber/10 text-amber opacity-100"
+          )}
+        >
+          <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.preventDefault();
+            onToggleArchive();
+          }}
+          className={cn(
+            "h-8 w-8 rounded-lg",
+            save.isArchived && "bg-denim/10 text-denim opacity-100"
+          )}
+        >
+          <Archive className="h-4 w-4" />
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem asChild>
+              <Link href={`/app/saves/${save.id}`} className="gap-2">
+                <Eye className="h-4 w-4" />
+                View details
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={save.url} target="_blank" rel="noopener noreferrer" className="gap-2">
+                <ExternalLink className="h-4 w-4" />
+                Open original
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="gap-2 text-destructive focus:text-destructive"
+              onClick={onDelete}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
+function SaveGridCard({
+  save,
+  isSelected,
+  isSelectionMode,
+  onSelect,
+  onToggleFavorite,
+}: {
+  save: APISave;
+  isSelected: boolean;
+  isSelectionMode: boolean;
+  onSelect: () => void;
+  onToggleFavorite: () => void;
+}) {
+  const visibilityConfig = {
+    public: { icon: Eye, label: "Public", class: "tag-mint" },
+    private: { icon: EyeOff, label: "Private", class: "tag-denim" },
+  };
+
+  const vis = visibilityConfig[save.visibility];
+  const VisIcon = vis.icon;
+
+  return (
+    <Card
+      className={cn(
+        "group overflow-hidden transition-all duration-200 card-hover relative",
+        isSelected && "ring-2 ring-primary shadow-denim-lg"
+      )}
+    >
+      {/* Checkbox overlay */}
+      <div
+        className={cn(
+          "absolute left-3 top-3 z-10 transition-all duration-200",
+          isSelectionMode
+            ? "opacity-100 scale-100"
+            : "opacity-0 scale-90 group-hover:opacity-100 group-hover:scale-100"
+        )}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={onSelect}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-background/90 backdrop-blur-sm shadow-sm"
+        />
+      </div>
+
+      {/* Favorite button overlay */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={(e) => {
+          e.preventDefault();
+          onToggleFavorite();
+        }}
+        className={cn(
+          "absolute right-3 top-3 z-10 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm transition-all duration-200",
+          save.isFavorite ? "opacity-100 text-amber" : "opacity-0 group-hover:opacity-100"
+        )}
+      >
+        <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
+      </Button>
+
+      <a
+        href={save.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="group/thumb block"
+      >
+        {save.imageUrl ? (
+          <div className="relative aspect-video w-full overflow-hidden bg-muted">
+            <Image
+              src={save.imageUrl}
+              alt=""
+              fill
+              className="object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/thumb:bg-black/20">
+              <ExternalLink className="h-8 w-8 text-white opacity-0 drop-shadow-lg transition-opacity group-hover/thumb:opacity-100" />
+            </div>
+          </div>
+        ) : (
+          <div className="flex aspect-video w-full items-center justify-center bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted/70">
+            <Bookmark className="h-10 w-10 text-muted-foreground/30" />
+          </div>
+        )}
+      </a>
+
+      <div className="p-4">
+        <Link
+          href={`/app/saves/${save.id}`}
+          className="block font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-2"
+        >
+          {save.title || save.url}
+        </Link>
+
+        {save.description && (
+          <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
+        )}
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="flex items-center text-xs text-muted-foreground">
+            <Globe className="h-3 w-3 mr-1.5" />
+            {getDomainFromUrl(save.url)}
+          </span>
+          <Badge className={cn("gap-1 text-xs", vis.class)}>
+            <VisIcon className="h-3 w-3" />
+            {vis.label}
+          </Badge>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function SavesSkeleton({ viewMode }: { viewMode: ViewMode }) {
+  if (viewMode === "list") {
+    return (
+      <div className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4 rounded-xl border bg-card/50 p-4">
+            <Skeleton className="h-20 w-32 rounded-lg" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <div className="flex gap-4">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="overflow-hidden">
+          <Skeleton className="aspect-video w-full" />
+          <div className="p-4 space-y-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export default function SavesPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set());
+  const [filterComboboxOpen, setFilterComboboxOpen] = useState(false);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [tagComboboxOpen, setTagComboboxOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<APISave | null>(null);
+
+  // Debounce search to avoid firing on every keystroke (300ms delay)
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Debounce filters so user can select multiple without triggering query on each click
+  const filtersArray = Array.from(activeFilters).sort().join(",");
+  const debouncedFiltersArray = useDebounce(filtersArray, 300);
+  const debouncedFilters = new Set(
+    debouncedFiltersArray ? (debouncedFiltersArray.split(",") as FilterOption[]) : []
+  );
+
+  // Build query options from debounced filters
+  const queryOptions = {
+    query: debouncedSearch || undefined,
+    isArchived: debouncedFilters.has("archived") ? true : undefined,
+    isFavorite: debouncedFilters.has("favorites") ? true : undefined,
+    visibility: debouncedFilters.has("public")
+      ? ("public" as SaveVisibility)
+      : debouncedFilters.has("private")
+        ? ("private" as SaveVisibility)
+        : undefined,
+    tagId: tagFilter || undefined,
+    // Reduced from 50 to 20 for faster initial loads
+    limit: 20,
+  };
+
+  // Toggle a filter option
+  const toggleFilter = (option: FilterOption) => {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(option)) {
+        next.delete(option);
+      } else {
+        // If selecting public, remove private (and vice versa) - they're mutually exclusive
+        if (option === "public") next.delete("private");
+        if (option === "private") next.delete("public");
+        next.add(option);
+      }
+      return next;
+    });
+  };
+
+  // Get filter button label
+  const getFilterLabel = () => {
+    if (activeFilters.size === 0) return "All saves";
+    if (activeFilters.size === 1) {
+      const filter = Array.from(activeFilters)[0];
+      return FILTER_OPTIONS.find((f) => f.value === filter)?.label || "Filtered";
+    }
+    return `${activeFilters.size} filters`;
+  };
+
+  const { data, isLoading, isFetching } = trpc.space.listSaves.useQuery(queryOptions, {
+    // Keep previous data visible while fetching new data (avoids UI thrash)
+    placeholderData: keepPreviousData,
+  });
+  const { data: allTags, isLoading: isTagsLoading } = trpc.space.listTags.useQuery();
+  const utils = trpc.useUtils();
+
+  // Get the selected tag name for display
+  const selectedTagName = tagFilter && allTags?.find((t) => t.id === tagFilter)?.name;
+
+  const toggleFavorite = trpc.space.toggleFavorite.useMutation({
+    onSuccess: () => {
+      // Invalidate list to reflect the change
+      utils.space.listSaves.invalidate();
+      utils.space.getStats.invalidate();
+    },
+  });
+
+  const toggleArchive = trpc.space.toggleArchive.useMutation({
+    onSuccess: () => {
+      utils.space.listSaves.invalidate();
+    },
+  });
+
+  const deleteSave = trpc.space.deleteSave.useMutation({
+    onSuccess: () => {
+      utils.space.listSaves.invalidate();
+      utils.space.getStats.invalidate();
+      utils.space.getDashboardData.invalidate();
+    },
+  });
+
+  const bulkDeleteSaves = trpc.space.bulkDeleteSaves.useMutation({
+    onSuccess: () => {
+      setSelectedIds(new Set());
+      utils.space.listSaves.invalidate();
+      utils.space.getStats.invalidate();
+      utils.space.getDashboardData.invalidate();
+    },
+  });
+
+  const isSelectionMode = selectedIds.size > 0;
+  const allSelected =
+    data?.items && data.items.length > 0 && selectedIds.size === data.items.length;
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (!data?.items) return;
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.items.map((s: APISave) => s.id)));
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+    setShowBulkDeleteDialog(true);
+  };
+
+  const confirmBulkDelete = () => {
+    bulkDeleteSaves.mutate({ saveIds: Array.from(selectedIds) });
+    setShowBulkDeleteDialog(false);
+  };
+
+  const handleSingleDelete = (save: APISave) => {
+    setSingleDeleteTarget(save);
+  };
+
+  const confirmSingleDelete = () => {
+    if (singleDeleteTarget) {
+      deleteSave.mutate({ saveId: singleDeleteTarget.id });
+      setSingleDeleteTarget(null);
+    }
+  };
+
+  return (
+    <div className="p-6 lg:p-8">
+      {/* Header */}
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Saves</h1>
+          <p className="text-muted-foreground">
+            {data?.items?.length ?? 0} saves in your collection
+          </p>
+        </div>
+        <Link href={routes.app.savesNew}>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Save
+          </Button>
+        </Link>
+      </div>
+
+      {/* Filters and search */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
+        {/* Select button - always rendered to avoid CLS */}
+        <Button
+          variant="outline"
+          onClick={selectAll}
+          className="gap-2 h-10 shrink-0"
+          disabled={!data?.items?.length}
+        >
+          <div
+            className={cn(
+              "flex h-4 w-4 items-center justify-center rounded border-2 transition-colors",
+              allSelected
+                ? "border-primary bg-primary text-primary-foreground"
+                : isSelectionMode
+                  ? "border-primary bg-primary/50 text-primary-foreground"
+                  : "border-muted-foreground/50"
+            )}
+          >
+            {(allSelected || isSelectionMode) && <Check className="h-3 w-3" strokeWidth={3} />}
+          </div>
+          Select All
+        </Button>
+
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search saves..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 pl-10 pr-10"
+          />
+          {/* Subtle loading indicator for background fetches */}
+          {isFetching && !isLoading && (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Filter combobox - multi-select */}
+          <Popover open={filterComboboxOpen} onOpenChange={setFilterComboboxOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                aria-expanded={filterComboboxOpen}
+                className="w-[160px] h-10 justify-between"
+              >
+                <Filter className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate flex-1 text-left">{getFilterLabel()}</span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <Command>
+                <CommandList>
+                  <CommandGroup>
+                    {FILTER_OPTIONS.map((option) => {
+                      const Icon = option.icon;
+                      const isSelected = activeFilters.has(option.value);
+                      return (
+                        <CommandItem
+                          key={option.value}
+                          value={option.value}
+                          onSelect={() => toggleFilter(option.value)}
+                        >
+                          <Check
+                            className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")}
+                          />
+                          <Icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                          {option.label}
+                        </CommandItem>
+                      );
+                    })}
+                  </CommandGroup>
+                  {activeFilters.size > 0 && (
+                    <CommandGroup>
+                      <CommandItem
+                        onSelect={() => setActiveFilters(new Set())}
+                        className="justify-center text-center text-muted-foreground"
+                      >
+                        Clear filters
+                      </CommandItem>
+                    </CommandGroup>
+                  )}
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          {/* Tag filter combobox with search */}
+          <Popover open={tagComboboxOpen} onOpenChange={setTagComboboxOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                aria-expanded={tagComboboxOpen}
+                className="w-[160px] h-10 justify-between"
+                disabled={isTagsLoading || !allTags?.length}
+              >
+                <Tag className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate flex-1 text-left">
+                  {tagFilter ? selectedTagName || "Tag" : "All tags"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0" align="start">
+              <Command>
+                <CommandInput placeholder="Search tags..." />
+                <CommandList>
+                  <CommandEmpty>No tags found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="all"
+                      onSelect={() => {
+                        setTagFilter(null);
+                        setTagComboboxOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={cn("mr-2 h-4 w-4", !tagFilter ? "opacity-100" : "opacity-0")}
+                      />
+                      All tags
+                    </CommandItem>
+                    {allTags?.map((tag) => (
+                      <CommandItem
+                        key={tag.id}
+                        value={tag.name}
+                        onSelect={() => {
+                          setTagFilter(tag.id);
+                          setTagComboboxOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            tagFilter === tag.id ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {tag.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <div className="flex h-10 items-center rounded-lg border bg-muted/50 px-1.5 gap-1">
+            <Button
+              variant={viewMode === "list" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-7 w-7 rounded-md"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === "grid" ? "secondary" : "ghost"}
+              size="icon"
+              className="h-7 w-7 rounded-md"
+              onClick={() => setViewMode("grid")}
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk actions bar */}
+      {isSelectionMode && (
+        <div className="mb-6 flex items-center gap-4 rounded-xl border border-primary/30 bg-primary/5 p-4 shadow-sm">
+          <button
+            type="button"
+            onClick={selectAll}
+            className="flex items-center gap-3 text-sm font-medium"
+          >
+            <div
+              className={cn(
+                "flex h-5 w-5 items-center justify-center rounded border-2 transition-colors",
+                allSelected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-muted-foreground/50 hover:border-primary"
+              )}
+            >
+              {allSelected && <Check className="h-3.5 w-3.5 stroke-3" />}
+            </div>
+            {allSelected ? "Deselect all" : "Select all"}
+          </button>
+
+          <span className="text-sm text-muted-foreground">{selectedIds.size} selected</span>
+
+          <div className="flex-1" />
+
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleteSaves.isPending}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            {bulkDeleteSaves.isPending ? "Deleting..." : `Delete ${selectedIds.size}`}
+          </Button>
+
+          <Button variant="ghost" size="sm" onClick={clearSelection} className="gap-2">
+            <X className="h-4 w-4" />
+            Cancel
+          </Button>
+        </div>
+      )}
+
+      {/* Saves list/grid */}
+      {isLoading ? (
+        <SavesSkeleton viewMode={viewMode} />
+      ) : data?.items && data.items.length > 0 ? (
+        viewMode === "list" ? (
+          <div className="space-y-3">
+            {data.items.map((save: APISave) => (
+              <SaveListItem
+                key={save.id}
+                save={save}
+                isSelected={selectedIds.has(save.id)}
+                isSelectionMode={isSelectionMode}
+                onSelect={() => toggleSelect(save.id)}
+                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
+                onToggleArchive={() => toggleArchive.mutate({ saveId: save.id })}
+                onDelete={() => handleSingleDelete(save)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {data.items.map((save: APISave) => (
+              <SaveGridCard
+                key={save.id}
+                save={save}
+                isSelected={selectedIds.has(save.id)}
+                isSelectionMode={isSelectionMode}
+                onSelect={() => toggleSelect(save.id)}
+                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
+              />
+            ))}
+          </div>
+        )
+      ) : (
+        <div className="py-20 text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+            <Bookmark className="h-10 w-10 text-muted-foreground/50" />
+          </div>
+          <h3 className="mt-6 text-lg font-medium">No saves found</h3>
+          <p className="mt-2 text-muted-foreground">
+            {searchQuery || activeFilters.size > 0 || tagFilter
+              ? "Try adjusting your search or filters"
+              : "Add your first save to get started"}
+          </p>
+          {!searchQuery && activeFilters.size === 0 && !tagFilter && (
+            <Link href={routes.app.savesNew} className="mt-6 inline-block">
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                Add Save
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Delete {selectedIds.size} save{selectedIds.size > 1 ? "s" : ""}?
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete {selectedIds.size} save{selectedIds.size > 1 ? "s" : ""}.
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmBulkDelete}
+              disabled={bulkDeleteSaves.isPending}
+            >
+              {bulkDeleteSaves.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                `Delete ${selectedIds.size}`
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Single Delete Confirmation Dialog */}
+      <Dialog
+        open={!!singleDeleteTarget}
+        onOpenChange={(open) => !open && setSingleDeleteTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this save?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete "{singleDeleteTarget?.title || singleDeleteTarget?.url}".
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSingleDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmSingleDelete}
+              disabled={deleteSave.isPending}
+            >
+              {deleteSave.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

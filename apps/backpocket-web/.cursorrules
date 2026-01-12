@@ -1,0 +1,47 @@
+# Cursor Rules for Backpocket Web
+
+## Package Manager
+
+- This project uses **bun** exclusively. NEVER use npm, pnpm, or yarn.
+- Always use `bun add` instead of `npm install`, `pnpm add`, or `yarn add`.
+- Always use `bun remove` instead of `npm uninstall`, `pnpm remove`, or `yarn remove`.
+- Always use `bun run` for scripts, or just `bun <script>` (e.g., `bun dev`, `bun build`).
+
+## File Naming Conventions
+
+- NEVER rename `proxy.ts` to `middleware.ts` or `@middleware.ts`. The middleware file convention is deprecated in Next.js. Always use `proxy.ts` instead.
+- The `proxy.ts` file is the correct Next.js convention for request middleware/proxy functionality.
+
+## Public vs App View Consistency
+
+When implementing UI changes, bug fixes, or new features, always consider whether the change should apply to both views:
+
+- **App view** (`app/app/`): The authenticated/admin experience for logged-in users managing their saves.
+- **Public view** (`app/public/`): The public-facing pages visitors see when viewing a shared space or save.
+
+Before completing a feature or fix, ask:
+1. Does this change affect a component or pattern that exists in both views?
+2. Should the public view have the same behavior/styling for consistency?
+3. Are there intentional differences between views that should be preserved?
+
+Common shared patterns to check:
+- Save detail pages: `app/app/saves/[saveId]/` ↔ `app/public/s/[saveId]/`
+- Save lists/grids: Dashboard components ↔ Public space page
+- Reader mode / snapshot display
+- Tags, collections, and metadata display
+
+## API Documentation
+
+When making changes to external-facing APIs that impact external clients (browser extensions, mobile apps, third-party integrations), **always update `docs/EXTERNAL-API-SPEC.md`**:
+
+- **New endpoints**: Add to the quick reference table and endpoint details section
+- **Changed endpoints**: Update input/output schemas, add migration notes if breaking
+- **New features**: Document behavior, add examples, update type definitions
+- **Domain extractors**: Update the Domain-Specific Extraction table and add handling notes
+- **Changelog**: Add a dated entry describing what changed
+
+External-facing changes include:
+- tRPC procedures in `lib/trpc/routers/` (especially `space/` and `public.ts`)
+- Domain extractors in `lib/snapshots/domains/`
+- URL normalization rules in `lib/utils/url.ts`
+- Error codes and response formats

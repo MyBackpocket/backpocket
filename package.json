@@ -1,0 +1,38 @@
+{
+  "name": "backpocket",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Save content for yourself, organize it into a personal library, and optionally publish a read-only collection at your own URL.",
+  "author": "Mario",
+  "license": "MIT",
+  "packageManager": "bun@1.3.5",
+  "engines": {
+    "node": ">=22"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:web": "turbo dev --filter=backpocket-web",
+    "dev:mobile": "turbo dev --filter=backpocket-mobile",
+    "dev:extension": "turbo dev --filter=backpocket-browser-extension",
+    "build": "turbo build",
+    "build:web": "turbo build --filter=backpocket-web",
+    "build:mobile": "turbo build --filter=backpocket-mobile",
+    "build:extension": "turbo build --filter=backpocket-browser-extension",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "check": "biome check .",
+    "test": "turbo test",
+    "clean": "turbo clean && rm -rf node_modules",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.11",
+    "turbo": "^2.5.4"
+  }
+}
