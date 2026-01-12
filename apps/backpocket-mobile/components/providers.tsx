@@ -9,15 +9,13 @@ import {
 	DefaultTheme,
 	ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { ShareIntentProvider } from "expo-share-intent";
 import type React from "react";
 import { brandColors, Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { APIClientProvider } from "@/lib/api/hooks";
-import { queryClient } from "@/lib/api/query-client";
 import { tokenCache } from "@/lib/auth/token-cache";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/constants";
+import { ConvexProvider } from "@/lib/convex";
 import {
 	SettingsContext,
 	type ThemePreference,
@@ -71,13 +69,11 @@ function InnerProviders({ children, themePreference }: InnerProvidersProps) {
 
 	return (
 		<ThemeProvider forcedColorScheme={themePreference}>
-			<QueryClientProvider client={queryClient}>
-				<APIClientProvider>
-					<NavigationThemeProvider value={navigationTheme}>
-						{children}
-					</NavigationThemeProvider>
-				</APIClientProvider>
-			</QueryClientProvider>
+			<ConvexProvider>
+				<NavigationThemeProvider value={navigationTheme}>
+					{children}
+				</NavigationThemeProvider>
+			</ConvexProvider>
 		</ThemeProvider>
 	);
 }

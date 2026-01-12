@@ -20,6 +20,7 @@
   "dependencies": {
     "@backpocket/types": "workspace:*",
     "@clerk/chrome-extension": "^2.8.14",
+    "convex": "^1.31.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

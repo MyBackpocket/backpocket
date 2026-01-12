@@ -1,6 +1,6 @@
 {
   "name": "backpocket",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Save content for yourself, organize it into a personal library, and optionally publish a read-only collection at your own URL.",
   "author": "Mario",
@@ -34,5 +34,8 @@
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
     "turbo": "^2.5.4"
+  },
+  "dependencies": {
+    "convex": "^1.31.3"
   }
 }

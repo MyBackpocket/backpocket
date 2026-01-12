@@ -49,7 +49,7 @@ Backpocket is a personal content library for saving, organizing, and optionally 
 ```
 Production:          https://backpocket.my
 Public Spaces:       https://{slug}.backpocket.my
-API Base:            https://backpocket.my/api/trpc
+Convex URL:          https://your-project.convex.cloud
 ```
 
 ---
@@ -60,14 +60,13 @@ API Base:            https://backpocket.my/api/trpc
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Web App** | Next.js 15, React 19, Tailwind CSS | Primary web interface |
-| **Mobile App** | Expo, React Native, NativeWind | iOS & Android |
+| **Web App** | Next.js 16, React 19, Tailwind CSS | Primary web interface |
+| **Mobile App** | Expo 54, React Native, NativeWind | iOS & Android |
 | **Extension** | WXT, React | Browser extension |
-| **API** | tRPC | Type-safe API layer |
-| **Database** | Supabase (PostgreSQL) | Primary data store |
-| **Auth** | Clerk | Authentication |
-| **Hosting** | Vercel | Web, API, edge functions |
-| **Storage** | Supabase Storage | Snapshot content |
+| **Backend** | Convex | Real-time database, queries, mutations, actions |
+| **Auth** | Clerk + Convex JWT | Authentication |
+| **Hosting** | Vercel | Web app hosting |
+| **Storage** | Convex File Storage | Snapshot content |
 
 ### Monorepo Structure
 
@@ -77,12 +76,44 @@ backpocket/
 │   ├── backpocket-web/           # Next.js web application
 │   ├── backpocket-mobile/        # Expo React Native app
 │   └── backpocket-browser-extension/  # WXT browser extension
+├── convex/                       # Convex backend functions
+│   ├── schema.ts                 # Database schema
+│   ├── saves.ts                  # Save queries/mutations
+│   ├── tags.ts                   # Tag queries/mutations
+│   ├── collections.ts            # Collection queries/mutations
+│   ├── spaces.ts                 # Space queries/mutations
+│   ├── public.ts                 # Public (unauthenticated) queries
+│   ├── snapshots.ts              # Snapshot processing
+│   └── lib/                      # Auth helpers, validators
 ├── packages/
 │   ├── types/                    # @backpocket/types - Shared types
 │   ├── utils/                    # @backpocket/utils - Shared utilities
 │   └── tsconfig/                 # Shared TypeScript configs
 ├── docs/                         # This documentation
 └── package.json
+```
+
+### Convex Backend
+
+Convex provides a real-time, TypeScript-first backend with:
+
+- **Queries** — Read-only functions that subscribe to changes
+- **Mutations** — Write operations that update the database
+- **Actions** — Side-effect functions for external APIs
+- **Scheduled Functions** — Background job processing
+
+```typescript
+// Example: Using Convex hooks in React
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+function SavesList() {
+  const saves = useQuery(api.saves.list, { limit: 20 });
+  const createSave = useMutation(api.saves.create);
+  
+  // saves updates in real-time when data changes
+  return <SavesGrid items={saves?.items ?? []} />;
+}
 ```
 
 ### Shared Packages
