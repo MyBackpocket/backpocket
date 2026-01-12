@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useGetMySpace } from "@/lib/convex";
+import { useEffect, useRef, useState } from "react";
+import { useGetMySpace, useEnsureSpace } from "@/lib/convex";
 import { AppSidebar } from "./app-sidebar";
 import { MobileHeader } from "./mobile-header";
 
@@ -12,10 +12,22 @@ interface AppShellProps {
 /**
  * Client-side shell that manages mobile navigation state.
  * Space data is fetched via Convex (real-time updates).
+ * Automatically creates user's space on first app access.
  */
 export function AppShell({ children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const space = useGetMySpace();
+  const ensureSpace = useEnsureSpace();
+  const hasCalledEnsureSpace = useRef(false);
+
+  // Auto-create space for new users
+  // space === undefined means loading, null means no space exists
+  useEffect(() => {
+    if (space === null && !hasCalledEnsureSpace.current) {
+      hasCalledEnsureSpace.current = true;
+      ensureSpace();
+    }
+  }, [space, ensureSpace]);
 
   // Transform Convex response to match expected shape
   const spaceData = space

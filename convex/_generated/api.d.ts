@@ -11,6 +11,7 @@
 import type * as collections from "../collections.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as migrations_fix_uppercase_slugs from "../migrations/fix_uppercase_slugs.js";
 import type * as public_ from "../public.js";
 import type * as saves from "../saves.js";
 import type * as snapshots from "../snapshots.js";
@@ -27,6 +28,7 @@ declare const fullApi: ApiFromModules<{
   collections: typeof collections;
   "lib/auth": typeof lib_auth;
   "lib/validators": typeof lib_validators;
+  "migrations/fix_uppercase_slugs": typeof migrations_fix_uppercase_slugs;
   public: typeof public_;
   saves: typeof saves;
   snapshots: typeof snapshots;

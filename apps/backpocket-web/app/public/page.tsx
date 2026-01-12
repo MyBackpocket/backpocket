@@ -102,8 +102,10 @@ function PublicSpaceContent() {
   }, []);
 
   // Resolve space by slug
-  const space = useResolveSpaceBySlug(spaceSlug ?? "skip");
-  const spaceLoading = spaceSlug !== null && space === undefined;
+  // Pass undefined (not the string "skip") when spaceSlug is null to properly skip the query
+  const space = useResolveSpaceBySlug(spaceSlug ?? undefined);
+  // Loading if we haven't determined the slug yet OR if we're fetching the space
+  const spaceLoading = spaceSlug === null || space === undefined;
 
   // Fetch saves with filters
   const savesInput = useMemo(() => {

@@ -59,7 +59,8 @@ export async function getOrCreateUserSpace(ctx: MutationCtx, userId: string) {
   }
 
   // Create a new personal space with a unique slug
-  const baseSlug = `user-${userId.slice(-8)}`;
+  // Lowercase is required because hostnames/subdomains are case-insensitive
+  const baseSlug = `user-${userId.slice(-8).toLowerCase()}`;
   let slug = baseSlug;
   let attempt = 0;
 

@@ -31,14 +31,17 @@
     "format:check": "biome format .",
     "check": "biome check .",
     "test": "turbo test",
+    "test:convex": "vitest run --config convex/vitest.config.ts",
     "clean": "turbo clean && rm -rf node_modules",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
-    "turbo": "^2.5.4"
+    "convex-test": "^0.0.41",
+    "turbo": "^2.7.4",
+    "vitest": "^4.0.17"
   },
   "dependencies": {
-    "convex": "^1.31.3"
+    "convex": "^1.31.4"
   }
 }

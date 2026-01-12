@@ -344,7 +344,7 @@ The primary endpoint for saving links. Used by all platforms.
 
 - Tags are automatically created if they don't exist
 - Tag names are normalized (lowercase, trimmed)
-- User's space is auto-created on first save
+- User's space is auto-created on first app access (not waiting for first save)
 - Snapshots are automatically queued for processing
 - URLs are normalized for duplicate detection
 
@@ -859,6 +859,25 @@ null, undefined, true, false, test, demo, example, sample, backpocket
 - `"too_short"` — Less than 3 characters
 - `"too_long"` — More than 32 characters
 - `"invalid_format"` — Doesn't match allowed pattern
+
+---
+
+#### Space Auto-Creation
+
+When a user first accesses the authenticated app, their personal space is automatically
+created via the `ensureSpace` mutation. This happens in:
+
+- **Web**: `AppShell` component
+- **Mobile**: `TabLayout` component
+
+The space includes:
+
+| Property | Value |
+|----------|-------|
+| Type | `personal` |
+| Name | `My Library` |
+| Visibility | `private` |
+| Slug | `user-{last8CharsOfUserId}` |
 
 ---
 
