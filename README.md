@@ -1,4 +1,4 @@
-# Backpocket
+# <img src="./docs/assets/Backpocket-Logo-32.png" alt="Backpocket Logo" height="32" align="absmiddle" /> Backpocket
 
 Save content for yourself, organize it into a personal library, and optionally publish a read-only collection at your own URL.
 

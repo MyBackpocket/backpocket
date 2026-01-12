@@ -10,6 +10,14 @@ Welcome to the Backpocket documentation. This is the source of truth for all pla
 | **[FEATURE-MATRIX.md](./FEATURE-MATRIX.md)** | Feature parity tracker across Web, Mobile, and Extension |
 | **[ROADMAP.md](./ROADMAP.md)** | Planned features and integrations |
 
+## Deployment Guides
+
+| Guide | Platform | Description |
+|-------|----------|-------------|
+| **[DEPLOY-WEB.md](./DEPLOY-WEB.md)** | Vercel | Deploy the Next.js web app to Vercel |
+| **[DEPLOY-MOBILE.md](./DEPLOY-MOBILE.md)** | App Store / Play Store | Build and submit iOS/Android apps with EAS |
+| **[DEPLOY-EXTENSION.md](./DEPLOY-EXTENSION.md)** | Browser Stores | Publish to Chrome, Firefox, and Edge stores |
+
 ## For Developers
 
 ### Getting Started
