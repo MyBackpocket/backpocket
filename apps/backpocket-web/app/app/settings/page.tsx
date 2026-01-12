@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   Check,
   Copy,
+  Download,
   Eye,
   EyeOff,
   Globe,
@@ -606,6 +607,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Data Export */}
+          <ExportDataCard />
+
           {/* Save button */}
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={updateSettings.isPending}>
@@ -783,6 +787,103 @@ function ThemeSelector() {
         </button>
       ))}
     </div>
+  );
+}
+
+// Export data card component
+function ExportDataCard() {
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportStats, setExportStats] = useState<{
+    saves: number;
+    tags: number;
+    collections: number;
+  } | null>(null);
+
+  const exportData = trpc.space.exportAllData.useQuery(undefined, {
+    enabled: false, // Only fetch when triggered
+    staleTime: 0,
+  });
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const result = await exportData.refetch();
+      if (result.data) {
+        // Create and download the JSON file
+        const json = JSON.stringify(result.data, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `backpocket-export-${new Date().toISOString().split("T")[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Show stats
+        setExportStats(result.data.counts);
+      }
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Download className="h-5 w-5" />
+          Export Data
+        </CardTitle>
+        <CardDescription>
+          Download all your saves, tags, and collections as a JSON file for backup or migration
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">What's included:</p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>All saved links with metadata</li>
+              <li>Tags and their associations</li>
+              <li>Collections and default tags</li>
+              <li>Space settings and profile</li>
+            </ul>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Export format is designed for easy import into other databases like Convex, Supabase, or
+            any JSON-compatible system.
+          </p>
+        </div>
+
+        {exportStats && (
+          <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3">
+            <p className="text-sm text-green-800 dark:text-green-300 flex items-center gap-2">
+              <Check className="h-4 w-4" />
+              Successfully exported: {exportStats.saves} saves, {exportStats.tags} tags,{" "}
+              {exportStats.collections} collections
+            </p>
+          </div>
+        )}
+
+        <Button onClick={handleExport} disabled={isExporting} className="w-full">
+          {isExporting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Export All Data
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

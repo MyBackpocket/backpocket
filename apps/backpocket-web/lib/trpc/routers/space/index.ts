@@ -1,6 +1,7 @@
 import { router } from "../../trpc";
 import { collectionsRouter } from "./collections";
 import { domainsRouter } from "./domains";
+import { exportRouter } from "./export";
 import { savesRouter } from "./saves";
 import { settingsRouter } from "./settings";
 import { snapshotsRouter } from "./snapshots";
@@ -55,4 +56,7 @@ export const spaceRouter = router({
   getSaveSnapshot: snapshotsRouter.getSaveSnapshot,
   requestSaveSnapshot: snapshotsRouter.requestSaveSnapshot,
   getSnapshotQuota: snapshotsRouter.getSnapshotQuota,
+
+  // Export
+  exportAllData: exportRouter.exportAllData,
 });

@@ -990,7 +990,107 @@ Combined endpoint returning space settings, stats, and recent saves.
 
 ---
 
-### 4.7 Snapshots
+### 4.7 Export
+
+#### Export All Data
+
+**Endpoint:** `POST /api/trpc/space.exportAllData`
+
+Export all user data in a format suitable for migration to Convex or other databases.
+
+**Request:**
+
+```json
+{
+  "json": {}
+}
+```
+
+**Response:**
+
+```json
+{
+  "result": {
+    "data": {
+      "version": "1.0",
+      "exportedAt": "2026-01-12T00:00:00.000Z",
+      "space": {
+        "id": "uuid",
+        "slug": "mario",
+        "name": "Mario's Links",
+        "bio": "...",
+        "visibility": "public",
+        "publicLayout": "grid",
+        "defaultSaveVisibility": "private",
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      },
+      "tags": [
+        {
+          "id": "uuid",
+          "name": "reading",
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z"
+        }
+      ],
+      "collections": [
+        {
+          "id": "uuid",
+          "name": "My Collection",
+          "visibility": "private",
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z",
+          "defaultTagIds": ["tag-uuid-1", "tag-uuid-2"]
+        }
+      ],
+      "saves": [
+        {
+          "id": "uuid",
+          "url": "https://example.com/article",
+          "normalizedUrl": "example.com/article",
+          "title": "Article Title",
+          "description": "...",
+          "siteName": "Example",
+          "imageUrl": "https://...",
+          "contentType": "article",
+          "visibility": "private",
+          "isArchived": false,
+          "isFavorite": true,
+          "savedAt": "2024-01-01T00:00:00.000Z",
+          "createdAt": "2024-01-01T00:00:00.000Z",
+          "updatedAt": "2024-01-01T00:00:00.000Z",
+          "tagIds": ["tag-uuid-1"],
+          "collectionIds": ["collection-uuid-1"]
+        }
+      ],
+      "counts": {
+        "saves": 150,
+        "tags": 25,
+        "collections": 5
+      }
+    }
+  }
+}
+```
+
+**Export Format Notes:**
+
+- `version` field for future format changes
+- All relationships are normalized (IDs instead of nested objects)
+- Timestamps are ISO 8601 format
+- Tags and collections include their original IDs for relationship mapping
+- Saves reference tags and collections by their IDs
+
+**Convex Import Tips:**
+
+1. Import entities in order: tags → collections → saves
+2. Create an ID mapping table for old→new IDs
+3. Use batch mutations for efficiency
+4. Relationships are explicit arrays of IDs
+
+---
+
+### 4.8 Snapshots
 
 Snapshots capture readable content from saved URLs for offline reading.
 
@@ -1110,7 +1210,7 @@ Set `force: true` to re-snapshot an existing save.
 
 ---
 
-### 4.8 Public Endpoints
+### 4.9 Public Endpoints
 
 These endpoints don't require authentication and are used for public space pages.
 
@@ -1292,7 +1392,7 @@ Returns collections with at least one public save, sorted by count.
 
 ---
 
-### 4.9 Error Codes
+### 4.10 Error Codes
 
 | tRPC Code | HTTP Status | Description |
 |-----------|-------------|-------------|
@@ -1306,7 +1406,7 @@ Returns collections with at least one public save, sorted by count.
 
 ---
 
-### 4.10 Endpoint Quick Reference
+### 4.11 Endpoint Quick Reference
 
 #### Saves (Authenticated)
 
@@ -1373,6 +1473,12 @@ Returns collections with at least one public save, sorted by count.
 | Get snapshot | `space.getSaveSnapshot` | POST |
 | Request snapshot | `space.requestSaveSnapshot` | POST |
 | Get quota | `space.getSnapshotQuota` | POST |
+
+#### Export (Authenticated)
+
+| Action | Endpoint | Method |
+|--------|----------|--------|
+| Export all data | `space.exportAllData` | POST |
 
 #### Public (No Auth)
 
@@ -2051,6 +2157,15 @@ Each list should have meaningful empty states with:
 ---
 
 ## 9. Changelog
+
+### 2026-01-12
+
+#### Added
+
+- **Data Export:** New `space.exportAllData` endpoint for exporting all user data (saves, tags, collections) in a migration-friendly JSON format
+- **Export UI:** Export data card in Settings page for downloading all data as JSON
+
+---
 
 ### 2026-01-06
 
