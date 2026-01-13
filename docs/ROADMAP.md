@@ -11,7 +11,6 @@ Planned features and improvements for Backpocket.
 ### User Experience
 
 - [ ] Avatar / public space picture upload
-- [ ] Custom user notes for saves
 - [ ] Collection auto-visibility: default public/private for saves added
 - [ ] Hidden collections: hide from main list/search for sensitive content
 - [ ] Bulk operations for collections
@@ -149,6 +148,20 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 
 ### 2026-01-13
 
+- ✅ **WYSIWYG note editor** (Web)
+  - Added Novel-based rich text editor for note editing on save detail and creation pages
+  - Simple/rich mode toggle persisted in localStorage
+  - Full-screen mode for focused writing with Escape to exit
+  - Floating toolbar on text selection (bold, italic, strikethrough, code)
+  - Slash commands for quick formatting (`/heading`, `/list`, `/quote`, `/code`)
+  - Auto-save with debounce (1000ms delay) and save status indicator
+  - Markdown import/export: stores as markdown, edits as rich text
+- ✅ **Save notes feature** (Web + Mobile)
+  - Added `note` field to saves for personal thoughts, annotations, or commentary
+  - Notes support full markdown formatting with GFM (tables, strikethrough, etc.)
+  - Notes inherit visibility from parent save (public saves show notes publicly)
+  - Markdown rendered with syntax highlighting for code blocks
+  - Searchable: notes are included in save text search
 - ✅ **Refresh save feature** (Web + Mobile)
   - **Web:** Added "Refresh" dropdown on save detail page with options:
     - Refresh metadata (title, description, thumbnail)

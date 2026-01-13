@@ -45,6 +45,7 @@ async function getSaveById(
     url: save.url,
     title: save.title,
     description: save.description,
+    note: save.note ?? null,
     siteName: save.siteName,
     imageUrl: save.imageUrl,
     contentType: save.contentType,
@@ -147,8 +148,9 @@ export const list = query({
         const q = args.query.toLowerCase();
         const matchesTitle = save.title?.toLowerCase().includes(q);
         const matchesDesc = save.description?.toLowerCase().includes(q);
+        const matchesNote = save.note?.toLowerCase().includes(q);
         const matchesUrl = save.url.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc && !matchesUrl) {
+        if (!matchesTitle && !matchesDesc && !matchesNote && !matchesUrl) {
           return false;
         }
       }
@@ -224,6 +226,7 @@ export const list = query({
         url: save.url,
         title: save.title ?? null,
         description: save.description ?? null,
+        note: save.note ?? null,
         siteName: save.siteName ?? null,
         imageUrl: save.imageUrl ?? null,
         contentType: save.contentType ?? null,
@@ -279,6 +282,7 @@ export const get = query({
       url: save.url,
       title: save.title ?? null,
       description: save.description ?? null,
+      note: save.note ?? null,
       siteName: save.siteName ?? null,
       imageUrl: save.imageUrl ?? null,
       contentType: save.contentType ?? null,
@@ -405,7 +409,7 @@ export const create = mutation({
         url: args.url,
         normalizedUrl: normalizedUrl ?? undefined,
         title: args.title,
-        description: args.note,
+        note: args.note, // User's personal notes (stored separately from description)
         visibility: args.visibility ?? space.defaultSaveVisibility,
         isArchived: false,
         isFavorite: false,
@@ -504,7 +508,8 @@ export const create = mutation({
         spaceId: space._id,
         url: args.url,
         title: args.title ?? null,
-        description: args.note ?? null,
+        description: null, // OG/meta description (populated by snapshot extraction)
+        note: args.note ?? null, // User's personal notes
         siteName: null,
         imageUrl: null,
         contentType: null,
@@ -547,6 +552,7 @@ export const update = mutation({
     id: v.id("saves"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    note: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     siteName: v.optional(v.string()),
     visibility: v.optional(visibilityValidator),
@@ -586,6 +592,10 @@ export const update = mutation({
       if (args.description !== undefined) {
         updates.description = args.description;
         fieldsUpdated.push("description");
+      }
+      if (args.note !== undefined) {
+        updates.note = args.note;
+        fieldsUpdated.push("note");
       }
       if (args.imageUrl !== undefined) {
         updates.imageUrl = args.imageUrl;

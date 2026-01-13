@@ -45,6 +45,7 @@ import {
   useWindowDimensions,
   View,
 } from "react-native";
+import Markdown from "react-native-markdown-display";
 import RenderHtml from "react-native-render-html";
 
 const HEADER_BUTTON_SIZE = 36;
@@ -273,6 +274,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   // Form state
   const [title, setTitle] = useState(save.title || "");
   const [description, setDescription] = useState(save.description || "");
+  const [note, setNote] = useState(save.note || "");
   const [visibility, setVisibility] = useState<SaveVisibility>(save.visibility);
   const [tagNames, setTagNames] = useState<string[]>(save.tags?.map((t) => t.name) || []);
   const [selectedCollectionIds, setSelectedCollectionIds] = useState<string[]>(
@@ -285,6 +287,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   useEffect(() => {
     setTitle(save.title || "");
     setDescription(save.description || "");
+    setNote(save.note || "");
     setVisibility(save.visibility);
     setTagNames(save.tags?.map((t) => t.name) || []);
     setSelectedCollectionIds(save.collections?.map((c) => c.id) || []);
@@ -341,6 +344,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
         id: save.id as any,
         title: title || undefined,
         description: description || undefined,
+        note: note || undefined,
         visibility,
         tagNames,
         collectionIds: selectedCollectionIds as any,
@@ -358,6 +362,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   const hasChanges =
     title !== (save.title || "") ||
     description !== (save.description || "") ||
+    note !== (save.note || "") ||
     visibility !== save.visibility ||
     JSON.stringify(tagNames.sort()) !==
       JSON.stringify((save.tags?.map((t) => t.name) || []).sort()) ||
@@ -424,6 +429,32 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
                   },
                 ]}
               />
+            </View>
+
+            {/* Note */}
+            <View style={modalStyles.field}>
+              <Text style={[modalStyles.label, { color: colors.text }]}>Note</Text>
+              <TextInput
+                value={note}
+                onChangeText={setNote}
+                placeholder="Add your thoughts, annotations, or commentary..."
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                numberOfLines={4}
+                style={[
+                  modalStyles.textArea,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.text,
+                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                    fontSize: 14,
+                  },
+                ]}
+              />
+              <Text style={[modalStyles.hint, { color: colors.mutedForeground }]}>
+                Supports markdown. Inherits visibility from save.
+              </Text>
             </View>
 
             {/* Visibility */}
@@ -1055,6 +1086,73 @@ export default function SaveDetailScreen() {
             <Text style={[styles.quickActionText, { color: colors.text }]}>Open</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Note - User's personal notes with markdown */}
+        {save.note && (
+          <Card style={styles.section}>
+            <CardContent style={styles.sectionContent}>
+              <View style={styles.sectionHeader}>
+                <BookOpen size={18} color={colors.mutedForeground} />
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Note</Text>
+              </View>
+              <Markdown
+                style={{
+                  body: {
+                    color: colors.text,
+                    fontFamily: "DMSans",
+                    fontSize: 15,
+                    lineHeight: 22,
+                  },
+                  heading1: {
+                    fontFamily: "Fraunces-Bold",
+                    fontSize: 22,
+                    marginBottom: 12,
+                    marginTop: 16,
+                    color: colors.text,
+                  },
+                  heading2: {
+                    fontFamily: "DMSans-Bold",
+                    fontSize: 18,
+                    marginBottom: 10,
+                    marginTop: 14,
+                    color: colors.text,
+                  },
+                  heading3: {
+                    fontFamily: "DMSans-Bold",
+                    fontSize: 16,
+                    marginBottom: 8,
+                    marginTop: 12,
+                    color: colors.text,
+                  },
+                  link: {
+                    color: brandColors.rust.DEFAULT,
+                  },
+                  blockquote: {
+                    borderLeftWidth: 3,
+                    borderLeftColor: brandColors.amber,
+                    paddingLeft: 12,
+                    fontStyle: "italic",
+                    color: colors.mutedForeground,
+                  },
+                  code_inline: {
+                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                    backgroundColor: colors.muted,
+                    paddingHorizontal: 4,
+                    borderRadius: 4,
+                  },
+                  code_block: {
+                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                    backgroundColor: colors.muted,
+                    padding: 12,
+                    borderRadius: 8,
+                  },
+                }}
+              >
+                {save.note}
+              </Markdown>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Reader Mode */}
         {snapshotData?.snapshot?.status === "ready" && snapshotData.content && (

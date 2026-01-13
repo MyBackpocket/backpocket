@@ -10,7 +10,8 @@ export interface Save {
   spaceId: string;
   url: string;
   title: string | null;
-  description: string | null;
+  description: string | null; // OG/meta description
+  note: string | null; // User's personal notes (supports markdown)
   siteName: string | null;
   imageUrl: string | null;
   contentType: string | null;
@@ -40,6 +41,7 @@ export interface UpdateSaveInput {
   id: string;
   title?: string;
   description?: string;
+  note?: string;
   visibility?: SaveVisibility;
   collectionIds?: string[];
   tagNames?: string[];
@@ -62,7 +64,8 @@ export interface APISave {
   spaceId: string;
   url: string;
   title: string | null;
-  description: string | null;
+  description: string | null; // OG/meta description
+  note: string | null; // User's personal notes (supports markdown)
   siteName: string | null;
   imageUrl: string | null;
   contentType: string | null;
@@ -86,7 +89,8 @@ export interface PublicSave {
   id: string;
   url: string;
   title: string | null;
-  description: string | null;
+  description: string | null; // OG/meta description
+  note: string | null; // User's personal notes (supports markdown, for microblog display)
   siteName: string | null;
   imageUrl: string | null;
   savedAt: Date | string;

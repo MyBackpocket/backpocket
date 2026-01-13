@@ -1624,7 +1624,8 @@ interface Save {
   spaceId: string;
   url: string;
   title: string | null;
-  description: string | null;
+  description: string | null; // OG/meta description
+  note: string | null; // User's personal notes (supports markdown)
   siteName: string | null;
   imageUrl: string | null;
   contentType: string | null;
@@ -1956,7 +1957,33 @@ Content preservation and distraction-free reading:
 - Plain text version available
 - Stored in Supabase Storage
 
-### 6.5 Public Spaces
+### 6.5 Notes
+
+Personal notes attached to saves:
+
+**Storage:**
+
+- Stored as markdown strings in the `note` field
+- Notes inherit visibility from parent save
+- Searchable: notes are included in save text search
+
+**Web Editor (Novel-based WYSIWYG):**
+
+- Simple mode: Plain textarea with markdown support (default)
+- Rich mode: Notion-style WYSIWYG editor with:
+  - Floating toolbar on text selection (bold, italic, strikethrough, code)
+  - Slash commands for formatting (`/heading`, `/list`, `/quote`, `/code`)
+  - Full-screen mode for focused writing (Escape to exit)
+- Mode preference persisted in localStorage
+- Auto-save with debounce (1000ms delay)
+- Save status indicator (Saving.../Saved)
+
+**Mobile Editor:**
+
+- Plain TextInput with markdown support
+- Rendered with MarkdownRenderer when viewing
+
+### 6.7 Public Spaces
 
 Optional public profile:
 
@@ -1966,7 +1993,7 @@ Optional public profile:
 - Configurable layout (list/grid)
 - Visit counter
 
-### 6.6 URL Normalization
+### 6.8 URL Normalization
 
 URLs are normalized for duplicate detection:
 

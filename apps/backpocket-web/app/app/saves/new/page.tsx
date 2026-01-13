@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
+import { NoteEditor } from "@/components/note-editor";
 import { routes } from "@/lib/constants/routes";
 import { useCreateSave, useGetMySpace, useListCollections } from "@/lib/convex";
 import type { SaveVisibility } from "@/lib/types";
@@ -300,19 +300,17 @@ function NewSaveForm() {
             {/* Note */}
             <div className="space-y-2">
               <Label htmlFor="note" className="text-sm font-medium">
-                Private note
+                Note
                 <span className="text-muted-foreground font-normal ml-1">(optional)</span>
               </Label>
-              <Textarea
-                id="note"
-                placeholder="Add a note for yourself..."
+              <NoteEditor
                 value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                className="resize-none"
+                onChange={setNote}
+                placeholder="Add your thoughts, annotations, or commentary..."
+                autoSave={false}
               />
               <p className="text-xs text-muted-foreground">
-                Notes are always private, even on public saves
+                Inherits visibility from save.
               </p>
             </div>
 

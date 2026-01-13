@@ -99,7 +99,8 @@ export default defineSchema({
     url: v.string(),
     normalizedUrl: v.optional(v.string()),
     title: v.optional(v.string()),
-    description: v.optional(v.string()),
+    description: v.optional(v.string()), // OG/meta description
+    note: v.optional(v.string()), // User's personal notes (supports markdown)
     siteName: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     contentType: v.optional(v.string()),

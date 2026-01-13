@@ -29,6 +29,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { use, useCallback, useEffect, useRef, useState } from "react";
+import { NoteEditor } from "@/components/note-editor";
 import { ReaderMode } from "@/components/reader-mode";
 import { ScrollNavigator } from "@/components/scroll-navigator";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { routes } from "@/lib/constants/routes";
 import {
   useCreateCollection,
@@ -291,7 +293,6 @@ function EditableTextarea({
     </Card>
   );
 }
-
 interface InlineTagsEditorProps {
   tags: string[];
   onSave: (tags: string[]) => void;
@@ -764,6 +765,20 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     [saveId, updateSave]
   );
 
+  const handleUpdateNote = useCallback(
+    async (note: string) => {
+      setIsSaving(true);
+      try {
+        await updateSave({ id: saveId as any, note: note || undefined });
+      } catch (error) {
+        console.error("Failed to update note:", error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [saveId, updateSave]
+  );
+
   const handleUpdateVisibility = useCallback(
     async (newVisibility: "private" | "public") => {
       setIsSaving(true);
@@ -1126,49 +1141,70 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
           </Button>
         </div>
 
-        {/* Description - Inline Editable */}
-        <div className="mb-6">
-          <EditableTextarea
-            value={save.description || ""}
-            placeholder="Click to add a description..."
-            onSave={handleUpdateDescription}
-            isSaving={isSaving}
-          />
-        </div>
+        {/* Tabbed Content */}
+        <Tabs defaultValue="source" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="source" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Source
+            </TabsTrigger>
+            <TabsTrigger value="note" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Note
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Metadata - Inline Editable */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Tags */}
-          <InlineTagsEditor
-            tags={save.tags?.map((t) => t.name) || []}
-            onSave={handleUpdateTags}
-            isSaving={isSaving}
-          />
+          {/* Source Tab - Article content and metadata */}
+          <TabsContent value="source" className="space-y-6">
+            {/* Description */}
+            <EditableTextarea
+              value={save.description || ""}
+              placeholder="Click to add a description..."
+              onSave={handleUpdateDescription}
+              isSaving={isSaving}
+            />
 
-          {/* Collections */}
-          <InlineCollectionsEditor
-            selectedIds={save.collections?.map((c) => c.id) || []}
-            allCollections={allCollections || []}
-            onSave={handleUpdateCollections}
-            onCreateCollection={handleCreateCollection}
-            isSaving={isSaving}
-            isCreating={isCreatingCollection}
-          />
-        </div>
+            {/* Tags and Collections */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <InlineTagsEditor
+                tags={save.tags?.map((t) => t.name) || []}
+                onSave={handleUpdateTags}
+                isSaving={isSaving}
+              />
+              <InlineCollectionsEditor
+                selectedIds={save.collections?.map((c) => c.id) || []}
+                allCollections={allCollections || []}
+                onSave={handleUpdateCollections}
+                onCreateCollection={handleCreateCollection}
+                isSaving={isSaving}
+                isCreating={isCreatingCollection}
+              />
+            </div>
 
-        {/* Reader Mode */}
-        <div className="mt-6">
-          <ReaderMode
-            status={(snapshotData?.snapshot?.status as SnapshotStatus) ?? null}
-            blockedReason={snapshotData?.snapshot?.blockedReason as SnapshotBlockedReason | null}
-            content={snapshotData?.content as SnapshotContent | null}
-            isLoading={snapshotData === undefined}
-            onRefresh={handleRefreshContent}
-            isRefreshing={isRefreshingContent}
-            showRefreshButton={false}
-            originalUrl={save.url}
-          />
-        </div>
+            {/* Reader Mode */}
+            <ReaderMode
+              status={(snapshotData?.snapshot?.status as SnapshotStatus) ?? null}
+              blockedReason={snapshotData?.snapshot?.blockedReason as SnapshotBlockedReason | null}
+              content={snapshotData?.content as SnapshotContent | null}
+              isLoading={snapshotData === undefined}
+              onRefresh={handleRefreshContent}
+              isRefreshing={isRefreshingContent}
+              showRefreshButton={false}
+              originalUrl={save.url}
+            />
+          </TabsContent>
+
+          {/* Note Tab - Personal notes/microblog */}
+          <TabsContent value="note">
+            <NoteEditor
+              value={save.note || ""}
+              onChange={(value) => handleUpdateNote(value)}
+              placeholder="Add your thoughts, annotations, or commentary..."
+              autoSave
+              autoSaveDelay={1000}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

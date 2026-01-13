@@ -24,6 +24,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -61,6 +62,7 @@ export default function NewSaveScreen() {
 
   const [url, setUrl] = useState(params.url || "");
   const [title, setTitle] = useState("");
+  const [note, setNote] = useState("");
   // Use space's default visibility or fall back to "public"
   const [visibility, setVisibility] = useState<SaveVisibility>(
     space?.defaultSaveVisibility ?? "public"
@@ -174,6 +176,7 @@ export default function NewSaveScreen() {
         title: title.trim() || undefined,
         visibility,
         tagNames: tags.length > 0 ? tags : undefined,
+        note: note.trim() || undefined,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -206,7 +209,7 @@ export default function NewSaveScreen() {
     } finally {
       setIsCreating(false);
     }
-  }, [url, title, visibility, tags, createSaveMutation, router, isValidUrl, showDuplicateAlert]);
+  }, [url, title, note, visibility, tags, createSaveMutation, router, isValidUrl, showDuplicateAlert]);
 
   return (
     <>
@@ -407,6 +410,32 @@ export default function NewSaveScreen() {
             </CardContent>
           </Card>
 
+          {/* Note (optional) */}
+          <Card style={styles.section}>
+            <CardContent style={styles.sectionContent}>
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>Note (optional)</Text>
+              <TextInput
+                placeholder="Add your thoughts or commentary..."
+                placeholderTextColor={colors.mutedForeground}
+                value={note}
+                onChangeText={setNote}
+                multiline
+                numberOfLines={4}
+                style={[
+                  styles.textArea,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
+              />
+              <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+                Supports markdown. Inherits visibility from save.
+              </Text>
+            </CardContent>
+          </Card>
+
           {/* Save Button */}
           <View style={styles.buttonContainer}>
             <Button
@@ -555,6 +584,17 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 14,
     fontFamily: "DMSans-Medium",
+  },
+  // Note textarea
+  textArea: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    textAlignVertical: "top",
   },
   // Save button
   buttonContainer: {

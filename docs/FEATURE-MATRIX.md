@@ -25,6 +25,7 @@ Feature parity tracker across Backpocket platforms.
 | Bulk delete | ✅ | ✅ | ❌ | |
 | Toggle favorite | ✅ | ✅ | ❌ | |
 | Toggle archive | ✅ | ✅ | ❌ | |
+| Save notes (markdown) | ✅ | ✅ | ❌ | Personal notes inherit visibility; Web has WYSIWYG editor |
 | Duplicate detection | ✅ | ✅ | ✅ | |
 | **Search & Filter** |
 | Text search | ✅ | ✅ | ❌ | |

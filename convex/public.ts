@@ -147,8 +147,9 @@ export const listPublicSaves = query({
         const q = args.query.toLowerCase();
         const matchesTitle = save.title?.toLowerCase().includes(q);
         const matchesDesc = save.description?.toLowerCase().includes(q);
+        const matchesNote = save.note?.toLowerCase().includes(q);
         const matchesUrl = save.url.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesDesc && !matchesUrl) {
+        if (!matchesTitle && !matchesDesc && !matchesNote && !matchesUrl) {
           return false;
         }
       }
@@ -183,6 +184,7 @@ export const listPublicSaves = query({
         url: save.url,
         title: save.title ?? null,
         description: save.description ?? null,
+        note: save.note ?? null,
         siteName: save.siteName ?? null,
         imageUrl: save.imageUrl ?? null,
         savedAt: save.savedAt,
@@ -222,6 +224,7 @@ export const getPublicSave = query({
       url: save.url,
       title: save.title ?? null,
       description: save.description ?? null,
+      note: save.note ?? null,
       siteName: save.siteName ?? null,
       imageUrl: save.imageUrl ?? null,
       savedAt: save.savedAt,

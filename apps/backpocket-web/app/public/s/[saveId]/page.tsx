@@ -17,7 +17,9 @@ import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { LogoIcon } from "@/components/logo";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ScrollNavigator } from "@/components/scroll-navigator";
+import { PublicSaveTabs } from "./public-save-tabs";
 import { ThemeSwitcherCompact } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -189,178 +191,202 @@ export default async function PublicSavePermalinkPage({
             </span>
           </div>
 
-          {/* Tags - clickable to filter */}
-          {save.tags && save.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {save.tags.map((tag) => (
-                <Link key={tag} href={`/?tag=${encodeURIComponent(tag)}`}>
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-denim/20 transition-colors"
-                  >
-                    {tag}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          )}
+          {/* Tabbed Content */}
+          <div className="mt-8">
+            <PublicSaveTabs
+              hasNote={!!save.note}
+              sourceContent={
+                <div className="space-y-6">
+                  {/* Tags - clickable to filter */}
+                  {save.tags && save.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {save.tags.map((tag) => (
+                        <Link key={tag} href={`/?tag=${encodeURIComponent(tag)}`}>
+                          <Badge
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-denim/20 transition-colors"
+                          >
+                            {tag}
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
 
-          {/* Description */}
-          {save.description && (
-            <Card className="mt-8">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                  Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{save.description}</p>
-              </CardContent>
-            </Card>
-          )}
+                  {/* Description */}
+                  {save.description && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          Description
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">{save.description}</p>
+                      </CardContent>
+                    </Card>
+                  )}
 
-          {/* Reader Mode Content */}
-          {snapshot?.snapshot?.status === "ready" && snapshot.content ? (
-            <Card className="mt-8">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Reader Mode
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  {snapshot.content.length > 0 && (
-                    <Badge variant="secondary" className="gap-1">
-                      <Clock className="h-3 w-3" />
-                      {Math.max(
-                        1,
-                        Math.ceil(
-                          (snapshot.content.textContent?.split(/\s+/).filter(Boolean).length || 0) /
-                            200
-                        )
-                      )}{" "}
-                      min read
-                    </Badge>
+                  {/* Reader Mode Content */}
+                  {snapshot?.snapshot?.status === "ready" && snapshot.content ? (
+                    <Card>
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <BookOpen className="h-4 w-4" />
+                          Reader Mode
+                        </CardTitle>
+                        <div className="flex items-center gap-2">
+                          {snapshot.content.length > 0 && (
+                            <Badge variant="secondary" className="gap-1">
+                              <Clock className="h-3 w-3" />
+                              {Math.max(
+                                1,
+                                Math.ceil(
+                                  (snapshot.content.textContent?.split(/\s+/).filter(Boolean)
+                                    .length || 0) / 200
+                                )
+                              )}{" "}
+                              min read
+                            </Badge>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {/* Disclaimer */}
+                        <div className="mb-4 pb-4 border-b border-dashed">
+                          <p className="flex items-start gap-2 text-xs text-muted-foreground/70">
+                            <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                            {snapshot.content.siteName?.toLowerCase() === "twitter" ||
+                            snapshot.content.siteName?.toLowerCase() === "x" ? (
+                              <span>
+                                This simplified view was extracted using{" "}
+                                <a
+                                  href="https://developer.twitter.com/en/docs/twitter-for-websites/oembed-api"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+                                >
+                                  Twitter&apos;s oEmbed API
+                                </a>
+                                . Text may be truncated; media and replies are not included.
+                              </span>
+                            ) : (
+                              <span>
+                                This simplified view was extracted using{" "}
+                                <a
+                                  href="https://github.com/mozilla/readability"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+                                >
+                                  Mozilla Readability
+                                </a>
+                                , the same technology behind Firefox Reader View. For the complete
+                                experience,{" "}
+                                <a
+                                  href={save.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+                                >
+                                  visit the original
+                                </a>
+                                .
+                              </span>
+                            )}
+                          </p>
+                        </div>
+
+                        {/* Byline */}
+                        {snapshot.content.byline && (
+                          <div className="flex items-start gap-2 text-sm text-muted-foreground mb-4">
+                            <User className="h-4 w-4 shrink-0 mt-0.5" />
+                            {snapshot.content.byline.startsWith("<a") ? (
+                              <span
+                                className="[&_a]:text-primary [&_a]:underline-offset-2 hover:[&_a]:underline"
+                                // biome-ignore lint/security/noDangerouslySetInnerHtml: Byline HTML is sanitized on server
+                                dangerouslySetInnerHTML={{ __html: snapshot.content.byline }}
+                              />
+                            ) : (
+                              <span>{snapshot.content.byline}</span>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Article content */}
+                        <article
+                          className="prose prose-neutral dark:prose-invert max-w-none
+                            prose-headings:font-semibold prose-headings:tracking-tight
+                            prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                            prose-img:rounded-lg prose-img:border
+                            prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1
+                            prose-pre:bg-muted prose-pre:border
+                            prose-code:before:content-none prose-code:after:content-none
+                            prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
+                          // biome-ignore lint/security/noDangerouslySetInnerHtml: Content is sanitized on the server
+                          dangerouslySetInnerHTML={{ __html: snapshot.content.content }}
+                        />
+
+                        {/* Twitter truncation notice */}
+                        {(snapshot.content.siteName?.toLowerCase() === "twitter" ||
+                          snapshot.content.siteName?.toLowerCase() === "x") &&
+                          snapshot.content.length > 0 && (
+                            <p className="mt-4 text-sm text-muted-foreground/60 italic">
+                              [text may be truncated]
+                            </p>
+                          )}
+
+                        {/* Original link at the end */}
+                        <div className="mt-8 pt-6 border-t text-center">
+                          <a
+                            href={save.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            <Globe className="h-4 w-4" />
+                            View original at {getDomainFromUrl(save.url)}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    /* CTA when no snapshot content */
+                    <div className="rounded-xl border bg-card p-8 text-center">
+                      <p className="text-muted-foreground">Want to read the full article?</p>
+                      <a
+                        href={save.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-4 inline-block"
+                      >
+                        <Button>
+                          Visit Original
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
+                      </a>
+                    </div>
                   )}
                 </div>
-              </CardHeader>
-              <CardContent>
-                {/* Disclaimer */}
-                <div className="mb-4 pb-4 border-b border-dashed">
-                  <p className="flex items-start gap-2 text-xs text-muted-foreground/70">
-                    <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                    {snapshot.content.siteName?.toLowerCase() === "twitter" ||
-                    snapshot.content.siteName?.toLowerCase() === "x" ? (
-                      <span>
-                        This simplified view was extracted using{" "}
-                        <a
-                          href="https://developer.twitter.com/en/docs/twitter-for-websites/oembed-api"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
-                        >
-                          Twitter's oEmbed API
-                        </a>
-                        . Text may be truncated; media and replies are not included.
-                      </span>
-                    ) : (
-                      <span>
-                        This simplified view was extracted using{" "}
-                        <a
-                          href="https://github.com/mozilla/readability"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
-                        >
-                          Mozilla Readability
-                        </a>
-                        , the same technology behind Firefox Reader View. For the complete
-                        experience,{" "}
-                        <a
-                          href={save.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
-                        >
-                          visit the original
-                        </a>
-                        .
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-                {/* Byline */}
-                {snapshot.content.byline && (
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground mb-4">
-                    <User className="h-4 w-4 shrink-0 mt-0.5" />
-                    {snapshot.content.byline.startsWith("<a") ? (
-                      <span
-                        className="[&_a]:text-primary [&_a]:underline-offset-2 hover:[&_a]:underline"
-                        // biome-ignore lint/security/noDangerouslySetInnerHtml: Byline HTML is sanitized on server
-                        dangerouslySetInnerHTML={{ __html: snapshot.content.byline }}
-                      />
-                    ) : (
-                      <span>{snapshot.content.byline}</span>
-                    )}
+              }
+              noteContent={
+                save.note ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <MarkdownRenderer content={save.note} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="rounded-xl border bg-card p-8 text-center">
+                    <FileText className="h-8 w-8 mx-auto text-muted-foreground/50" />
+                    <p className="mt-4 text-muted-foreground">No note for this save.</p>
                   </div>
-                )}
-
-                {/* Article content */}
-                <article
-                  className="prose prose-neutral dark:prose-invert max-w-none
-                    prose-headings:font-semibold prose-headings:tracking-tight
-                    prose-a:text-primary prose-a:no-underline hover:prose-a:underline
-                    prose-img:rounded-lg prose-img:border
-                    prose-blockquote:border-l-primary prose-blockquote:bg-muted/50 prose-blockquote:py-1
-                    prose-pre:bg-muted prose-pre:border
-                    prose-code:before:content-none prose-code:after:content-none
-                    prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded"
-                  // biome-ignore lint/security/noDangerouslySetInnerHtml: Content is sanitized on the server
-                  dangerouslySetInnerHTML={{ __html: snapshot.content.content }}
-                />
-
-                {/* Twitter truncation notice - only show for actual tweet content, not placeholders */}
-                {(snapshot.content.siteName?.toLowerCase() === "twitter" ||
-                  snapshot.content.siteName?.toLowerCase() === "x") &&
-                  snapshot.content.length > 0 && (
-                    <p className="mt-4 text-sm text-muted-foreground/60 italic">
-                      [text may be truncated]
-                    </p>
-                  )}
-
-                {/* Original link at the end */}
-                <div className="mt-8 pt-6 border-t text-center">
-                  <a
-                    href={save.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    <Globe className="h-4 w-4" />
-                    View original at {getDomainFromUrl(save.url)}
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            /* CTA when no snapshot content */
-            <div className="mt-12 rounded-xl border bg-card p-8 text-center">
-              <p className="text-muted-foreground">Want to read the full article?</p>
-              <a
-                href={save.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-block"
-              >
-                <Button>
-                  Visit Original
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </Button>
-              </a>
-            </div>
-          )}
+                )
+              }
+            />
+          </div>
         </article>
       </main>
 

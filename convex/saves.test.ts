@@ -80,6 +80,101 @@ describe("saves", () => {
       })
     ).rejects.toThrow();
   });
+
+  test("creating a save with note preserves the note", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_note123" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    const save = await asUser.mutation(api.saves.create, {
+      url: "https://example.com/with-note",
+      note: "This is my **markdown** note with some thoughts.",
+    });
+
+    expect(save.note).toBe("This is my **markdown** note with some thoughts.");
+    // Description should be null (populated by snapshot, not the note)
+    expect(save.description).toBeNull();
+  });
+
+  test("updating a save note works correctly", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_note_update456" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    const save = await asUser.mutation(api.saves.create, {
+      url: "https://example.com/update-note",
+    });
+
+    expect(save.note).toBeNull();
+
+    // Update with a note
+    const updated = await asUser.mutation(api.saves.update, {
+      id: save.id,
+      note: "Added a note later",
+    });
+
+    expect(updated?.note).toBe("Added a note later");
+  });
+
+  test("note is included in save list response", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_note_list789" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    await asUser.mutation(api.saves.create, {
+      url: "https://example.com/note-in-list",
+      note: "A note for listing",
+    });
+
+    const { items } = await asUser.query(api.saves.list, {});
+
+    expect(items.length).toBeGreaterThan(0);
+    const save = items.find((s) => s.url === "https://example.com/note-in-list");
+    expect(save).toBeDefined();
+    expect(save?.note).toBe("A note for listing");
+  });
+
+  test("note is searchable in list query", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_note_search" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    await asUser.mutation(api.saves.create, {
+      url: "https://example.com/searchable-note",
+      note: "This note contains uniqueSearchTerm123 for testing",
+    });
+
+    // Search by note content
+    const { items } = await asUser.query(api.saves.list, {
+      query: "uniqueSearchTerm123",
+    });
+
+    expect(items.length).toBe(1);
+    expect(items[0].url).toBe("https://example.com/searchable-note");
+  });
+
+  test("note is returned in get query", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_note_get" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    const created = await asUser.mutation(api.saves.create, {
+      url: "https://example.com/note-in-get",
+      note: "Note for get query",
+    });
+
+    const save = await asUser.query(api.saves.get, {
+      saveId: created.id,
+    });
+
+    expect(save).toBeDefined();
+    expect(save?.note).toBe("Note for get query");
+  });
 });
 
 describe("saves observability", () => {
