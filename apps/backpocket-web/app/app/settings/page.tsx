@@ -1256,44 +1256,51 @@ function ExportDataCard() {
           Export Data
         </CardTitle>
         <CardDescription>
-          Download all your saves, collections, and tags as a JSON file
+          Download all your saves, tags, and collections as a JSON file for backup or migration
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <p className="text-sm text-muted-foreground">
-              {isLoading ? (
-                "Loading your data..."
-              ) : exportData ? (
-                <>
-                  {exportData.counts.saves} saves, {exportData.counts.tags} tags,{" "}
-                  {exportData.counts.collections} collections
-                </>
-              ) : (
-                "No data to export"
-              )}
-            </p>
-            <p className="text-xs text-muted-foreground">Includes all metadata and relationships</p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleExport}
-            disabled={isLoading || !exportData || isExporting}
-          >
-            {isExporting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="mr-2 h-4 w-4" />
-                Export All
-              </>
-            )}
-          </Button>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          <p className="font-medium">What's included:</p>
+          <ul className="space-y-2 text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>All saved links with metadata</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Tags and their associations</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Collections and default tags</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Space settings and profile</span>
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground pt-1">
+            Export format is designed for easy import into other databases like Convex, Supabase, or any JSON-compatible system.
+          </p>
         </div>
+        <Button
+          className="w-full"
+          onClick={handleExport}
+          disabled={isLoading || !exportData || isExporting}
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Export All Data
+            </>
+          )}
+        </Button>
       </CardContent>
     </Card>
   );
