@@ -42,8 +42,8 @@ Built as a spiritual successor to Mozilla's Pocket after its shutdown in 2025.
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/backpocket-web.git
-   cd backpocket-web
+   git clone https://github.com/MyBackpocket/backpocket.git
+   cd backpocket/apps/backpocket-web
    ```
 
 2. **Install dependencies**

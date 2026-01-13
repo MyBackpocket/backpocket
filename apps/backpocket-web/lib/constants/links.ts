@@ -9,12 +9,15 @@
 /** Canonical marketing/home URL for backpocket */
 export const MARKETING_URL = "https://backpocket.my";
 
+/** GitHub monorepo base URL */
+const GITHUB_REPO = "https://github.com/MyBackpocket/backpocket";
+
 /** External reference links */
 export const externalLinks = {
   /** Mozilla's Pocket shutdown announcement */
   pocketShutdown: "https://support.mozilla.org/en-US/kb/future-of-pocket",
-  /** Browser extension GitHub repository */
-  browserExtensionRepo: "https://github.com/MyBackpocket/backpocket-browser-extension",
-  /** Mobile app GitHub repository */
-  mobileAppRepo: "https://github.com/MyBackpocket/backpocket-mobile",
+  /** Browser extension source in monorepo */
+  browserExtensionRepo: `${GITHUB_REPO}/tree/main/apps/backpocket-browser-extension`,
+  /** Mobile app source in monorepo */
+  mobileAppRepo: `${GITHUB_REPO}/tree/main/apps/backpocket-mobile`,
 } as const;
