@@ -42,6 +42,7 @@ import {
   useUpdateSlug,
 } from "@/lib/convex";
 import type { PublicLayout, SaveVisibility, SpaceVisibility } from "@/lib/types";
+import { FOCUS_SPACE_NAME_EVENT } from "../_components/app-sidebar";
 
 type SaveStatus = "idle" | "saving" | "saved";
 
@@ -59,6 +60,10 @@ export default function SettingsPage() {
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const initialLoadDone = useRef(false);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ref for focusing the name input
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [isNameHighlighted, setIsNameHighlighted] = useState(false);
 
   // Slug editing state
   const [slug, setSlug] = useState("");
@@ -92,6 +97,25 @@ export default function SettingsPage() {
       }, 100);
     }
   }, [space]);
+
+  // Listen for focus space name event (triggered from sidebar pencil icon)
+  useEffect(() => {
+    const handleFocusSpaceName = () => {
+      // Scroll the input into view smoothly
+      nameInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Focus and select the input after a brief delay to allow scroll
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+        nameInputRef.current?.select();
+      }, 100);
+      // Trigger the highlight animation
+      setIsNameHighlighted(true);
+      setTimeout(() => setIsNameHighlighted(false), 1500);
+    };
+
+    window.addEventListener(FOCUS_SPACE_NAME_EVENT, handleFocusSpaceName);
+    return () => window.removeEventListener(FOCUS_SPACE_NAME_EVENT, handleFocusSpaceName);
+  }, []);
 
   // Auto-save helper function
   const saveSettings = useCallback(
@@ -296,10 +320,16 @@ export default function SettingsPage() {
                   Display Name
                 </Label>
                 <Input
+                  ref={nameInputRef}
                   id="name"
                   placeholder="Your name or title"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className={
+                    isNameHighlighted
+                      ? "ring-2 ring-denim ring-offset-2 ring-offset-background transition-all duration-300"
+                      : "transition-all duration-300"
+                  }
                 />
               </div>
 
