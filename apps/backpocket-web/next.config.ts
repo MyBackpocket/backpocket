@@ -19,9 +19,12 @@ const nextConfig: NextConfig = {
       "@convex": "../../convex",
     },
   },
-  experimental: {
-    devCacheControlNoCache: true,
-  },
+  // Only include canary-specific dev flags in development
+  ...(process.env.NODE_ENV === "development" && {
+    experimental: {
+      devCacheControlNoCache: true,
+    } as NextConfig["experimental"],
+  }),
 };
 
 export default nextConfig;
