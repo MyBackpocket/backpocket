@@ -17,7 +17,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogoIcon } from "@/components/logo";
-import { ThemeSwitcherCompact } from "@/components/theme-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,7 +131,7 @@ function PublicSpaceContent() {
       tagName: urlTag || undefined,
       collectionId: (urlCollection || undefined) as any,
       cursor,
-      limit: 20,
+      limit: 6,
     };
   }, [space?.id, debouncedSearch, urlTag, urlCollection, cursor]);
 
@@ -282,6 +282,7 @@ function PublicSpaceContent() {
                 <Rss className="h-4 w-4" />
                 <span className="hidden sm:inline">RSS</span>
               </Link>
+              <ThemeSwitcher />
             </div>
           </div>
 
@@ -485,16 +486,13 @@ function PublicSpaceContent() {
       {/* Footer */}
       <footer className="border-t border-denim/15 py-8 mt-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <a
-              href={MARKETING_URL}
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-rust transition-colors"
-            >
-              <LogoIcon size="xs" />
-              <span>Powered by backpocket</span>
-            </a>
-            <ThemeSwitcherCompact />
-          </div>
+          <a
+            href={MARKETING_URL}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-rust transition-colors"
+          >
+            <LogoIcon size="xs" />
+            <span>Powered by backpocket</span>
+          </a>
         </div>
       </footer>
     </div>

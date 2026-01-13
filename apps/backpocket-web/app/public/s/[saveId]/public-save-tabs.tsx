@@ -12,7 +12,7 @@ interface PublicSaveTabsProps {
 
 export function PublicSaveTabs({ sourceContent, noteContent, hasNote }: PublicSaveTabsProps) {
   return (
-    <Tabs defaultValue="source" className="w-full">
+    <Tabs defaultValue={hasNote ? "note" : "source"} className="w-full">
       <TabsList className="grid w-full grid-cols-2 mb-6">
         <TabsTrigger value="source" className="gap-2">
           <BookOpen className="h-4 w-4" />

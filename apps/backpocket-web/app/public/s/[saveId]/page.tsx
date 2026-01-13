@@ -20,7 +20,7 @@ import { LogoIcon } from "@/components/logo";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ScrollNavigator } from "@/components/scroll-navigator";
 import { PublicSaveTabs } from "./public-save-tabs";
-import { ThemeSwitcherCompact } from "@/components/theme-switcher";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -150,12 +150,15 @@ export default async function PublicSavePermalinkPage({
               <ArrowLeft className="h-4 w-4" />
               <span>Back to {space?.name || "space"}</span>
             </Link>
-            <Link
-              href="/rss.xml"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Rss className="h-4 w-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/rss.xml"
+                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Rss className="h-4 w-4" />
+              </Link>
+              <ThemeSwitcher />
+            </div>
           </div>
         </div>
       </header>
@@ -393,16 +396,13 @@ export default async function PublicSavePermalinkPage({
       {/* Footer */}
       <footer className="border-t border-denim/15 py-8">
         <div className="mx-auto max-w-3xl px-6">
-          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-            <a
-              href={MARKETING_URL}
-              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-rust transition-colors"
-            >
-              <LogoIcon size="xs" />
-              <span>Powered by backpocket</span>
-            </a>
-            <ThemeSwitcherCompact />
-          </div>
+          <a
+            href={MARKETING_URL}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-rust transition-colors"
+          >
+            <LogoIcon size="xs" />
+            <span>Powered by backpocket</span>
+          </a>
         </div>
       </footer>
 
