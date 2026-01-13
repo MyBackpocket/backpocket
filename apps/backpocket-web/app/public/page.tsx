@@ -185,6 +185,7 @@ function PublicSpaceContent() {
   };
 
   const hasActiveFilters = urlQuery || urlTag || urlCollection;
+  const hasFilters = (tags && tags.length > 0) || (collections && collections.length > 0);
   const isGridLayout = space?.publicLayout === "grid";
 
   // Loading state - wait for space AND filters to avoid layout shifts
@@ -199,7 +200,7 @@ function PublicSpaceContent() {
   return (
     <div className="min-h-screen bg-gradient-denim">
       {/* Header */}
-      <header className="border-b border-denim/15 bg-background/80 backdrop-blur-md sticky top-0 z-10">
+      <header className="border-b border-denim/15 bg-background/80 backdrop-blur-md">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Profile info */}
@@ -214,20 +215,13 @@ function PublicSpaceContent() {
                   />
                 </div>
               ) : (
-                <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-linear-to-br from-denim to-denim-deep text-white shadow-denim">
+                <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-full bg-linear-to-br from-denim to-denim-deep text-white shadow-denim">
                   <span className="text-xl font-semibold">
                     {space.name.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate">{space.name}</h1>
-                {space.bio && (
-                  <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1 max-w-md">
-                    {space.bio}
-                  </p>
-                )}
-              </div>
+              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate min-w-0" title={space.name}>{space.name}</h1>
             </div>
 
             {/* Actions */}
@@ -242,6 +236,13 @@ function PublicSpaceContent() {
               </Link>
             </div>
           </div>
+
+          {/* Bio/Description */}
+          {space.bio && (
+            <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
+              {space.bio}
+            </p>
+          )}
 
           {/* Search bar */}
           <div className="mt-4 flex gap-2">
@@ -265,21 +266,23 @@ function PublicSpaceContent() {
               )}
             </div>
             {/* Mobile filter toggle */}
-            <Button
-              variant="outline"
-              size="icon"
-              className={cn(
-                "sm:hidden transition-colors",
-                showMobileFilters && "bg-denim/10 border-denim/30 text-denim"
-              )}
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
-            >
-              {showMobileFilters ? (
-                <ChevronUp className="h-4 w-4" />
-              ) : (
-                <SlidersHorizontal className="h-4 w-4" />
-              )}
-            </Button>
+            {hasFilters && (
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "sm:hidden transition-colors",
+                  showMobileFilters && "bg-denim/10 border-denim/30 text-denim"
+                )}
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+              >
+                {showMobileFilters ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <SlidersHorizontal className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Active filters display */}
@@ -323,75 +326,81 @@ function PublicSpaceContent() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
         <div className="flex gap-6">
           {/* Sidebar - Desktop */}
-          <aside className="hidden sm:block w-56 shrink-0 space-y-6">
-            <FilterSidebar
-              tags={tags || []}
-              collections={collections || []}
-              selectedTag={urlTag}
-              selectedCollection={urlCollection}
-              onTagSelect={(tag) => updateFilters({ tag, collection: "" })}
-              onCollectionSelect={(id) => updateFilters({ collection: id, tag: "" })}
-            />
-          </aside>
+          {hasFilters && (
+            <aside className="hidden sm:block w-56 shrink-0 space-y-6">
+              <FilterSidebar
+                tags={tags || []}
+                collections={collections || []}
+                selectedTag={urlTag}
+                selectedCollection={urlCollection}
+                onTagSelect={(tag) => updateFilters({ tag, collection: "" })}
+                onCollectionSelect={(id) => updateFilters({ collection: id, tag: "" })}
+              />
+            </aside>
+          )}
 
           {/* Mobile filters backdrop */}
-          <div
-            className={cn(
-              "sm:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300",
-              showMobileFilters ? "opacity-100" : "opacity-0 pointer-events-none"
-            )}
-            onClick={() => setShowMobileFilters(false)}
-            onKeyDown={(e) => e.key === "Escape" && setShowMobileFilters(false)}
-          />
+          {hasFilters && (
+            <div
+              className={cn(
+                "sm:hidden fixed inset-0 z-40 bg-black/40 transition-opacity duration-300",
+                showMobileFilters ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+              onClick={() => setShowMobileFilters(false)}
+              onKeyDown={(e) => e.key === "Escape" && setShowMobileFilters(false)}
+            />
+          )}
 
           {/* Mobile filters bottom sheet */}
-          <div
-            className={cn(
-              "sm:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out",
-              showMobileFilters ? "translate-y-0" : "translate-y-full"
-            )}
-          >
-            {/* Sheet container with rounded top */}
-            <div className="bg-background rounded-t-2xl shadow-2xl border-t border-denim/20">
-              {/* Drag handle */}
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-              </div>
+          {hasFilters && (
+            <div
+              className={cn(
+                "sm:hidden fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out",
+                showMobileFilters ? "translate-y-0" : "translate-y-full"
+              )}
+            >
+              {/* Sheet container with rounded top */}
+              <div className="bg-background rounded-t-2xl shadow-2xl border-t border-denim/20">
+                {/* Drag handle */}
+                <div className="flex justify-center pt-3 pb-2">
+                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+                </div>
 
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 pb-3 border-b border-border">
-                <h3 className="text-base font-semibold">Filters</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowMobileFilters(false)}
-                  className="p-2 -mr-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 pb-3 border-b border-border">
+                  <h3 className="text-base font-semibold">Filters</h3>
+                  <button
+                    type="button"
+                    onClick={() => setShowMobileFilters(false)}
+                    className="p-2 -mr-2 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
 
-              {/* Filter content */}
-              <div className="px-5 py-5 max-h-[60vh] overflow-y-auto">
-                <FilterSidebar
-                  tags={tags || []}
-                  collections={collections || []}
-                  selectedTag={urlTag}
-                  selectedCollection={urlCollection}
-                  onTagSelect={(tag) => {
-                    updateFilters({ tag, collection: "" });
-                    setShowMobileFilters(false);
-                  }}
-                  onCollectionSelect={(id) => {
-                    updateFilters({ collection: id, tag: "" });
-                    setShowMobileFilters(false);
-                  }}
-                />
-              </div>
+                {/* Filter content */}
+                <div className="px-5 py-5 max-h-[60vh] overflow-y-auto">
+                  <FilterSidebar
+                    tags={tags || []}
+                    collections={collections || []}
+                    selectedTag={urlTag}
+                    selectedCollection={urlCollection}
+                    onTagSelect={(tag) => {
+                      updateFilters({ tag, collection: "" });
+                      setShowMobileFilters(false);
+                    }}
+                    onCollectionSelect={(id) => {
+                      updateFilters({ collection: id, tag: "" });
+                      setShowMobileFilters(false);
+                    }}
+                  />
+                </div>
 
-              {/* Safe area padding for devices with home indicator */}
-              <div className="h-safe-area-inset-bottom pb-6" />
+                {/* Safe area padding for devices with home indicator */}
+                <div className="h-safe-area-inset-bottom pb-6" />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Main content */}
           <main className="flex-1 min-w-0">
