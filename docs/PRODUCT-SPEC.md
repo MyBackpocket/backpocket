@@ -1,7 +1,7 @@
 # Backpocket Product Specification
 
-> **Version:** 1.0.0  
-> **Last Updated:** 2026-01-12
+> **Version:** 1.1.0  
+> **Last Updated:** 2026-01-13
 
 Complete specification for Backpocket — a personal bookmarking and reading app with optional public sharing.
 
@@ -29,13 +29,13 @@ Backpocket is a personal content library for saving, organizing, and optionally 
 
 ### Design Principles
 
-| Principle | Description |
-|-----------|-------------|
+| Principle              | Description                                         |
+| ---------------------- | --------------------------------------------------- |
 | **Privacy by default** | All saves are private unless explicitly made public |
 | **No social features** | No followers, likes, comments, or algorithmic feeds |
-| **Calm and focused** | Clean, minimal UI with no distractions |
-| **Offline-first** | Core functionality works without network |
-| **Content ownership** | Snapshots preserve content you control |
+| **Calm and focused**   | Clean, minimal UI with no distractions              |
+| **Offline-first**      | Core functionality works without network            |
+| **Content ownership**  | Snapshots preserve content you control              |
 
 ### Core Capabilities
 
@@ -58,15 +58,15 @@ Convex URL:          https://your-project.convex.cloud
 
 ### Tech Stack
 
-| Layer | Technology | Purpose |
-|-------|------------|---------|
-| **Web App** | Next.js 16, React 19, Tailwind CSS | Primary web interface |
-| **Mobile App** | Expo 54, React Native, NativeWind | iOS & Android |
-| **Extension** | WXT, React | Browser extension |
-| **Backend** | Convex | Real-time database, queries, mutations, actions |
-| **Auth** | Clerk + Convex JWT | Authentication |
-| **Hosting** | Vercel | Web app hosting |
-| **Storage** | Convex File Storage | Snapshot content |
+| Layer          | Technology                         | Purpose                                         |
+| -------------- | ---------------------------------- | ----------------------------------------------- |
+| **Web App**    | Next.js 16, React 19, Tailwind CSS | Primary web interface                           |
+| **Mobile App** | Expo 54, React Native, NativeWind  | iOS & Android                                   |
+| **Extension**  | WXT, React                         | Browser extension                               |
+| **Backend**    | Convex                             | Real-time database, queries, mutations, actions |
+| **Auth**       | Clerk + Convex JWT                 | Authentication                                  |
+| **Hosting**    | Vercel                             | Web app hosting                                 |
+| **Storage**    | Convex File Storage                | Snapshot content                                |
 
 ### Monorepo Structure
 
@@ -110,7 +110,7 @@ import { api } from "../../convex/_generated/api";
 function SavesList() {
   const saves = useQuery(api.saves.list, { limit: 20 });
   const createSave = useMutation(api.saves.create);
-  
+
   // saves updates in real-time when data changes
   return <SavesGrid items={saves?.items ?? []} />;
 }
@@ -231,14 +231,14 @@ Backpocket uses [Convex](https://convex.dev) for its API layer. All functions ar
 
 ### Function Namespaces
 
-| Module | Auth Required | Description |
-|--------|---------------|-------------|
-| `saves.*` | ✅ Yes | Save management operations |
-| `tags.*` | ✅ Yes | Tag management operations |
-| `collections.*` | ✅ Yes | Collection management operations |
-| `spaces.*` | ✅ Yes | Space settings operations |
-| `snapshots.*` | ✅ Yes | Snapshot operations |
-| `public.*` | ❌ No | Public read-only operations |
+| Module          | Auth Required | Description                      |
+| --------------- | ------------- | -------------------------------- |
+| `saves.*`       | ✅ Yes        | Save management operations       |
+| `tags.*`        | ✅ Yes        | Tag management operations        |
+| `collections.*` | ✅ Yes        | Collection management operations |
+| `spaces.*`      | ✅ Yes        | Space settings operations        |
+| `snapshots.*`   | ✅ Yes        | Snapshot operations              |
+| `public.*`      | ❌ No         | Public read-only operations      |
 
 ### Client Usage
 
@@ -303,14 +303,14 @@ The primary endpoint for saving links. Used by all platforms.
 
 **Input Schema:**
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `url` | `string` | ✅ Yes | - | Valid URL to save |
-| `title` | `string` | ❌ No | null | Custom title (auto-fetched if not provided) |
-| `visibility` | `"private" \| "public"` | ❌ No | `"private"` | Save visibility |
-| `tagNames` | `string[]` | ❌ No | `[]` | Tag names (auto-created if new) |
-| `collectionIds` | `string[]` | ❌ No | `[]` | Collection IDs to add to |
-| `note` | `string` | ❌ No | null | Description/notes |
+| Field           | Type                    | Required | Default     | Description                                 |
+| --------------- | ----------------------- | -------- | ----------- | ------------------------------------------- |
+| `url`           | `string`                | ✅ Yes   | -           | Valid URL to save                           |
+| `title`         | `string`                | ❌ No    | null        | Custom title (auto-fetched if not provided) |
+| `visibility`    | `"private" \| "public"` | ❌ No    | `"private"` | Save visibility                             |
+| `tagNames`      | `string[]`              | ❌ No    | `[]`        | Tag names (auto-created if new)             |
+| `collectionIds` | `string[]`              | ❌ No    | `[]`        | Collection IDs to add to                    |
+| `note`          | `string`                | ❌ No    | null        | Description/notes                           |
 
 **Response:**
 
@@ -447,16 +447,16 @@ Pre-check if a URL exists before saving. Useful for instant UX feedback.
 
 **Input Schema:**
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `query` | `string` | ❌ No | - | Search in title/description/url |
-| `visibility` | `"private" \| "public"` | ❌ No | - | Filter by visibility |
-| `isArchived` | `boolean` | ❌ No | - | Filter archived saves |
-| `isFavorite` | `boolean` | ❌ No | - | Filter favorites |
-| `collectionId` | `string` | ❌ No | - | Filter by collection |
-| `tagId` | `string` | ❌ No | - | Filter by tag |
-| `cursor` | `string` | ❌ No | - | Pagination cursor (ISO date) |
-| `limit` | `number` | ❌ No | 20 | Results per page (1-50) |
+| Field          | Type                    | Required | Default | Description                     |
+| -------------- | ----------------------- | -------- | ------- | ------------------------------- |
+| `query`        | `string`                | ❌ No    | -       | Search in title/description/url |
+| `visibility`   | `"private" \| "public"` | ❌ No    | -       | Filter by visibility            |
+| `isArchived`   | `boolean`               | ❌ No    | -       | Filter archived saves           |
+| `isFavorite`   | `boolean`               | ❌ No    | -       | Filter favorites                |
+| `collectionId` | `string`                | ❌ No    | -       | Filter by collection            |
+| `tagId`        | `string`                | ❌ No    | -       | Filter by tag                   |
+| `cursor`       | `string`                | ❌ No    | -       | Pagination cursor (ISO date)    |
+| `limit`        | `number`                | ❌ No    | 20      | Results per page (1-50)         |
 
 **Response:**
 
@@ -464,7 +464,9 @@ Pre-check if a URL exists before saving. Useful for instant UX feedback.
 {
   "result": {
     "data": {
-      "items": [/* Save objects */],
+      "items": [
+        /* Save objects */
+      ],
       "nextCursor": "2024-01-01T00:00:00.000Z"
     }
   }
@@ -497,6 +499,8 @@ Pre-check if a URL exists before saving. Useful for instant UX feedback.
     "id": "uuid",
     "title": "New title",
     "description": "New description",
+    "imageUrl": "https://example.com/image.jpg",
+    "siteName": "Example Site",
     "visibility": "public",
     "tagNames": ["new", "tags"],
     "collectionIds": ["uuid-1"]
@@ -504,7 +508,7 @@ Pre-check if a URL exists before saving. Useful for instant UX feedback.
 }
 ```
 
-All fields except `id` are optional.
+All fields except `id` are optional. Used by the "Refresh metadata" feature to update save metadata from the source URL.
 
 **Note:** Orphaned tags (no longer associated with any saves) are automatically deleted.
 
@@ -784,13 +788,13 @@ Max 100 saves per request.
 }
 ```
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `name` | `string` | Display name for public space |
-| `bio` | `string` | Short description |
-| `avatarUrl` | `string` | Avatar image URL |
-| `visibility` | `"public" \| "private"` | Space visibility |
-| `publicLayout` | `"list" \| "grid"` | How saves are displayed publicly |
+| Field                   | Type                    | Description                      |
+| ----------------------- | ----------------------- | -------------------------------- |
+| `name`                  | `string`                | Display name for public space    |
+| `bio`                   | `string`                | Short description                |
+| `avatarUrl`             | `string`                | Avatar image URL                 |
+| `visibility`            | `"public" \| "private"` | Space visibility                 |
+| `publicLayout`          | `"list" \| "grid"`      | How saves are displayed publicly |
 | `defaultSaveVisibility` | `"private" \| "public"` | Default visibility for new saves |
 
 ---
@@ -872,12 +876,12 @@ created via the `ensureSpace` mutation. This happens in:
 
 The space includes:
 
-| Property | Value |
-|----------|-------|
-| Type | `personal` |
-| Name | `My Library` |
-| Visibility | `private` |
-| Slug | `user-{last8CharsOfUserId}` |
+| Property   | Value                       |
+| ---------- | --------------------------- |
+| Type       | `personal`                  |
+| Name       | `My Library`                |
+| Visibility | `private`                   |
+| Slug       | `user-{last8CharsOfUserId}` |
 
 ---
 
@@ -1028,9 +1032,15 @@ Combined endpoint returning space settings, stats, and recent saves.
 {
   "result": {
     "data": {
-      "space": { /* Space object */ },
-      "stats": { /* Stats object */ },
-      "recentSaves": [ /* Last 5 saves */ ]
+      "space": {
+        /* Space object */
+      },
+      "stats": {
+        /* Stats object */
+      },
+      "recentSaves": [
+        /* Last 5 saves */
+      ]
     }
   }
 }
@@ -1146,10 +1156,10 @@ Snapshots capture readable content from saved URLs for offline reading.
 
 Some domains have specialized extractors:
 
-| Domain | Method | Notes |
-|--------|--------|-------|
-| `twitter.com`, `x.com` | Twitter oEmbed API | Tweet text; FxTwitter fallback |
-| `reddit.com` | old.reddit.com scrape | Posts, comments, subreddits, profiles |
+| Domain                 | Method                | Notes                                 |
+| ---------------------- | --------------------- | ------------------------------------- |
+| `twitter.com`, `x.com` | Twitter oEmbed API    | Tweet text; FxTwitter fallback        |
+| `reddit.com`           | old.reddit.com scrape | Posts, comments, subreddits, profiles |
 
 **Twitter/X:**
 
@@ -1325,14 +1335,14 @@ These endpoints don't require authentication and are used for public space pages
 }
 ```
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `spaceId` | `string` | ✅ Yes | - | Space ID |
-| `query` | `string` | ❌ No | - | Search in title, description, URL |
-| `tagName` | `string` | ❌ No | - | Filter by tag name (case-insensitive) |
-| `collectionId` | `string` | ❌ No | - | Filter by collection ID |
-| `cursor` | `string` | ❌ No | - | Pagination cursor |
-| `limit` | `number` | ❌ No | 20 | Results per page (1-50) |
+| Field          | Type     | Required | Default | Description                           |
+| -------------- | -------- | -------- | ------- | ------------------------------------- |
+| `spaceId`      | `string` | ✅ Yes   | -       | Space ID                              |
+| `query`        | `string` | ❌ No    | -       | Search in title, description, URL     |
+| `tagName`      | `string` | ❌ No    | -       | Filter by tag name (case-insensitive) |
+| `collectionId` | `string` | ❌ No    | -       | Filter by collection ID               |
+| `cursor`       | `string` | ❌ No    | -       | Pagination cursor                     |
+| `limit`        | `number` | ❌ No    | 20      | Results per page (1-50)               |
 
 ---
 
@@ -1442,15 +1452,15 @@ Returns collections with at least one public save, sorted by count.
 
 ### 4.10 Error Codes
 
-| tRPC Code | HTTP Status | Description |
-|-----------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Not authenticated |
-| `NOT_FOUND` | 404 | Resource not found |
-| `BAD_REQUEST` | 400 | Invalid input |
-| `CONFLICT` | 409 | Resource conflict (duplicate, slug taken) |
-| `TOO_MANY_REQUESTS` | 429 | Rate limit exceeded |
-| `PRECONDITION_FAILED` | 412 | Feature disabled |
-| `INTERNAL_SERVER_ERROR` | 500 | Server error |
+| tRPC Code               | HTTP Status | Description                               |
+| ----------------------- | ----------- | ----------------------------------------- |
+| `UNAUTHORIZED`          | 401         | Not authenticated                         |
+| `NOT_FOUND`             | 404         | Resource not found                        |
+| `BAD_REQUEST`           | 400         | Invalid input                             |
+| `CONFLICT`              | 409         | Resource conflict (duplicate, slug taken) |
+| `TOO_MANY_REQUESTS`     | 429         | Rate limit exceeded                       |
+| `PRECONDITION_FAILED`   | 412         | Feature disabled                          |
+| `INTERNAL_SERVER_ERROR` | 500         | Server error                              |
 
 ---
 
@@ -1458,89 +1468,89 @@ Returns collections with at least one public save, sorted by count.
 
 #### Saves (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Create save | `space.createSave` | POST |
-| Check duplicate | `space.checkDuplicate` | POST |
-| List saves | `space.listSaves` | POST |
-| Get save | `space.getSave` | POST |
-| Update save | `space.updateSave` | POST |
-| Toggle favorite | `space.toggleFavorite` | POST |
-| Toggle archive | `space.toggleArchive` | POST |
-| Delete save | `space.deleteSave` | POST |
-| Bulk delete | `space.bulkDeleteSaves` | POST |
+| Action          | Endpoint                | Method |
+| --------------- | ----------------------- | ------ |
+| Create save     | `space.createSave`      | POST   |
+| Check duplicate | `space.checkDuplicate`  | POST   |
+| List saves      | `space.listSaves`       | POST   |
+| Get save        | `space.getSave`         | POST   |
+| Update save     | `space.updateSave`      | POST   |
+| Toggle favorite | `space.toggleFavorite`  | POST   |
+| Toggle archive  | `space.toggleArchive`   | POST   |
+| Delete save     | `space.deleteSave`      | POST   |
+| Bulk delete     | `space.bulkDeleteSaves` | POST   |
 
 #### Tags (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| List tags | `space.listTags` | POST |
-| Create tag | `space.createTag` | POST |
-| Update tag | `space.updateTag` | POST |
-| Delete tag | `space.deleteTag` | POST |
+| Action     | Endpoint          | Method |
+| ---------- | ----------------- | ------ |
+| List tags  | `space.listTags`  | POST   |
+| Create tag | `space.createTag` | POST   |
+| Update tag | `space.updateTag` | POST   |
+| Delete tag | `space.deleteTag` | POST   |
 
 #### Collections (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| List collections | `space.listCollections` | POST |
-| Create collection | `space.createCollection` | POST |
-| Update collection | `space.updateCollection` | POST |
-| Delete collection | `space.deleteCollection` | POST |
+| Action            | Endpoint                 | Method |
+| ----------------- | ------------------------ | ------ |
+| List collections  | `space.listCollections`  | POST   |
+| Create collection | `space.createCollection` | POST   |
+| Update collection | `space.updateCollection` | POST   |
+| Delete collection | `space.deleteCollection` | POST   |
 
 #### Settings (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Get my space | `space.getMySpace` | POST |
-| Update settings | `space.updateSettings` | POST |
-| Update slug | `space.updateSlug` | POST |
-| Check slug | `space.checkSlugAvailability` | POST |
+| Action          | Endpoint                      | Method |
+| --------------- | ----------------------------- | ------ |
+| Get my space    | `space.getMySpace`            | POST   |
+| Update settings | `space.updateSettings`        | POST   |
+| Update slug     | `space.updateSlug`            | POST   |
+| Check slug      | `space.checkSlugAvailability` | POST   |
 
 #### Domains (Authenticated)
 
-| Action | Endpoint | Method | Platform |
-|--------|----------|--------|----------|
-| List domains | `space.listDomains` | POST | All |
-| Add domain | `space.addDomain` | POST | ⚠️ Web only |
-| Verify domain | `space.verifyDomain` | POST | ⚠️ Web only |
-| Get status | `space.getDomainStatus` | POST | All |
-| Remove domain | `space.removeDomain` | POST | All |
+| Action        | Endpoint                | Method | Platform    |
+| ------------- | ----------------------- | ------ | ----------- |
+| List domains  | `space.listDomains`     | POST   | All         |
+| Add domain    | `space.addDomain`       | POST   | ⚠️ Web only |
+| Verify domain | `space.verifyDomain`    | POST   | ⚠️ Web only |
+| Get status    | `space.getDomainStatus` | POST   | All         |
+| Remove domain | `space.removeDomain`    | POST   | All         |
 
 #### Stats (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Get stats | `space.getStats` | POST |
-| Get dashboard | `space.getDashboardData` | POST |
+| Action        | Endpoint                 | Method |
+| ------------- | ------------------------ | ------ |
+| Get stats     | `space.getStats`         | POST   |
+| Get dashboard | `space.getDashboardData` | POST   |
 
 #### Snapshots (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Get snapshot | `space.getSaveSnapshot` | POST |
-| Request snapshot | `space.requestSaveSnapshot` | POST |
-| Get quota | `space.getSnapshotQuota` | POST |
+| Action           | Endpoint                    | Method |
+| ---------------- | --------------------------- | ------ |
+| Get snapshot     | `space.getSaveSnapshot`     | POST   |
+| Request snapshot | `space.requestSaveSnapshot` | POST   |
+| Get quota        | `space.getSnapshotQuota`    | POST   |
 
 #### Export (Authenticated)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Export all data | `space.exportAllData` | POST |
+| Action          | Endpoint              | Method |
+| --------------- | --------------------- | ------ |
+| Export all data | `space.exportAllData` | POST   |
 
 #### Public (No Auth)
 
-| Action | Endpoint | Method |
-|--------|----------|--------|
-| Resolve by host | `public.resolveSpaceByHost` | POST |
-| Resolve by slug | `public.resolveSpaceBySlug` | POST |
-| List saves | `public.listPublicSaves` | POST |
-| Get save | `public.getPublicSave` | POST |
-| List tags | `public.listPublicTags` | POST |
-| List collections | `public.listPublicCollections` | POST |
-| Get snapshot | `public.getPublicSaveSnapshot` | POST |
-| Register visit | `public.registerVisit` | POST |
-| Get visit count | `public.getVisitCount` | POST |
+| Action           | Endpoint                       | Method |
+| ---------------- | ------------------------------ | ------ |
+| Resolve by host  | `public.resolveSpaceByHost`    | POST   |
+| Resolve by slug  | `public.resolveSpaceBySlug`    | POST   |
+| List saves       | `public.listPublicSaves`       | POST   |
+| Get save         | `public.getPublicSave`         | POST   |
+| List tags        | `public.listPublicTags`        | POST   |
+| List collections | `public.listPublicCollections` | POST   |
+| Get snapshot     | `public.getPublicSaveSnapshot` | POST   |
+| Register visit   | `public.registerVisit`         | POST   |
+| Get visit count  | `public.getVisitCount`         | POST   |
 
 ---
 
@@ -1719,9 +1729,9 @@ interface SaveSnapshot {
 ```typescript
 interface SnapshotContent {
   title: string;
-  byline: string | null;     // May contain HTML (e.g., author link)
-  content: string;           // Sanitized HTML
-  textContent: string;       // Plain text version
+  byline: string | null; // May contain HTML (e.g., author link)
+  content: string; // Sanitized HTML
+  textContent: string; // Plain text version
   excerpt: string;
   siteName: string | null;
   length: number;
@@ -1960,15 +1970,15 @@ Optional public profile:
 
 URLs are normalized for duplicate detection:
 
-| Transformation | Example |
-|---------------|---------|
-| Strip tracking params | `?utm_source=twitter` → removed |
-| Remove `www.` | `www.example.com` → `example.com` |
-| Lowercase hostname | `Example.COM` → `example.com` |
-| Remove default ports | `:443` (https), `:80` (http) → removed |
-| Sort query params | `?b=2&a=1` → `?a=1&b=2` |
-| Remove trailing slash | `/path/` → `/path` |
-| Remove hash fragments | `#section` → removed |
+| Transformation        | Example                                |
+| --------------------- | -------------------------------------- |
+| Strip tracking params | `?utm_source=twitter` → removed        |
+| Remove `www.`         | `www.example.com` → `example.com`      |
+| Lowercase hostname    | `Example.COM` → `example.com`          |
+| Remove default ports  | `:443` (https), `:80` (http) → removed |
+| Sort query params     | `?b=2&a=1` → `?a=1&b=2`                |
+| Remove trailing slash | `/path/` → `/path`                     |
+| Remove hash fragments | `#section` → removed                   |
 
 **Tracking Parameters Stripped:**
 
@@ -2125,7 +2135,7 @@ await fetch("https://backpocket.my/api/trpc/space.createSave", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
   },
   body: JSON.stringify({
     json: {
@@ -2180,12 +2190,12 @@ const colors = {
 
 ### Mobile Gestures
 
-| Gesture | Context | Action |
-|---------|---------|--------|
-| Swipe left | Save list item | Archive |
-| Swipe right | Save list item | Favorite |
-| Long press | Save list item | Enter selection mode |
-| Pull down | Any list | Refresh |
+| Gesture     | Context        | Action               |
+| ----------- | -------------- | -------------------- |
+| Swipe left  | Save list item | Archive              |
+| Swipe right | Save list item | Favorite             |
+| Long press  | Save list item | Enter selection mode |
+| Pull down   | Any list       | Refresh              |
 
 ### Loading States
 
@@ -2205,6 +2215,28 @@ Each list should have meaningful empty states with:
 ---
 
 ## 9. Changelog
+
+### 2026-01-13
+
+#### Added
+
+- **Refresh Save Feature (Web + Mobile):**
+  - **Web:** New "Refresh" dropdown on save detail page with options for metadata, content, or both
+  - **Mobile:** New "Refresh" quick action button on save detail screen
+- **Enhanced URL Unfurling:** `/api/unfurl` endpoint now supports:
+  - **Twitter/X:** oEmbed API integration for proper tweet titles and content
+  - **Reddit:** JSON API integration for post titles, subreddit, and timestamps
+  - Smart timestamps (relative for recent, absolute for older content)
+- **`@backpocket/utils` Twitter Utilities:** New shared utilities for parsing X/Twitter URLs:
+  - `parseTwitterUrl()` — Extract username and tweet ID
+  - `getDateFromSnowflakeId()` — Decode timestamp from tweet ID
+  - `isTwitterUrl()` — Check if URL is from X/Twitter
+
+#### Changed
+
+- **`saves.update` mutation:** Now accepts `imageUrl` and `siteName` fields for metadata refresh
+
+---
 
 ### 2026-01-12
 

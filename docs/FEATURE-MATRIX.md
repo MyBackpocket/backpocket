@@ -55,8 +55,7 @@ Feature parity tracker across Backpocket platforms.
 | View reader mode | ✅ | ✅ | ❌ | |
 | Adjustable font size | ✅ | ✅ | N/A | |
 | Theme (light/dark/sepia) | ✅ | ✅ | N/A | |
-| Request re-snapshot | ✅ | 📋 | ❌ | |
-| View snapshot quota | ✅ | 📋 | ❌ | |
+| Refresh save | ✅ | ✅ | ❌ | Re-fetch metadata and re-snapshot |
 
 ---
 

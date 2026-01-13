@@ -21,6 +21,7 @@ import {
   FolderOpen,
   Pencil,
   Plus,
+  RefreshCw,
   Star,
   Tag,
   Trash2,
@@ -65,6 +66,7 @@ import {
 import { useListTags } from "@/lib/api/tags";
 import type { Save, SaveVisibility } from "@/lib/api/types";
 import { isSaveProcessing } from "@/lib/api/use-processing-saves";
+import { useRequestSaveSnapshot } from "@/lib/convex/hooks";
 import { useOpenUrl } from "@/lib/utils";
 
 // === Visibility Selector Component ===
@@ -714,13 +716,19 @@ export default function SaveDetailScreen() {
   const { openUrl } = useOpenUrl();
   const { width } = useWindowDimensions();
 
-  const { data: save, isLoading, isError } = useGetSave(id);
-  const { data: snapshotData, isLoading: isLoadingSnapshot } = useGetSaveSnapshot(id);
+  const { data: save, isLoading, isError, refetch: refetchSave } = useGetSave(id);
+  const {
+    data: snapshotData,
+    isLoading: isLoadingSnapshot,
+    refetch: refetchSnapshot,
+  } = useGetSaveSnapshot(id);
   const toggleFavorite = useToggleFavorite();
   const toggleArchive = useToggleArchive();
   const deleteSave = useDeleteSave();
+  const requestSnapshot = useRequestSaveSnapshot();
 
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isReaderModeExpanded, setIsReaderModeExpanded] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -825,6 +833,36 @@ export default function SaveDetailScreen() {
       ]
     );
   }, [save, deleteSave, router]);
+
+  const handleRefresh = useCallback(() => {
+    if (!save) return;
+
+    Alert.alert(
+      "Refresh Save",
+      "This will re-fetch the title, description, thumbnail, and reader mode content from the source URL.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Refresh",
+          onPress: async () => {
+            setIsRefreshing(true);
+            try {
+              // Request a new snapshot which also re-enriches metadata
+              await requestSnapshot({ saveId: save.id as any, force: true });
+              // Refetch the save and snapshot data
+              await Promise.all([refetchSave(), refetchSnapshot()]);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch {
+              Alert.alert("Error", "Failed to refresh save");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } finally {
+              setIsRefreshing(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [save, requestSnapshot, refetchSave, refetchSnapshot]);
 
   if (isLoading) {
     return (
@@ -984,6 +1022,21 @@ export default function SaveDetailScreen() {
             />
             <Text style={[styles.quickActionText, { color: colors.text }]}>
               {save.isFavorite ? "Favorited" : "Favorite"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: colors.card }]}
+            onPress={handleRefresh}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? (
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+            ) : (
+              <RefreshCw size={24} color={colors.mutedForeground} />
+            )}
+            <Text style={[styles.quickActionText, { color: colors.text }]}>
+              {isRefreshing ? "Refreshing..." : "Refresh"}
             </Text>
           </TouchableOpacity>
 
