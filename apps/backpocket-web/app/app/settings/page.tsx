@@ -4,15 +4,20 @@ import {
   AlertCircle,
   ArrowUpRight,
   Check,
+  Copy,
   Download,
   Eye,
   EyeOff,
+  Globe,
   Link as LinkIcon,
   Loader2,
   Lock,
   Monitor,
   Moon,
+  Plus,
+  RefreshCw,
   Sun,
+  Trash2,
   User,
 } from "lucide-react";
 import Image from "next/image";
@@ -21,6 +26,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AccountInfo } from "@/components/auth-components";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -35,13 +48,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ROOT_DOMAIN } from "@/lib/config/public";
+import { dnsProviderList, vercelDns } from "@/lib/constants/dns";
 import { buildSpaceUrl, isLocalhostHostname } from "@/lib/constants/urls";
 import {
+  type DomainId,
+  useAddDomain,
   useCheckSlugAvailability,
   useExportAllData,
+  useGetDomainStatus,
   useGetMySpace,
+  useListDomains,
+  useRemoveDomain,
   useUpdateSettings,
   useUpdateSlug,
+  useVerifyDomain,
 } from "@/lib/convex";
 import type { PublicLayout, SaveVisibility, SpaceVisibility } from "@/lib/types";
 import { FOCUS_SPACE_NAME_EVENT } from "../_components/app-sidebar";
@@ -451,6 +471,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Custom Domains */}
+          <CustomDomainsCard />
+
           {/* Space Visibility */}
           <Card>
             <CardHeader>
@@ -787,6 +810,416 @@ function ThemeSelector() {
   );
 }
 
+// Helper component for copying text
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
+      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+    </Button>
+  );
+}
+
+// Domain item component with detailed status and verification info
+interface DomainData {
+  id: string;
+  domain: string;
+  status: "pending_verification" | "verified" | "active" | "error" | "disabled";
+}
+
+function DomainItem({
+  domain,
+  onRemove,
+  isRemoving,
+}: {
+  domain: DomainData;
+  onRemove: () => void;
+  isRemoving: boolean;
+}) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [status, setStatus] = useState<{
+    verified: boolean;
+    misconfigured: boolean;
+    verification?: Array<{ type: string; domain: string; value: string }>;
+  } | null>(null);
+
+  const getDomainStatus = useGetDomainStatus();
+  const verifyDomainAction = useVerifyDomain();
+
+  // Fetch domain status on mount and periodically for pending domains
+  const fetchStatus = useCallback(async () => {
+    try {
+      const result = await getDomainStatus({ domainId: domain.id as DomainId });
+      if (result.success && result.data) {
+        setStatus({
+          verified: result.data.verified,
+          misconfigured: result.data.misconfigured,
+          verification: result.data.verification,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch domain status:", error);
+    }
+  }, [getDomainStatus, domain.id]);
+
+  useEffect(() => {
+    fetchStatus();
+
+    // Poll for status updates if pending
+    if (domain.status === "pending_verification") {
+      const interval = setInterval(fetchStatus, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [domain.status, fetchStatus]);
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    try {
+      await verifyDomainAction({ domainId: domain.id as DomainId });
+      await fetchStatus();
+    } catch (error) {
+      console.error("Failed to verify domain:", error);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const isActive = status?.verified || domain.status === "active";
+
+  return (
+    <div className="rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="font-medium truncate">{domain.domain}</p>
+            {isActive ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                <Check className="h-3 w-3" />
+                Active
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <AlertCircle className="h-3 w-3" />
+                Pending
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          {isActive && (
+            <a href={`https://${domain.domain}`} target="_blank" rel="noopener noreferrer">
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <ArrowUpRight className="h-4 w-4" />
+              </Button>
+            </a>
+          )}
+          {!isActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleVerify}
+              disabled={isVerifying}
+              className="h-8 w-8 p-0"
+            >
+              {isVerifying ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={isRemoving}
+            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+          >
+            {isRemoving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove custom domain?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <strong>{domain.domain}</strong>? You&apos;ll need to
+              reconfigure your DNS settings if you want to add it again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onRemove();
+                setShowDeleteConfirm(false);
+              }}
+              disabled={isRemoving}
+            >
+              {isRemoving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Remove Domain
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DNS Configuration instructions */}
+      {!isActive && status?.verification && status.verification.length > 0 && (
+        <div className="mt-4 space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Add these DNS records at your domain registrar or DNS provider:
+          </p>
+
+          {/* Step 1: Verification TXT record */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Step 1: Add verification record
+            </p>
+            <div className="space-y-3 rounded-md bg-muted/50 p-3 text-sm">
+              {status.verification.map((v, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="grid grid-cols-[70px,1fr] gap-2 items-center">
+                    <span className="text-xs text-muted-foreground">Type:</span>
+                    <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded w-fit">
+                      {v.type}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-[70px,1fr,auto] gap-2 items-center">
+                    <span className="text-xs text-muted-foreground">Name:</span>
+                    <code className="font-mono text-xs truncate">{v.domain}</code>
+                    <CopyButton text={v.domain} />
+                  </div>
+                  <div className="grid grid-cols-[70px,1fr,auto] gap-2 items-center">
+                    <span className="text-xs text-muted-foreground">Value:</span>
+                    <code className="font-mono text-xs truncate">{v.value}</code>
+                    <CopyButton text={v.value} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Step 2: Point domain to backpocket */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">
+              Step 2: Point your domain to backpocket
+            </p>
+            <div className="rounded-md bg-blue-50 dark:bg-blue-900/20 p-3 space-y-2">
+              <div className="space-y-1">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  <strong>For subdomains</strong> (e.g., backpocket.yourdomain.com):
+                </p>
+                <div className="flex items-center gap-2 bg-blue-100/50 dark:bg-blue-800/30 rounded px-2 py-1">
+                  <span className="font-mono text-xs">CNAME →</span>
+                  <code className="font-mono text-xs flex-1">{vercelDns.cname}</code>
+                  <CopyButton text={vercelDns.cname} />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs text-blue-800 dark:text-blue-300">
+                  <strong>For apex/root domains</strong> (e.g., yourdomain.com):
+                </p>
+                <div className="flex items-center gap-2 bg-blue-100/50 dark:bg-blue-800/30 rounded px-2 py-1">
+                  <span className="font-mono text-xs">A →</span>
+                  <code className="font-mono text-xs flex-1">{vercelDns.aRecord}</code>
+                  <CopyButton text={vercelDns.aRecord} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* DNS Provider help */}
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+              Need help? DNS guides for popular providers
+            </summary>
+            <div className="mt-2 space-y-1 pl-3 text-muted-foreground">
+              <p>
+                {dnsProviderList.map((provider, index) => (
+                  <span key={provider.name}>
+                    {index > 0 && " · "}
+                    <a
+                      href={provider.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {provider.name}
+                    </a>
+                  </span>
+                ))}
+              </p>
+              <p className="text-muted-foreground/70">
+                DNS changes can take up to 48 hours to propagate, but usually complete within
+                minutes.
+              </p>
+            </div>
+          </details>
+        </div>
+      )}
+
+      {/* Misconfigured warning */}
+      {status?.misconfigured && (
+        <div className="mt-3 rounded-md bg-amber-50 dark:bg-amber-900/20 p-3">
+          <p className="text-xs text-amber-800 dark:text-amber-300">
+            <AlertCircle className="inline h-3 w-3 mr-1" />
+            DNS is misconfigured. Please check your DNS settings.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Custom Domains card component
+function CustomDomainsCard() {
+  const domains = useListDomains();
+  const addDomain = useAddDomain();
+  const removeDomain = useRemoveDomain();
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removingDomain, setRemovingDomain] = useState<DomainId | null>(null);
+
+  const isLoading = domains === undefined;
+
+  const handleAddDomain = useCallback(async () => {
+    if (!newDomain.trim()) return;
+
+    setIsSubmitting(true);
+    setAddError(null);
+
+    try {
+      const result = await addDomain({ domain: newDomain.trim().toLowerCase() });
+      if (result.success) {
+        setNewDomain("");
+        setIsAdding(false);
+      } else {
+        setAddError(result.error || "Failed to add domain");
+      }
+    } catch (error) {
+      setAddError(error instanceof Error ? error.message : "Failed to add domain");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [addDomain, newDomain]);
+
+  const handleRemoveDomain = useCallback(
+    async (domainId: DomainId) => {
+      setRemovingDomain(domainId);
+      try {
+        await removeDomain({ domainId });
+      } catch (error) {
+        console.error("Failed to remove domain:", error);
+      } finally {
+        setRemovingDomain(null);
+      }
+    },
+    [removeDomain]
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Custom Domain
+        </CardTitle>
+        <CardDescription>Use your own domain for your public space</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Domain List */}
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : domains && domains.length > 0 ? (
+          <div className="space-y-3">
+            {domains.map((domain) => (
+              <DomainItem
+                key={domain.id}
+                domain={domain as DomainData}
+                onRemove={() => handleRemoveDomain(domain.id as DomainId)}
+                isRemoving={removingDomain === domain.id}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Add Domain Form */}
+        {isAdding ? (
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="space-y-2">
+              <Label htmlFor="newDomain">Domain</Label>
+              <Input
+                id="newDomain"
+                placeholder="yourdomain.com"
+                value={newDomain}
+                onChange={(e) => {
+                  setNewDomain(e.target.value);
+                  setAddError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddDomain();
+                  }
+                }}
+              />
+              {addError && <p className="text-xs text-destructive">{addError}</p>}
+              <p className="text-xs text-muted-foreground">
+                Enter your domain without http:// or https://
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAddDomain} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Domain
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewDomain("");
+                  setAddError(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" className="w-full" onClick={() => setIsAdding(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Custom Domain
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // Export data card component
 function ExportDataCard() {
   const exportData = useExportAllData();
@@ -841,9 +1274,7 @@ function ExportDataCard() {
                 "No data to export"
               )}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Includes all metadata and relationships
-            </p>
+            <p className="text-xs text-muted-foreground">Includes all metadata and relationships</p>
           </div>
           <Button
             variant="outline"

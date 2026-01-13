@@ -2,7 +2,7 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
 
 /**
  * Hook to check if the user is authenticated.
@@ -236,4 +236,31 @@ export function useGetPublicSaveSnapshot(
     api.snapshots.getPublicSaveSnapshot,
     spaceId && saveId ? { spaceId, saveId, includeContent } : "skip"
   );
+}
+
+// ============================================================================
+// DOMAINS HOOKS
+// ============================================================================
+
+export type DomainId = Id<"domainMappings">;
+
+export function useListDomains() {
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.spaces.listDomains, isAuthenticated ? {} : "skip");
+}
+
+export function useAddDomain() {
+  return useAction(api.spaces.addDomain);
+}
+
+export function useRemoveDomain() {
+  return useAction(api.spaces.removeDomain);
+}
+
+export function useVerifyDomain() {
+  return useAction(api.spaces.verifyDomain);
+}
+
+export function useGetDomainStatus() {
+  return useAction(api.spaces.getDomainStatus);
 }

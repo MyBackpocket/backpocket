@@ -1,8 +1,9 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { api } from "./_generated/api";
+import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser, getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
 import { isValidSlug, RESERVED_SLUGS } from "./lib/validators";
-import { publicLayoutValidator, visibilityValidator } from "./schema";
+import { domainStatusValidator, publicLayoutValidator, visibilityValidator } from "./schema";
 
 // Get the user's space
 export const getMySpace = query({
@@ -95,7 +96,8 @@ export const updateSettings = mutation({
     if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
     if (args.visibility !== undefined) updates.visibility = args.visibility;
     if (args.publicLayout !== undefined) updates.publicLayout = args.publicLayout;
-    if (args.defaultSaveVisibility !== undefined) updates.defaultSaveVisibility = args.defaultSaveVisibility;
+    if (args.defaultSaveVisibility !== undefined)
+      updates.defaultSaveVisibility = args.defaultSaveVisibility;
 
     await ctx.db.patch(space._id, updates);
 
@@ -320,12 +322,18 @@ export const exportAllData = query({
     // Build lookup maps for relationships
     const tagIdsBySaveId = new Map<string, string[]>();
     saveIds.forEach((saveId, idx) => {
-      tagIdsBySaveId.set(saveId, allSaveTags[idx].map((st) => st.tagId));
+      tagIdsBySaveId.set(
+        saveId,
+        allSaveTags[idx].map((st) => st.tagId)
+      );
     });
 
     const collectionIdsBySaveId = new Map<string, string[]>();
     saveIds.forEach((saveId, idx) => {
-      collectionIdsBySaveId.set(saveId, allSaveCollections[idx].map((sc) => sc.collectionId));
+      collectionIdsBySaveId.set(
+        saveId,
+        allSaveCollections[idx].map((sc) => sc.collectionId)
+      );
     });
 
     const defaultTagIdsByCollectionId = new Map<string, string[]>();
@@ -384,5 +392,519 @@ export const exportAllData = query({
         collections: collections.length,
       },
     };
+  },
+});
+
+// ============================================================================
+// DOMAIN MANAGEMENT
+// ============================================================================
+
+/**
+ * List all custom domains for the user's space
+ */
+export const listDomains = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return [];
+    }
+
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      return [];
+    }
+
+    const domains = await ctx.db
+      .query("domainMappings")
+      .withIndex("by_spaceId", (q) => q.eq("spaceId", space._id))
+      .collect();
+
+    return domains.map((d) => ({
+      id: d._id,
+      domain: d.domain,
+      spaceId: d.spaceId,
+      status: d.status,
+      verificationToken: d.verificationToken ?? null,
+      createdAt: d._creationTime,
+      updatedAt: d._creationTime,
+    }));
+  },
+});
+
+/**
+ * Get a specific domain by ID (for internal use by actions)
+ */
+export const getDomainById = query({
+  args: {
+    domainId: v.id("domainMappings"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      return null;
+    }
+
+    const domain = await ctx.db.get(args.domainId);
+    if (!domain || domain.spaceId !== space._id) {
+      return null;
+    }
+
+    return {
+      id: domain._id,
+      domain: domain.domain,
+      spaceId: domain.spaceId,
+      status: domain.status,
+      verificationToken: domain.verificationToken ?? null,
+    };
+  },
+});
+
+/**
+ * Internal mutation to add a domain mapping to the database.
+ * Called by the addDomain action after Vercel API succeeds.
+ */
+export const addDomainMapping = mutation({
+  args: {
+    domain: v.string(),
+    status: domainStatusValidator,
+    verificationToken: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx);
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      throw new ConvexError("Space not found");
+    }
+
+    // Check if domain already exists
+    const existing = await ctx.db
+      .query("domainMappings")
+      .withIndex("by_domain", (q) => q.eq("domain", args.domain))
+      .first();
+
+    if (existing) {
+      throw new ConvexError("This domain is already registered");
+    }
+
+    const id = await ctx.db.insert("domainMappings", {
+      domain: args.domain,
+      spaceId: space._id,
+      status: args.status,
+      verificationToken: args.verificationToken,
+    });
+
+    const mapping = await ctx.db.get(id);
+    return {
+      id: mapping!._id,
+      domain: mapping!.domain,
+      spaceId: mapping!.spaceId,
+      status: mapping!.status,
+      verificationToken: mapping!.verificationToken ?? null,
+      createdAt: mapping!._creationTime,
+      updatedAt: mapping!._creationTime,
+    };
+  },
+});
+
+/**
+ * Internal mutation to update a domain mapping status.
+ * Called by actions after Vercel API operations.
+ */
+export const updateDomainStatus = mutation({
+  args: {
+    domainId: v.id("domainMappings"),
+    status: domainStatusValidator,
+  },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx);
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      throw new ConvexError("Space not found");
+    }
+
+    const domain = await ctx.db.get(args.domainId);
+    if (!domain || domain.spaceId !== space._id) {
+      throw new ConvexError("Domain not found");
+    }
+
+    await ctx.db.patch(args.domainId, { status: args.status });
+
+    const updated = await ctx.db.get(args.domainId);
+    return {
+      id: updated!._id,
+      domain: updated!.domain,
+      spaceId: updated!.spaceId,
+      status: updated!.status,
+      verificationToken: updated!.verificationToken ?? null,
+      createdAt: updated!._creationTime,
+      updatedAt: Date.now(),
+    };
+  },
+});
+
+/**
+ * Internal mutation to remove a domain mapping from the database.
+ * Called by the removeDomain action after Vercel API succeeds.
+ */
+export const deleteDomainMapping = mutation({
+  args: {
+    domainId: v.id("domainMappings"),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireAuth(ctx);
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      throw new ConvexError("Space not found");
+    }
+
+    const domain = await ctx.db.get(args.domainId);
+    if (!domain || domain.spaceId !== space._id) {
+      throw new ConvexError("Domain not found");
+    }
+
+    await ctx.db.delete(args.domainId);
+    return { success: true };
+  },
+});
+
+/**
+ * Add a custom domain to the user's space.
+ * This action calls the Vercel API to add the domain, then stores it in the database.
+ */
+export const addDomain = action({
+  args: {
+    domain: v.string(),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    domain?: {
+      id: string;
+      domain: string;
+      status: string;
+      verificationRequired: boolean;
+      verification?: Array<{ type: string; domain: string; value: string }>;
+    };
+    error?: string;
+  }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Normalize domain
+    const domain = args.domain.toLowerCase().trim();
+
+    // Basic domain validation
+    const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+    if (!domainRegex.test(domain)) {
+      return { success: false, error: "Invalid domain format" };
+    }
+
+    // Call the Next.js API route to add domain to Vercel
+    const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.CONVEX_SITE_URL;
+    if (!apiBaseUrl) {
+      return { success: false, error: "API URL not configured" };
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/domains`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+        body: JSON.stringify({ action: "add", domain }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        return { success: false, error: result.error || "Failed to add domain to Vercel" };
+      }
+
+      // Store in database
+      const status = result.verificationRequired ? "pending_verification" : "active";
+      const mapping = await ctx.runMutation(api.spaces.addDomainMapping, {
+        domain,
+        status: status as "pending_verification" | "active",
+        verificationToken: result.verification?.[0]?.value,
+      });
+
+      return {
+        success: true,
+        domain: {
+          id: mapping.id,
+          domain: mapping.domain,
+          status: mapping.status,
+          verificationRequired: result.verificationRequired || false,
+          verification: result.verification,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to add domain:", error);
+      return { success: false, error: "Failed to add domain" };
+    }
+  },
+});
+
+/**
+ * Remove a custom domain from the user's space.
+ * This action removes the domain from Vercel, then deletes it from the database.
+ */
+export const removeDomain = action({
+  args: {
+    domainId: v.id("domainMappings"),
+  },
+  handler: async (ctx, args): Promise<{ success: boolean; error?: string }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Get the domain mapping first
+    // We need to query it via a query, but actions can't run queries directly
+    // So we'll use the mutation which already validates ownership
+    const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.CONVEX_SITE_URL;
+    if (!apiBaseUrl) {
+      return { success: false, error: "API URL not configured" };
+    }
+
+    try {
+      // First, get the domain info by calling a helper endpoint
+      const infoResponse = await fetch(`${apiBaseUrl}/api/domains?domainId=${args.domainId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+      });
+
+      if (!infoResponse.ok) {
+        // Domain might not exist in Vercel, just remove from DB
+        await ctx.runMutation(api.spaces.deleteDomainMapping, { domainId: args.domainId });
+        return { success: true };
+      }
+
+      const domainInfo = await infoResponse.json();
+
+      // Remove from Vercel
+      const response = await fetch(`${apiBaseUrl}/api/domains`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+        body: JSON.stringify({ action: "remove", domain: domainInfo.domain }),
+      });
+
+      const result = await response.json();
+
+      // Even if Vercel removal fails, remove from our database
+      // (domain might have been removed manually from Vercel)
+      await ctx.runMutation(api.spaces.deleteDomainMapping, { domainId: args.domainId });
+
+      if (!result.success) {
+        console.warn("Domain removed from database but Vercel removal failed:", result.error);
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to remove domain:", error);
+      // Try to remove from database anyway
+      try {
+        await ctx.runMutation(api.spaces.deleteDomainMapping, { domainId: args.domainId });
+        return { success: true };
+      } catch {
+        return { success: false, error: "Failed to remove domain" };
+      }
+    }
+  },
+});
+
+/**
+ * Verify a custom domain.
+ * This action triggers domain verification on Vercel.
+ */
+export const verifyDomain = action({
+  args: {
+    domainId: v.id("domainMappings"),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    verified: boolean;
+    status?: string;
+    verification?: Array<{ type: string; domain: string; value: string }>;
+    error?: string;
+  }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { success: false, verified: false, error: "Not authenticated" };
+    }
+
+    const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.CONVEX_SITE_URL;
+    if (!apiBaseUrl) {
+      return { success: false, verified: false, error: "API URL not configured" };
+    }
+
+    try {
+      // Get domain info
+      const infoResponse = await fetch(`${apiBaseUrl}/api/domains?domainId=${args.domainId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+      });
+
+      if (!infoResponse.ok) {
+        return { success: false, verified: false, error: "Domain not found" };
+      }
+
+      const domainInfo = await infoResponse.json();
+
+      // Call verify endpoint
+      const response = await fetch(`${apiBaseUrl}/api/domains`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+        },
+        body: JSON.stringify({ action: "verify", domain: domainInfo.domain }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        return {
+          success: false,
+          verified: false,
+          verification: result.verification,
+          error: result.error,
+        };
+      }
+
+      // Update status in database
+      const newStatus = result.verified ? "active" : "pending_verification";
+      await ctx.runMutation(api.spaces.updateDomainStatus, {
+        domainId: args.domainId,
+        status: newStatus as "active" | "pending_verification",
+      });
+
+      return {
+        success: true,
+        verified: result.verified,
+        status: newStatus,
+        verification: result.verification,
+      };
+    } catch (error) {
+      console.error("Failed to verify domain:", error);
+      return { success: false, verified: false, error: "Failed to verify domain" };
+    }
+  },
+});
+
+/**
+ * Get detailed status for a specific domain
+ */
+export const getDomainStatus = action({
+  args: {
+    domainId: v.id("domainMappings"),
+  },
+  handler: async (
+    ctx,
+    args
+  ): Promise<{
+    success: boolean;
+    data?: {
+      id: string;
+      domain: string;
+      status: string;
+      verified: boolean;
+      misconfigured: boolean;
+      verification?: Array<{ type: string; domain: string; value: string }>;
+    };
+    error?: string;
+  }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Look up the domain from our database first
+    const domainMapping = await ctx.runQuery(api.spaces.getDomainById, {
+      domainId: args.domainId,
+    });
+
+    if (!domainMapping) {
+      return { success: false, error: "Domain not found" };
+    }
+
+    const apiBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.CONVEX_SITE_URL;
+    if (!apiBaseUrl) {
+      return { success: false, error: "API URL not configured" };
+    }
+
+    try {
+      // Ask the API route for Vercel status using the domain name
+      const response = await fetch(
+        `${apiBaseUrl}/api/domains?domain=${encodeURIComponent(domainMapping.domain)}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${process.env.INTERNAL_API_SECRET}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        // Return basic info from our database even if Vercel lookup fails
+        return {
+          success: true,
+          data: {
+            id: args.domainId,
+            domain: domainMapping.domain,
+            status: domainMapping.status,
+            verified: domainMapping.status === "active",
+            misconfigured: false,
+          },
+        };
+      }
+
+      const vercelStatus = await response.json();
+      return {
+        success: true,
+        data: {
+          id: args.domainId,
+          domain: domainMapping.domain,
+          status: domainMapping.status,
+          verified: vercelStatus.verified ?? domainMapping.status === "active",
+          misconfigured: vercelStatus.misconfigured ?? false,
+          verification: vercelStatus.verification,
+        },
+      };
+    } catch (error) {
+      console.error("Failed to get domain status from Vercel:", error);
+      // Return basic info from our database
+      return {
+        success: true,
+        data: {
+          id: args.domainId,
+          domain: domainMapping.domain,
+          status: domainMapping.status,
+          verified: domainMapping.status === "active",
+          misconfigured: false,
+        },
+      };
+    }
   },
 });
