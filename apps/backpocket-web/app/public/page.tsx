@@ -15,7 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { LogoIcon } from "@/components/logo";
 import { ThemeSwitcherCompact } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -24,19 +24,24 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VisitorCounter } from "@/components/visitor-counter";
 import { MARKETING_URL } from "@/lib/constants/links";
+import {
+  useListPublicCollections,
+  useListPublicSaves,
+  useListPublicTags,
+  useResolveSpaceBySlug,
+} from "@/lib/convex";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { trpc } from "@/lib/trpc/client";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
-// Serialized save type (dates come as strings from tRPC)
-type SerializedPublicSave = {
+// Serialized save type
+type PublicSave = {
   id: string;
   url: string;
   title: string | null;
   description: string | null;
   siteName: string | null;
   imageUrl: string | null;
-  savedAt: string | Date;
+  savedAt: number;
   tags?: string[];
 };
 
@@ -97,48 +102,38 @@ function PublicSpaceContent() {
   }, []);
 
   // Resolve space by slug
-  const { data: space, isLoading: spaceLoading } = trpc.public.resolveSpaceBySlug.useQuery(
-    { slug: spaceSlug || "" },
-    { enabled: !!spaceSlug }
-  );
+  // Pass undefined (not the string "skip") when spaceSlug is null to properly skip the query
+  const space = useResolveSpaceBySlug(spaceSlug ?? undefined);
+  // Loading if we haven't determined the slug yet OR if we're fetching the space
+  const spaceLoading = spaceSlug === null || space === undefined;
 
   // Fetch saves with filters
-  const {
-    data: savesData,
-    isLoading: savesLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = trpc.public.listPublicSaves.useInfiniteQuery(
-    {
-      spaceId: space?.id || "",
+  const savesInput = useMemo(() => {
+    if (!space?.id) return undefined;
+    return {
+      spaceId: space.id as any,
       query: debouncedSearch || undefined,
       tagName: urlTag || undefined,
-      collectionId: urlCollection || undefined,
+      collectionId: (urlCollection || undefined) as any,
       limit: 20,
-    },
-    {
-      enabled: !!space?.id,
-      getNextPageParam: (lastPage) => lastPage.nextCursor,
-    }
-  );
+    };
+  }, [space?.id, debouncedSearch, urlTag, urlCollection]);
+
+  const savesData = useListPublicSaves(savesInput);
+  const savesLoading = savesInput !== undefined && savesData === undefined;
+  const saves = savesData?.items ?? [];
+  const hasNextPage = !!savesData?.nextCursor;
 
   // Fetch tags and collections for filters
-  const { data: tags, isLoading: tagsLoading } = trpc.public.listPublicTags.useQuery(
-    { spaceId: space?.id || "" },
-    { enabled: !!space?.id }
-  );
+  const spaceIdForFilters = space?.id as any;
 
-  const { data: collections, isLoading: collectionsLoading } =
-    trpc.public.listPublicCollections.useQuery(
-      { spaceId: space?.id || "" },
-      { enabled: !!space?.id }
-    );
+  const tags = useListPublicTags(spaceIdForFilters);
+  const tagsLoading = spaceIdForFilters && tags === undefined;
+
+  const collections = useListPublicCollections(spaceIdForFilters);
+  const collectionsLoading = spaceIdForFilters && collections === undefined;
 
   const filtersLoading = tagsLoading || collectionsLoading;
-
-  // Flatten paginated saves
-  const saves = savesData?.pages.flatMap((page) => page.items) || [];
 
   // Update URL when filters change
   const updateFilters = useCallback(
@@ -224,7 +219,7 @@ function PublicSpaceContent() {
 
             {/* Actions */}
             <div className="flex items-center gap-3">
-              <VisitorCounter spaceId={space.id} initialCount={space.visitCount} />
+              <VisitorCounter spaceId={space.id} initialCount={space.visitCount ?? 0} />
               <Link
                 href="/rss.xml"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-rust transition-colors"
@@ -405,15 +400,12 @@ function PublicSpaceContent() {
                   </div>
                 )}
 
-                {/* Load more */}
+                {/* Load more - Note: Convex doesn't have infinite query by default, 
+                    would need custom cursor handling for pagination */}
                 {hasNextPage && (
                   <div className="mt-8 text-center">
-                    <Button
-                      variant="outline"
-                      onClick={() => fetchNextPage()}
-                      disabled={isFetchingNextPage}
-                    >
-                      {isFetchingNextPage ? "Loading..." : "Load more"}
+                    <Button variant="outline" disabled>
+                      Load more (pagination coming soon)
                     </Button>
                   </div>
                 )}
@@ -528,7 +520,7 @@ function FilterSidebar({
 }
 
 // Save card components
-function SaveCardGrid({ save, index }: { save: SerializedPublicSave; index: number }) {
+function SaveCardGrid({ save, index }: { save: PublicSave; index: number }) {
   return (
     <Link href={`/s/${save.id}`} className="group block">
       <article
@@ -559,7 +551,7 @@ function SaveCardGrid({ save, index }: { save: SerializedPublicSave; index: numb
           <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
             <span>{getDomainFromUrl(save.url)}</span>
             <span>•</span>
-            <span>{formatDate(save.savedAt)}</span>
+            <span>{formatDate(new Date(save.savedAt))}</span>
           </div>
           {save.tags && save.tags.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1">
@@ -579,7 +571,7 @@ function SaveCardGrid({ save, index }: { save: SerializedPublicSave; index: numb
   );
 }
 
-function SaveCardList({ save, index }: { save: SerializedPublicSave; index: number }) {
+function SaveCardList({ save, index }: { save: PublicSave; index: number }) {
   return (
     <Link href={`/s/${save.id}`} className="group block">
       <article
@@ -605,7 +597,7 @@ function SaveCardList({ save, index }: { save: SerializedPublicSave; index: numb
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {formatDate(save.savedAt)}
+              {formatDate(new Date(save.savedAt))}
             </span>
           </div>
           {save.tags && save.tags.length > 0 && (

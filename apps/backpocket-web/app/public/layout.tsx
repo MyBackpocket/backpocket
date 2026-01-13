@@ -3,7 +3,9 @@ import { headers } from "next/headers";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import { extractCustomDomain, isCustomDomainSlug } from "@/lib/constants/public-space";
-import { createCaller } from "@/lib/trpc/caller";
+
+// Force dynamic rendering - this route depends on runtime headers (subdomain/custom domain)
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
@@ -16,15 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  const caller = await createCaller();
-  const space = await caller.public.resolveSpaceBySlug({ slug: spaceSlug });
-
-  if (!space) {
-    return {
-      title: "Space not found | backpocket",
-      description: "This space doesn't exist or is private.",
-    };
-  }
+  // For metadata, we use a simple fallback since we can't easily fetch from Convex server-side
+  // The actual space info will be loaded client-side
+  const displaySlug = isCustomDomainSlug(spaceSlug) ? extractCustomDomain(spaceSlug) : spaceSlug;
 
   // Determine base URL - use custom domain if present, otherwise subdomain
   let baseUrl: string;
@@ -32,22 +28,22 @@ export async function generateMetadata(): Promise<Metadata> {
     const customDomain = extractCustomDomain(spaceSlug);
     baseUrl = `https://${customDomain}`;
   } else {
-    baseUrl = `https://${space.slug}.${ROOT_DOMAIN}`;
+    baseUrl = `https://${spaceSlug}.${ROOT_DOMAIN}`;
   }
 
   return {
-    title: `${space.name} | backpocket`,
-    description: space.bio || "A public collection",
+    title: `${displaySlug} | backpocket`,
+    description: "A public collection",
     openGraph: {
-      title: space.name,
-      description: space.bio || "A public collection",
+      title: displaySlug,
+      description: "A public collection",
       type: "website",
       url: baseUrl,
     },
     twitter: {
       card: "summary_large_image",
-      title: space.name,
-      description: space.bio || "A public collection",
+      title: displaySlug,
+      description: "A public collection",
     },
     alternates: {
       types: {

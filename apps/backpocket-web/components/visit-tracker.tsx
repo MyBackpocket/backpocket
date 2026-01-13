@@ -1,8 +1,9 @@
 "use client";
 
+import type { Id } from "@convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 import { getVisitedSessionKey } from "@/lib/constants/storage";
-import { trpc } from "@/lib/trpc/client";
+import { useRegisterVisit } from "@/lib/convex";
 
 interface VisitTrackerProps {
   spaceId: string;
@@ -16,7 +17,7 @@ interface VisitTrackerProps {
  */
 export function VisitTracker({ spaceId, onVisitRegistered }: VisitTrackerProps) {
   const hasTracked = useRef(false);
-  const registerVisit = trpc.public.registerVisit.useMutation();
+  const registerVisit = useRegisterVisit();
 
   useEffect(() => {
     // Only track once per component lifecycle
@@ -32,29 +33,31 @@ export function VisitTracker({ spaceId, onVisitRegistered }: VisitTrackerProps) 
     const path = window.location.pathname;
 
     // Register the visit
-    registerVisit.mutate(
-      { spaceId, path },
-      {
-        onSuccess: (data) => {
-          // Mark as visited in this session
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem(sessionKey, "1");
-          }
-          // Notify parent of new visit count for live UI updates
-          if (onVisitRegistered && data.visitCount !== undefined) {
-            onVisitRegistered(data.visitCount);
-          }
-        },
-        onError: (error) => {
-          // Surface failures so they're visible in DevTools console
-          console.error("[VisitTracker] Failed to register visit:", {
-            spaceId,
-            path,
-            error: error.message,
-          });
-        },
+    const trackVisit = async () => {
+      try {
+        const result = await registerVisit({
+          spaceId: spaceId as Id<"spaces">,
+          path,
+        });
+        // Mark as visited in this session
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(sessionKey, "1");
+        }
+        // Notify parent of new visit count for live UI updates
+        if (onVisitRegistered && result.visitCount !== undefined) {
+          onVisitRegistered(result.visitCount);
+        }
+      } catch (error) {
+        // Surface failures so they're visible in DevTools console
+        console.error("[VisitTracker] Failed to register visit:", {
+          spaceId,
+          path,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
       }
-    );
+    };
+
+    trackVisit();
   }, [spaceId, registerVisit, onVisitRegistered]);
 
   return null;

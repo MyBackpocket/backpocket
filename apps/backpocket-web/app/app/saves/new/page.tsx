@@ -18,7 +18,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { routes } from "@/lib/constants/routes";
-import { trpc } from "@/lib/trpc/client";
+import { useCreateSave, useGetMySpace, useListCollections } from "@/lib/convex";
 import type { SaveVisibility } from "@/lib/types";
 
 const VISIBILITY_OPTIONS = [
@@ -65,8 +65,8 @@ function NewSaveForm() {
   const searchParams = useSearchParams();
 
   // Get user's default save visibility from settings
-  const { data: space } = trpc.space.getMySpace.useQuery();
-  const defaultVisibility = space?.defaultSaveVisibility ?? "private";
+  const space = useGetMySpace();
+  const defaultVisibility = (space?.defaultSaveVisibility as SaveVisibility) ?? "private";
 
   // Initialize from URL params (from QuickAdd "More options")
   const [url, setUrl] = useState(searchParams.get("url") || "");
@@ -76,11 +76,12 @@ function NewSaveForm() {
   );
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   // Use the user's default visibility if not explicitly set
   const effectiveVisibility = visibility ?? defaultVisibility;
 
-  const { data: collections } = trpc.space.listCollections.useQuery();
+  const collections = useListCollections({});
   const [selectedCollection, setSelectedCollection] = useState<string>(
     searchParams.get("collection") || ""
   );
@@ -89,7 +90,7 @@ function NewSaveForm() {
   const [duplicateSave, setDuplicateSave] = useState<DuplicateSaveInfo | null>(null);
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
-  const utils = trpc.useUtils();
+  const createSave = useCreateSave();
 
   // Update state if search params change
   useEffect(() => {
@@ -104,45 +105,42 @@ function NewSaveForm() {
     if (collectionParam) setSelectedCollection(collectionParam);
   }, [searchParams]);
 
-  const createSave = trpc.space.createSave.useMutation({
-    onSuccess: () => {
-      // Invalidate caches so the UI updates immediately
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-      router.push("/app/saves");
-    },
-    onError: (error) => {
-      // Check if this is a duplicate error (cause is added by our error formatter)
-      const data = error.data as
-        | { cause?: { type?: string; existingSave?: DuplicateSaveInfo } }
-        | undefined;
-      if (data?.cause?.type === "DUPLICATE_SAVE" && data.cause.existingSave) {
-        setDuplicateSave(data.cause.existingSave);
-        setShowDuplicateModal(true);
-      }
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!url) return;
 
-    createSave.mutate({
-      url,
-      title: title || undefined,
-      visibility: effectiveVisibility,
-      collectionIds:
-        selectedCollection && selectedCollection !== "none" ? [selectedCollection] : undefined,
-      tagNames: tags
-        ? tags
-            .split(",")
-            .map((t) => t.trim())
-            .filter(Boolean)
-        : undefined,
-      note: note || undefined,
-    });
+    setIsSaving(true);
+    try {
+      await createSave({
+        url,
+        title: title || undefined,
+        visibility: effectiveVisibility,
+        collectionIds:
+          selectedCollection && selectedCollection !== "none"
+            ? [selectedCollection as any]
+            : undefined,
+        tagNames: tags
+          ? tags
+              .split(",")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : undefined,
+        note: note || undefined,
+      });
+      router.push("/app/saves");
+    } catch (error: any) {
+      // Check if this is a duplicate error
+      if (error?.message?.includes("already have this link saved") || error?.data?.existingSave) {
+        const existingSave = error?.data?.existingSave;
+        if (existingSave) {
+          setDuplicateSave(existingSave);
+          setShowDuplicateModal(true);
+        }
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const selectedVisibility = VISIBILITY_OPTIONS.find((v) => v.value === effectiveVisibility);
@@ -320,8 +318,8 @@ function NewSaveForm() {
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-4 border-t">
-              <Button type="submit" disabled={!url || createSave.isPending} className="flex-1 h-11">
-                {createSave.isPending ? (
+              <Button type="submit" disabled={!url || isSaving} className="flex-1 h-11">
+                {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...

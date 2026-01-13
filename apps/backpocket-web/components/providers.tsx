@@ -1,29 +1,11 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink } from "@trpc/client";
 import { ThemeProvider, useTheme } from "next-themes";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { ConvexClientProvider } from "@/components/convex-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { THEME_COOKIE_NAME } from "@/lib/constants/storage";
-import { TRPC_ENDPOINT } from "@/lib/constants/trpc";
-import { getBaseUrl as getBaseUrlHelper } from "@/lib/constants/urls";
-import { trpc } from "@/lib/trpc/client";
-
-// Lazy load devtools only in development to reduce production bundle size
-const ReactQueryDevtools = lazy(() =>
-  import("@tanstack/react-query-devtools").then((mod) => ({
-    default: mod.ReactQueryDevtools,
-  }))
-);
-
-function getBaseUrl() {
-  return getBaseUrlHelper({
-    isBrowser: typeof window !== "undefined",
-    vercelUrl: process.env.VERCEL_URL,
-  });
-}
 
 // Get the root domain for cookie (e.g., ".backpocket.my" for cross-subdomain)
 function getCookieDomain(): string {
@@ -84,46 +66,12 @@ function ThemeCookieSync() {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            // Data stays fresh for 30 seconds - won't refetch during this time
-            staleTime: 30 * 1000,
-            // Keep unused data in cache for 5 minutes
-            gcTime: 5 * 60 * 1000,
-            // Don't refetch on window focus (reduces unnecessary requests)
-            refetchOnWindowFocus: false,
-            // Retry failed requests once
-            retry: 1,
-          },
-        },
-      })
-  );
-  const [trpcClient] = useState(() =>
-    trpc.createClient({
-      links: [
-        httpBatchLink({
-          url: `${getBaseUrl()}${TRPC_ENDPOINT}`,
-        }),
-      ],
-    })
-  );
-
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <ThemeCookieSync />
-      <trpc.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>{children}</TooltipProvider>
-          {process.env.NODE_ENV === "development" && (
-            <Suspense fallback={null}>
-              <ReactQueryDevtools initialIsOpen={false} />
-            </Suspense>
-          )}
-        </QueryClientProvider>
-      </trpc.Provider>
+      <ConvexClientProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+      </ConvexClientProvider>
     </ThemeProvider>
   );
 }

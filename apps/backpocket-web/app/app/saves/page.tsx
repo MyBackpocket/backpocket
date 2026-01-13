@@ -1,6 +1,5 @@
 "use client";
 
-import { keepPreviousData } from "@tanstack/react-query";
 import {
   Archive,
   Bookmark,
@@ -25,7 +24,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { PrefetchLink } from "@/components/prefetch-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -57,9 +57,24 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
+import {
+  useBulkDeleteSaves,
+  useDeleteSave,
+  useListSaves,
+  useListTags,
+  useToggleArchive,
+  useToggleFavorite,
+} from "@/lib/convex";
+import {
+  cacheKey,
+  clearPaginatedCache,
+  getPaginatedCache,
+  setPaginatedCache,
+  useCachedQuery,
+} from "@/lib/hooks/use-cached-query";
 import { useDebounce } from "@/lib/hooks/use-debounce";
-import { trpc } from "@/lib/trpc/client";
-import type { APISave, SaveVisibility } from "@/lib/types";
+import { usePrefetchTargets } from "@/lib/hooks/use-prefetch";
+import type { SaveVisibility } from "@/lib/types";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
 type ViewMode = "grid" | "list";
@@ -74,6 +89,20 @@ const FILTER_OPTIONS: { value: FilterOption; label: string; icon: typeof Star }[
   { value: "private", label: "Private", icon: EyeOff },
 ];
 
+interface SaveItem {
+  id: string;
+  url: string;
+  title: string | null;
+  description: string | null;
+  imageUrl: string | null;
+  visibility: "public" | "private";
+  isFavorite: boolean;
+  isArchived: boolean;
+  savedAt: string | number;
+  siteName: string | null;
+  tags?: Array<{ id: string; name: string }>;
+}
+
 function SaveListItem({
   save,
   isSelected,
@@ -82,14 +111,16 @@ function SaveListItem({
   onToggleFavorite,
   onToggleArchive,
   onDelete,
+  onPrefetch,
 }: {
-  save: APISave;
+  save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: () => void;
   onToggleFavorite: () => void;
   onToggleArchive: () => void;
   onDelete: () => void;
+  onPrefetch?: () => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -156,12 +187,13 @@ function SaveListItem({
               <VisIcon className="h-3 w-3" />
               {vis.label}
             </Badge>
-            <Link
+            <PrefetchLink
               href={`/app/saves/${save.id}`}
+              onPrefetch={onPrefetch}
               className="font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-1"
             >
               {save.title || save.url}
-            </Link>
+            </PrefetchLink>
           </div>
 
           {save.description && (
@@ -177,7 +209,7 @@ function SaveListItem({
           </span>
           <span className="flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />
-            {formatDate(save.savedAt)}
+            {formatDate(typeof save.savedAt === "number" ? new Date(save.savedAt) : save.savedAt)}
           </span>
           {save.tags && save.tags.length > 0 && (
             <div className="flex items-center gap-1.5">
@@ -267,12 +299,14 @@ function SaveGridCard({
   isSelectionMode,
   onSelect,
   onToggleFavorite,
+  onPrefetch,
 }: {
-  save: APISave;
+  save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: () => void;
   onToggleFavorite: () => void;
+  onPrefetch?: () => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -349,12 +383,13 @@ function SaveGridCard({
       </a>
 
       <div className="p-4">
-        <Link
+        <PrefetchLink
           href={`/app/saves/${save.id}`}
+          onPrefetch={onPrefetch}
           className="block font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-2"
         >
           {save.title || save.url}
-        </Link>
+        </PrefetchLink>
 
         {save.description && (
           <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
@@ -421,7 +456,21 @@ export default function SavesPage() {
   const [tagComboboxOpen, setTagComboboxOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false);
-  const [singleDeleteTarget, setSingleDeleteTarget] = useState<APISave | null>(null);
+  const [singleDeleteTarget, setSingleDeleteTarget] = useState<SaveItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
+  // Pagination state - items restored from cache for instant display, but always fetch fresh
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
+  const [allItems, setAllItems] = useState<SaveItem[]>(() => {
+    const cached = getPaginatedCache<SaveItem>("saves:paginated");
+    return cached?.items ?? [];
+  });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Prefetch hook for warming up save detail data on hover
+  const prefetch = usePrefetchTargets();
+  const prefetchSave = useCallback((saveId: string) => () => prefetch.save(saveId), [prefetch]);
 
   // Debounce search to avoid firing on every keystroke (300ms delay)
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -443,10 +492,22 @@ export default function SavesPage() {
       : debouncedFilters.has("private")
         ? ("private" as SaveVisibility)
         : undefined,
-    tagId: tagFilter || undefined,
-    // Reduced from 50 to 20 for faster initial loads
-    limit: 20,
+    tagId: (tagFilter as any) || undefined,
+    cursor,
+    limit: 6,
   };
+
+  // Reset pagination when filters change
+  const filterKey = `${debouncedSearch}|${debouncedFiltersArray}|${tagFilter}`;
+  const prevFilterKey = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKey.current !== filterKey) {
+      setCursor(undefined);
+      setAllItems([]);
+      clearPaginatedCache("saves:paginated");
+      prevFilterKey.current = filterKey;
+    }
+  }, [filterKey]);
 
   // Toggle a filter option
   const toggleFilter = (option: FilterOption) => {
@@ -474,50 +535,91 @@ export default function SavesPage() {
     return `${activeFilters.size} filters`;
   };
 
-  const { data, isLoading, isFetching } = trpc.space.listSaves.useQuery(queryOptions, {
-    // Keep previous data visible while fetching new data (avoids UI thrash)
-    placeholderData: keepPreviousData,
-  });
-  const { data: allTags, isLoading: isTagsLoading } = trpc.space.listTags.useQuery();
-  const utils = trpc.useUtils();
+  // Convex queries with stale-while-revalidate caching
+  const rawData = useListSaves(queryOptions);
+  const rawTags = useListTags();
+
+  // Cache to eliminate loading flash on back-navigation
+  const data = useCachedQuery(cacheKey("saves:list", queryOptions), rawData);
+  const allTags = useCachedQuery("saves:tags", rawTags);
+
+  // Only show loading if no cached data available (first page only)
+  const isLoading = data === undefined && cursor === undefined;
+  const isTagsLoading = allTags === undefined;
+
+  // Accumulate items when data arrives
+  const lastProcessedData = useRef<typeof data | undefined>(undefined);
+  useEffect(() => {
+    if (!data || data === lastProcessedData.current) return;
+    lastProcessedData.current = data;
+
+    setAllItems((prev) => {
+      if (cursor === undefined) {
+        // First page fetch
+        if (prev.length > 0) {
+          // We have cached items - check if fresh data matches the first page
+          const freshIds = new Set((data.items as SaveItem[]).map((s) => s.id));
+          const firstPageOfCache = prev.slice(0, data.items.length);
+          const cacheIsValid = firstPageOfCache.every((s) => freshIds.has(s.id));
+
+          if (cacheIsValid) {
+            // Cache is still valid - keep all accumulated items, don't update cache
+            return prev;
+          }
+          // Data changed - replace with fresh page 1
+          const newItems = data.items as SaveItem[];
+          setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+          return newItems;
+        }
+        // No cache - just use fresh data
+        const newItems = data.items as SaveItem[];
+        setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+        return newItems;
+      }
+
+      // Load more - append avoiding duplicates
+      const existingIds = new Set(prev.map((s) => s.id));
+      const additions = (data.items as SaveItem[]).filter((s) => !existingIds.has(s.id));
+      const newItems = [...prev, ...additions];
+      setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+      return newItems;
+    });
+    setIsLoadingMore(false);
+  }, [data, cursor]);
+
+  // Display items (accumulated or current data)
+  const displayItems = allItems.length > 0 ? allItems : ((data?.items as SaveItem[]) ?? []);
+
+  // Check hasMore from fresh data, or from cache if we're using cached items
+  const cachedData = getPaginatedCache<SaveItem>("saves:paginated");
+  const hasMore = allItems.length > (data?.items?.length ?? 0)
+    ? !!cachedData?.cursor // Using cached items, use cached cursor
+    : !!data?.nextCursor; // Using fresh data
+
+  const handleLoadMore = () => {
+    // Use cached cursor if we have more items than fresh data (restored from cache)
+    const nextCursor = allItems.length > (data?.items?.length ?? 0)
+      ? (cachedData?.cursor as number | undefined)
+      : data?.nextCursor;
+
+    if (nextCursor) {
+      setIsLoadingMore(true);
+      setCursor(nextCursor);
+    }
+  };
 
   // Get the selected tag name for display
   const selectedTagName = tagFilter && allTags?.find((t) => t.id === tagFilter)?.name;
 
-  const toggleFavorite = trpc.space.toggleFavorite.useMutation({
-    onSuccess: () => {
-      // Invalidate list to reflect the change
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-    },
-  });
-
-  const toggleArchive = trpc.space.toggleArchive.useMutation({
-    onSuccess: () => {
-      utils.space.listSaves.invalidate();
-    },
-  });
-
-  const deleteSave = trpc.space.deleteSave.useMutation({
-    onSuccess: () => {
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
-
-  const bulkDeleteSaves = trpc.space.bulkDeleteSaves.useMutation({
-    onSuccess: () => {
-      setSelectedIds(new Set());
-      utils.space.listSaves.invalidate();
-      utils.space.getStats.invalidate();
-      utils.space.getDashboardData.invalidate();
-    },
-  });
+  // Convex mutations
+  const toggleFavorite = useToggleFavorite();
+  const toggleArchive = useToggleArchive();
+  const deleteSave = useDeleteSave();
+  const bulkDeleteSaves = useBulkDeleteSaves();
 
   const isSelectionMode = selectedIds.size > 0;
   const allSelected =
-    data?.items && data.items.length > 0 && selectedIds.size === data.items.length;
+    displayItems.length > 0 && selectedIds.size === displayItems.length;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -532,11 +634,11 @@ export default function SavesPage() {
   };
 
   const selectAll = () => {
-    if (!data?.items) return;
+    if (displayItems.length === 0) return;
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(data.items.map((s: APISave) => s.id)));
+      setSelectedIds(new Set(displayItems.map((s) => s.id)));
     }
   };
 
@@ -549,19 +651,49 @@ export default function SavesPage() {
     setShowBulkDeleteDialog(true);
   };
 
-  const confirmBulkDelete = () => {
-    bulkDeleteSaves.mutate({ saveIds: Array.from(selectedIds) });
-    setShowBulkDeleteDialog(false);
+  const confirmBulkDelete = async () => {
+    setIsBulkDeleting(true);
+    try {
+      await bulkDeleteSaves({ saveIds: Array.from(selectedIds) as any[] });
+      setSelectedIds(new Set());
+      setShowBulkDeleteDialog(false);
+    } catch (error) {
+      console.error("Failed to bulk delete:", error);
+    } finally {
+      setIsBulkDeleting(false);
+    }
   };
 
-  const handleSingleDelete = (save: APISave) => {
+  const handleSingleDelete = (save: SaveItem) => {
     setSingleDeleteTarget(save);
   };
 
-  const confirmSingleDelete = () => {
-    if (singleDeleteTarget) {
-      deleteSave.mutate({ saveId: singleDeleteTarget.id });
+  const confirmSingleDelete = async () => {
+    if (!singleDeleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteSave({ saveId: singleDeleteTarget.id as any });
       setSingleDeleteTarget(null);
+    } catch (error) {
+      console.error("Failed to delete:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleToggleFavorite = async (saveId: string) => {
+    try {
+      await toggleFavorite({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
+  const handleToggleArchive = async (saveId: string) => {
+    try {
+      await toggleArchive({ saveId: saveId as any });
+    } catch (error) {
+      console.error("Failed to toggle archive:", error);
     }
   };
 
@@ -572,7 +704,7 @@ export default function SavesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Saves</h1>
           <p className="text-muted-foreground">
-            {data?.items?.length ?? 0} saves in your collection
+            {displayItems.length} saves in your collection{hasMore ? "+" : ""}
           </p>
         </div>
         <Link href={routes.app.savesNew}>
@@ -590,7 +722,7 @@ export default function SavesPage() {
           variant="outline"
           onClick={selectAll}
           className="gap-2 h-10 shrink-0"
-          disabled={!data?.items?.length}
+          disabled={displayItems.length === 0}
         >
           <div
             className={cn(
@@ -615,10 +747,6 @@ export default function SavesPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="h-10 pl-10 pr-10"
           />
-          {/* Subtle loading indicator for background fetches */}
-          {isFetching && !isLoading && (
-            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -780,11 +908,11 @@ export default function SavesPage() {
             variant="destructive"
             size="sm"
             onClick={handleBulkDelete}
-            disabled={bulkDeleteSaves.isPending}
+            disabled={isBulkDeleting}
             className="gap-2"
           >
             <Trash2 className="h-4 w-4" />
-            {bulkDeleteSaves.isPending ? "Deleting..." : `Delete ${selectedIds.size}`}
+            {isBulkDeleting ? "Deleting..." : `Delete ${selectedIds.size}`}
           </Button>
 
           <Button variant="ghost" size="sm" onClick={clearSelection} className="gap-2">
@@ -797,36 +925,61 @@ export default function SavesPage() {
       {/* Saves list/grid */}
       {isLoading ? (
         <SavesSkeleton viewMode={viewMode} />
-      ) : data?.items && data.items.length > 0 ? (
-        viewMode === "list" ? (
-          <div className="space-y-3">
-            {data.items.map((save: APISave) => (
-              <SaveListItem
-                key={save.id}
-                save={save}
-                isSelected={selectedIds.has(save.id)}
-                isSelectionMode={isSelectionMode}
-                onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
-                onToggleArchive={() => toggleArchive.mutate({ saveId: save.id })}
-                onDelete={() => handleSingleDelete(save)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {data.items.map((save: APISave) => (
-              <SaveGridCard
-                key={save.id}
-                save={save}
-                isSelected={selectedIds.has(save.id)}
-                isSelectionMode={isSelectionMode}
-                onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => toggleFavorite.mutate({ saveId: save.id })}
-              />
-            ))}
-          </div>
-        )
+      ) : displayItems.length > 0 ? (
+        <>
+          {viewMode === "list" ? (
+            <div className="space-y-3">
+              {displayItems.map((save) => (
+                <SaveListItem
+                  key={save.id}
+                  save={save}
+                  isSelected={selectedIds.has(save.id)}
+                  isSelectionMode={isSelectionMode}
+                  onSelect={() => toggleSelect(save.id)}
+                  onToggleFavorite={() => handleToggleFavorite(save.id)}
+                  onToggleArchive={() => handleToggleArchive(save.id)}
+                  onDelete={() => handleSingleDelete(save)}
+                  onPrefetch={prefetchSave(save.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {displayItems.map((save) => (
+                <SaveGridCard
+                  key={save.id}
+                  save={save}
+                  isSelected={selectedIds.has(save.id)}
+                  isSelectionMode={isSelectionMode}
+                  onSelect={() => toggleSelect(save.id)}
+                  onToggleFavorite={() => handleToggleFavorite(save.id)}
+                  onPrefetch={prefetchSave(save.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Load more button */}
+          {hasMore && (
+            <div className="mt-8 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="gap-2"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="py-20 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">
@@ -865,12 +1018,8 @@ export default function SavesPage() {
             <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmBulkDelete}
-              disabled={bulkDeleteSaves.isPending}
-            >
-              {bulkDeleteSaves.isPending ? (
+            <Button variant="destructive" onClick={confirmBulkDelete} disabled={isBulkDeleting}>
+              {isBulkDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...
@@ -900,12 +1049,8 @@ export default function SavesPage() {
             <Button variant="outline" onClick={() => setSingleDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmSingleDelete}
-              disabled={deleteSave.isPending}
-            >
-              {deleteSave.isPending ? (
+            <Button variant="destructive" onClick={confirmSingleDelete} disabled={isDeleting}>
+              {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Deleting...

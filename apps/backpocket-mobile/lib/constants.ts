@@ -6,6 +6,10 @@
 export const API_URL =
 	process.env.EXPO_PUBLIC_API_URL || "https://backpocket.my";
 
+// Convex Configuration
+export const CONVEX_URL =
+	process.env.EXPO_PUBLIC_CONVEX_URL || "https://your-project.convex.cloud";
+
 // Public Space Configuration
 export const ROOT_DOMAIN = "backpocket.my";
 

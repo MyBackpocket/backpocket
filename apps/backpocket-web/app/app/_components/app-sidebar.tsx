@@ -12,16 +12,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { UserButton } from "@/components/auth-components";
 import { Logo } from "@/components/logo";
+import { PrefetchLink } from "@/components/prefetch-link";
 import { QuickAdd } from "@/components/quick-add";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { IS_DEVELOPMENT, ROOT_DOMAIN } from "@/lib/config/public";
 import { routes } from "@/lib/constants/routes";
 import { buildSpaceHostname, buildSpaceUrl } from "@/lib/constants/urls";
+import { usePrefetchTargets } from "@/lib/hooks/use-prefetch";
 import type { DomainMapping, Space } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+/** Custom event name for focusing the space name input on settings page */
+export const FOCUS_SPACE_NAME_EVENT = "focus-space-name";
 
 const navigation = [
   { name: "Dashboard", href: routes.app.root, icon: LayoutDashboard },
@@ -128,6 +133,35 @@ interface AppSidebarProps {
 
 export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarProps) {
   const pathname = usePathname();
+  const isOnSettingsPage = pathname === routes.app.settings;
+  const prefetch = usePrefetchTargets();
+
+  // Map navigation items to their prefetch functions
+  const prefetchMap = useMemo(
+    () =>
+      ({
+        [routes.app.root]: prefetch.stats,
+        [routes.app.saves]: prefetch.saves,
+        [routes.app.collections]: prefetch.collections,
+      }) as Record<string, (() => void) | undefined>,
+    [prefetch]
+  );
+
+  /**
+   * Handle clicking the edit space name pencil icon.
+   * If already on settings page, focus the name input instead of navigating.
+   */
+  const handleEditSpaceName = useCallback(
+    (e: React.MouseEvent) => {
+      if (isOnSettingsPage) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent(FOCUS_SPACE_NAME_EVENT));
+      } else {
+        // Navigate to settings - the Link handles this
+      }
+    },
+    [isOnSettingsPage]
+  );
 
   return (
     <aside
@@ -161,17 +195,18 @@ export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarP
           <QuickAdd />
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - uses PrefetchLink to preload data on hover */}
         <nav className="flex-1 space-y-1 px-3">
           {navigation.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== routes.app.root && pathname.startsWith(item.href));
             return (
-              <Link
+              <PrefetchLink
                 key={item.name}
                 href={item.href}
                 onClick={onClose}
+                onPrefetch={prefetchMap[item.href]}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
@@ -181,7 +216,7 @@ export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarP
               >
                 <item.icon className={cn("h-5 w-5", isActive && "text-rust")} />
                 {item.name}
-              </Link>
+              </PrefetchLink>
             );
           })}
         </nav>
@@ -221,6 +256,7 @@ export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarP
                 </p>
                 <Link
                   href={routes.app.settings}
+                  onClick={handleEditSpaceName}
                   className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
                   title="Edit space settings"
                 >
@@ -232,6 +268,7 @@ export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarP
               ) : (
                 <Link
                   href={routes.app.settings}
+                  onClick={handleEditSpaceName}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mt-1"
                 >
                   <span>Set up your space</span>

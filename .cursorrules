@@ -24,6 +24,55 @@ Never use `npm`, `yarn`, or `pnpm` in this project.
 
 ---
 
+## Build Tools
+
+### Turborepo (Monorepo Orchestration)
+
+This is a **Turborepo** monorepo. All builds are orchestrated by Turbo:
+
+- Use `turbo.json` for pipeline configuration
+- Tasks are cached and parallelized automatically
+- Run tasks via `bun run <task>` which invokes Turbo
+
+### Turbopack (Next.js Bundler)
+
+The Next.js web app uses **Turbopack** (Next.js 16+ default), **NOT webpack**:
+
+- Configure bundler options in `next.config.ts` under `turbopack: {}`
+- Never add `webpack:` config — it's not used
+- Path aliases go in `turbopack.resolveAlias`, not webpack config
+
+```typescript
+// next.config.ts - CORRECT
+const nextConfig: NextConfig = {
+  turbopack: {
+    resolveAlias: {
+      "@convex": "../../convex",
+    },
+  },
+};
+
+// WRONG - don't use webpack config
+// webpack: (config) => { ... }
+```
+
+### Biome (Linting & Formatting)
+
+This project uses **Biome.js** for linting and formatting, **NOT Prettier or ESLint**:
+
+- Config is in `biome.json` at the root
+- Never add `.prettierrc`, `.eslintrc`, or related configs
+- Never suggest `eslint`, `prettier`, or their plugins
+
+```bash
+bun run lint       # Check for issues
+bun run lint:fix   # Auto-fix issues
+bun run format     # Format code
+bun run check      # Biome check (lint + format)
+```
+
+---
+
 ## Documentation Requirements
 
 When making changes to the codebase, **update the relevant documentation** in `/docs/`:
@@ -78,10 +127,11 @@ When completing features from the roadmap:
 - Import types from `@backpocket/types` for shared types
 - Import utilities from `@backpocket/utils` for shared utilities
 
-### Formatting
+### Formatting (Biome)
 
-- Biome is used for linting and formatting
+- **Biome.js only** — never Prettier or ESLint
 - Run `bun run lint:fix` before committing
+- Config in `biome.json` at root
 
 ### Imports
 
@@ -140,13 +190,19 @@ bun test             # Run tests
 bun clean            # Clean build artifacts
 ```
 
-### Database (Supabase)
+### Database (Convex)
 
 ```bash
-# From apps/backpocket-web/
-bunx supabase db push          # Apply migrations
-bunx supabase gen types        # Generate types
+# From project root
+bun run convex:dev             # Start Convex dev server
+bun run convex:deploy          # Deploy to production
+bun run convex:types           # Generate types
 ```
+
+Convex functions are in `/convex/` at the root:
+- Queries, mutations, and actions defined in TypeScript
+- Schema defined in `convex/schema.ts`
+- Generated types in `convex/_generated/` (committed to git)
 
 ---
 

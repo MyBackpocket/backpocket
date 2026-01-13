@@ -1,0 +1,8 @@
+{
+  "node": {
+    "externalPackages": [
+      "@mozilla/readability",
+      "linkedom"
+    ]
+  }
+}

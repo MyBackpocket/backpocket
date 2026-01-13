@@ -1,6 +1,6 @@
 {
   "name": "backpocket",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Save content for yourself, organize it into a personal library, and optionally publish a read-only collection at your own URL.",
   "author": "Mario",
@@ -18,6 +18,9 @@
     "dev:web": "turbo dev --filter=backpocket-web",
     "dev:mobile": "turbo dev --filter=backpocket-mobile",
     "dev:extension": "turbo dev --filter=backpocket-browser-extension",
+    "convex:dev": "bunx convex dev",
+    "convex:deploy": "bunx convex deploy",
+    "convex:types": "bunx convex codegen",
     "build": "turbo build",
     "build:web": "turbo build --filter=backpocket-web",
     "build:mobile": "turbo build --filter=backpocket-mobile",
@@ -28,11 +31,19 @@
     "format:check": "biome format .",
     "check": "biome check .",
     "test": "turbo test",
+    "test:convex": "vitest run --config convex/vitest.config.ts",
     "clean": "turbo clean && rm -rf node_modules",
     "typecheck": "turbo typecheck"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
-    "turbo": "^2.5.4"
+    "convex-test": "^0.0.41",
+    "turbo": "^2.7.4",
+    "vitest": "^4.0.17"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "convex": "^1.31.4",
+    "linkedom": "^0.18.12"
   }
 }

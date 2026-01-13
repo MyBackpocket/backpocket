@@ -49,7 +49,7 @@ Backpocket is a personal content library for saving, organizing, and optionally 
 ```
 Production:          https://backpocket.my
 Public Spaces:       https://{slug}.backpocket.my
-API Base:            https://backpocket.my/api/trpc
+Convex URL:          https://your-project.convex.cloud
 ```
 
 ---
@@ -60,14 +60,13 @@ API Base:            https://backpocket.my/api/trpc
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Web App** | Next.js 15, React 19, Tailwind CSS | Primary web interface |
-| **Mobile App** | Expo, React Native, NativeWind | iOS & Android |
+| **Web App** | Next.js 16, React 19, Tailwind CSS | Primary web interface |
+| **Mobile App** | Expo 54, React Native, NativeWind | iOS & Android |
 | **Extension** | WXT, React | Browser extension |
-| **API** | tRPC | Type-safe API layer |
-| **Database** | Supabase (PostgreSQL) | Primary data store |
-| **Auth** | Clerk | Authentication |
-| **Hosting** | Vercel | Web, API, edge functions |
-| **Storage** | Supabase Storage | Snapshot content |
+| **Backend** | Convex | Real-time database, queries, mutations, actions |
+| **Auth** | Clerk + Convex JWT | Authentication |
+| **Hosting** | Vercel | Web app hosting |
+| **Storage** | Convex File Storage | Snapshot content |
 
 ### Monorepo Structure
 
@@ -77,12 +76,44 @@ backpocket/
 │   ├── backpocket-web/           # Next.js web application
 │   ├── backpocket-mobile/        # Expo React Native app
 │   └── backpocket-browser-extension/  # WXT browser extension
+├── convex/                       # Convex backend functions
+│   ├── schema.ts                 # Database schema
+│   ├── saves.ts                  # Save queries/mutations
+│   ├── tags.ts                   # Tag queries/mutations
+│   ├── collections.ts            # Collection queries/mutations
+│   ├── spaces.ts                 # Space queries/mutations
+│   ├── public.ts                 # Public (unauthenticated) queries
+│   ├── snapshots.ts              # Snapshot processing
+│   └── lib/                      # Auth helpers, validators
 ├── packages/
 │   ├── types/                    # @backpocket/types - Shared types
 │   ├── utils/                    # @backpocket/utils - Shared utilities
 │   └── tsconfig/                 # Shared TypeScript configs
 ├── docs/                         # This documentation
 └── package.json
+```
+
+### Convex Backend
+
+Convex provides a real-time, TypeScript-first backend with:
+
+- **Queries** — Read-only functions that subscribe to changes
+- **Mutations** — Write operations that update the database
+- **Actions** — Side-effect functions for external APIs
+- **Scheduled Functions** — Background job processing
+
+```typescript
+// Example: Using Convex hooks in React
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+function SavesList() {
+  const saves = useQuery(api.saves.list, { limit: 20 });
+  const createSave = useMutation(api.saves.create);
+  
+  // saves updates in real-time when data changes
+  return <SavesGrid items={saves?.items ?? []} />;
+}
 ```
 
 ### Shared Packages
@@ -196,55 +227,53 @@ export const tokenCache: TokenCache = {
 
 ### Overview
 
-Backpocket uses [tRPC](https://trpc.io) for its API layer. All endpoints follow this pattern:
+Backpocket uses [Convex](https://convex.dev) for its API layer. All functions are defined in the `convex/` directory and are accessed via Convex's client libraries.
 
-```
-POST /api/trpc/<router>.<procedure>
-```
+### Function Namespaces
 
-### Router Namespaces
-
-| Router | Auth Required | Description |
+| Module | Auth Required | Description |
 |--------|---------------|-------------|
-| `space.*` | ✅ Yes | User's personal space operations |
+| `saves.*` | ✅ Yes | Save management operations |
+| `tags.*` | ✅ Yes | Tag management operations |
+| `collections.*` | ✅ Yes | Collection management operations |
+| `spaces.*` | ✅ Yes | Space settings operations |
+| `snapshots.*` | ✅ Yes | Snapshot operations |
 | `public.*` | ❌ No | Public read-only operations |
 
-### Request Format
+### Client Usage
 
-```json
-{
-  "json": {
-    // input data
-  }
-}
+#### React (Web/Mobile)
+
+```typescript
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
+
+// Query (auto-subscribes to real-time updates)
+const saves = useQuery(api.saves.listSaves, { limit: 20 });
+
+// Mutation
+const createSave = useMutation(api.saves.createSave);
+await createSave({ url: "https://example.com" });
 ```
 
-### Response Format
+#### Server/Action
 
-**Success:**
+```typescript
+import { fetchQuery, fetchMutation } from "convex/nextjs";
+import { api } from "../../convex/_generated/api";
 
-```json
-{
-  "result": {
-    "data": { /* response data */ }
-  }
-}
+const saves = await fetchQuery(api.saves.listSaves, { limit: 20 });
 ```
 
-**Error:**
+#### HTTP Client (Extension)
 
-```json
-{
-  "error": {
-    "message": "Error description",
-    "code": -32600,
-    "data": {
-      "code": "UNAUTHORIZED",
-      "httpStatus": 401,
-      "path": "space.createSave"
-    }
-  }
-}
+```typescript
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
+
+const client = new ConvexHttpClient(CONVEX_URL);
+client.setAuth(getToken);
+const saves = await client.query(api.saves.listSaves, { limit: 20 });
 ```
 
 ---
@@ -315,7 +344,7 @@ The primary endpoint for saving links. Used by all platforms.
 
 - Tags are automatically created if they don't exist
 - Tag names are normalized (lowercase, trimmed)
-- User's space is auto-created on first save
+- User's space is auto-created on first app access (not waiting for first save)
 - Snapshots are automatically queued for processing
 - URLs are normalized for duplicate detection
 
@@ -830,6 +859,25 @@ null, undefined, true, false, test, demo, example, sample, backpocket
 - `"too_short"` — Less than 3 characters
 - `"too_long"` — More than 32 characters
 - `"invalid_format"` — Doesn't match allowed pattern
+
+---
+
+#### Space Auto-Creation
+
+When a user first accesses the authenticated app, their personal space is automatically
+created via the `ensureSpace` mutation. This happens in:
+
+- **Web**: `AppShell` component
+- **Mobile**: `TabLayout` component
+
+The space includes:
+
+| Property | Value |
+|----------|-------|
+| Type | `personal` |
+| Name | `My Library` |
+| Visibility | `private` |
+| Slug | `user-{last8CharsOfUserId}` |
 
 ---
 

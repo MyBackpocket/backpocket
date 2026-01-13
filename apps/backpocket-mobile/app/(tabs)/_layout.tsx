@@ -6,6 +6,7 @@ import {
 	LayoutGrid,
 	Settings,
 } from "lucide-react-native";
+import { useEffect, useRef } from "react";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -13,10 +14,12 @@ import { HapticTab } from "@/components/haptic-tab";
 import { Colors, type ColorsTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/constants";
+import { useGetMySpace, useEnsureSpace } from "@/lib/convex/hooks";
 
 /**
  * Tab layout with Clerk auth protection
  * Redirects to sign-in if user is not authenticated
+ * Automatically creates user's space on first app access
  */
 export default function TabLayout() {
 	const colorScheme = useColorScheme();
@@ -28,6 +31,20 @@ export default function TabLayout() {
 	const auth = CLERK_PUBLISHABLE_KEY ? useAuth() : null;
 	const isSignedIn = auth?.isSignedIn;
 	const isLoaded = auth?.isLoaded ?? true;
+
+	// Space auto-creation for new users
+	const space = useGetMySpace();
+	const ensureSpace = useEnsureSpace();
+	const hasCalledEnsureSpace = useRef(false);
+
+	// Auto-create space when user is signed in but has no space
+	// space === undefined means loading, null means no space exists
+	useEffect(() => {
+		if (isSignedIn && space === null && !hasCalledEnsureSpace.current) {
+			hasCalledEnsureSpace.current = true;
+			ensureSpace();
+		}
+	}, [isSignedIn, space, ensureSpace]);
 
 	// If Clerk is not configured, show tabs without auth (development mode)
 	if (!CLERK_PUBLISHABLE_KEY) {

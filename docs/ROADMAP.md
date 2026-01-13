@@ -4,6 +4,19 @@ Planned features and improvements for Backpocket.
 
 ---
 
+## Bug Fixes
+
+### Domain-Specific Link Processing
+
+- [ ] Fix X (Twitter) link processing issues
+- [ ] Fix Reddit link processing issues
+
+### Web App
+
+- [ ] Fix custom domain settings page card (regression)
+
+---
+
 ## Planned Features
 
 ### User Experience
@@ -144,6 +157,16 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 ---
 
 ## Completed
+
+### 2026-01-12
+
+- ✅ **Supabase to Convex migration**
+  - Migrated database from Supabase/PostgreSQL to Convex
+  - Replaced tRPC routers with Convex queries/mutations/actions
+  - Replaced QStash + Redis with Convex scheduled functions
+  - Replaced Supabase Storage with Convex File Storage
+  - All clients (web, mobile, extension) now use Convex directly
+  - Real-time updates now built-in for all queries
 
 ### 2026-01-06
 

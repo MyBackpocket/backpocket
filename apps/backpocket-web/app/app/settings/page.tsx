@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AccountInfo } from "@/components/auth-components";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,29 +50,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { dnsProviderList, vercelDns } from "@/lib/constants/dns";
 import { buildSpaceUrl, isLocalhostHostname } from "@/lib/constants/urls";
-import { trpc } from "@/lib/trpc/client";
+import {
+  type DomainId,
+  useAddDomain,
+  useCheckSlugAvailability,
+  useExportAllData,
+  useGetDomainStatus,
+  useGetMySpace,
+  useListDomains,
+  useRemoveDomain,
+  useUpdateSettings,
+  useUpdateSlug,
+  useVerifyDomain,
+} from "@/lib/convex";
 import type { PublicLayout, SaveVisibility, SpaceVisibility } from "@/lib/types";
+import { FOCUS_SPACE_NAME_EVENT } from "../_components/app-sidebar";
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
-      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-    </Button>
-  );
-}
+type SaveStatus = "idle" | "saving" | "saved";
 
 export default function SettingsPage() {
-  const { data: space, isLoading } = trpc.space.getMySpace.useQuery();
-  const { data: domains, refetch: refetchDomains } = trpc.space.listDomains.useQuery();
-  const utils = trpc.useUtils();
+  const space = useGetMySpace();
+  const isLoading = space === undefined;
 
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
@@ -80,89 +78,148 @@ export default function SettingsPage() {
   const [publicLayout, setPublicLayout] = useState<PublicLayout>("grid");
   const [defaultSaveVisibility, setDefaultSaveVisibility] = useState<SaveVisibility>("private");
 
+  // Auto-save status
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const initialLoadDone = useRef(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Ref for focusing the name input
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const [isNameHighlighted, setIsNameHighlighted] = useState(false);
+
   // Slug editing state
   const [slug, setSlug] = useState("");
   const [slugInput, setSlugInput] = useState("");
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [slugError, setSlugError] = useState<string | null>(null);
+  const [isUpdatingSlug, setIsUpdatingSlug] = useState(false);
 
-  // Domain adding state
-  const [isAddingDomain, setIsAddingDomain] = useState(false);
-  const [newDomain, setNewDomain] = useState("");
-  const [domainError, setDomainError] = useState<string | null>(null);
+  const updateSettings = useUpdateSettings();
+  const updateSlugMutation = useUpdateSlug();
 
+  // Check slug availability
+  const slugAvailability = useCheckSlugAvailability(
+    isEditingSlug && slugInput.length >= 3 && slugInput !== slug ? slugInput : undefined
+  );
+  const isCheckingSlug =
+    slugAvailability === undefined && isEditingSlug && slugInput.length >= 3 && slugInput !== slug;
+
+  // Initialize state from space data
   useEffect(() => {
     if (space) {
       setName(space.name || "");
       setBio(space.bio || "");
-      setVisibility(space.visibility);
-      setPublicLayout(space.publicLayout);
-      setDefaultSaveVisibility(space.defaultSaveVisibility);
+      setVisibility(space.visibility as SpaceVisibility);
+      setPublicLayout(space.publicLayout as PublicLayout);
+      setDefaultSaveVisibility(space.defaultSaveVisibility as SaveVisibility);
       setSlug(space.slug);
       setSlugInput(space.slug);
+      // Mark initial load as complete after a short delay to avoid triggering auto-save
+      setTimeout(() => {
+        initialLoadDone.current = true;
+      }, 100);
     }
   }, [space]);
 
-  const updateSettings = trpc.space.updateSettings.useMutation({
-    onSuccess: () => {
-      utils.space.getMySpace.invalidate();
-    },
-  });
+  // Listen for focus space name event (triggered from sidebar pencil icon)
+  useEffect(() => {
+    const handleFocusSpaceName = () => {
+      // Scroll the input into view smoothly
+      nameInputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Focus and select the input after a brief delay to allow scroll
+      setTimeout(() => {
+        nameInputRef.current?.focus();
+        nameInputRef.current?.select();
+      }, 100);
+      // Trigger the highlight animation
+      setIsNameHighlighted(true);
+      setTimeout(() => setIsNameHighlighted(false), 1500);
+    };
 
-  const updateSlug = trpc.space.updateSlug.useMutation({
-    onSuccess: () => {
-      utils.space.getMySpace.invalidate();
-      setIsEditingSlug(false);
-      setSlugError(null);
-    },
-    onError: (error) => {
-      setSlugError(error.message);
-    },
-  });
+    window.addEventListener(FOCUS_SPACE_NAME_EVENT, handleFocusSpaceName);
+    return () => window.removeEventListener(FOCUS_SPACE_NAME_EVENT, handleFocusSpaceName);
+  }, []);
 
-  const addDomain = trpc.space.addDomain.useMutation({
-    onSuccess: () => {
-      refetchDomains();
-      setIsAddingDomain(false);
-      setNewDomain("");
-      setDomainError(null);
-    },
-    onError: (error) => {
-      setDomainError(error.message);
-    },
-  });
-
-  const verifyDomain = trpc.space.verifyDomain.useMutation({
-    onSuccess: () => {
-      refetchDomains();
-    },
-  });
-
-  const removeDomain = trpc.space.removeDomain.useMutation({
-    onSuccess: () => {
-      refetchDomains();
-    },
-  });
-
-  // Debounced slug availability check
-  const { data: slugAvailability, isFetching: isCheckingSlug } =
-    trpc.space.checkSlugAvailability.useQuery(
-      { slug: slugInput },
-      {
-        enabled: isEditingSlug && slugInput.length >= 3 && slugInput !== slug,
-        staleTime: 1000,
+  // Auto-save helper function
+  const saveSettings = useCallback(
+    async (settings: {
+      name?: string;
+      bio?: string;
+      visibility?: SpaceVisibility;
+      publicLayout?: PublicLayout;
+      defaultSaveVisibility?: SaveVisibility;
+    }) => {
+      setSaveStatus("saving");
+      try {
+        await updateSettings(settings);
+        setSaveStatus("saved");
+        // Reset to idle after showing "Saved" briefly
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
+      } catch (error) {
+        console.error("Failed to save settings:", error);
+        setSaveStatus("idle");
       }
-    );
+    },
+    [updateSettings]
+  );
 
-  const handleSave = () => {
-    updateSettings.mutate({
-      name,
-      bio,
-      visibility,
-      publicLayout,
-      defaultSaveVisibility,
-    });
-  };
+  // Debounced auto-save for text inputs (name, bio)
+  useEffect(() => {
+    if (!initialLoadDone.current || !space) return;
+    if (name === (space.name || "")) return;
+
+    const timeout = setTimeout(() => {
+      saveSettings({ name });
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [name, space, saveSettings]);
+
+  useEffect(() => {
+    if (!initialLoadDone.current || !space) return;
+    if (bio === (space.bio || "")) return;
+
+    const timeout = setTimeout(() => {
+      saveSettings({ bio });
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [bio, space, saveSettings]);
+
+  // Immediate save handlers for toggles and selects
+  const handleVisibilityChange = useCallback(
+    (checked: boolean) => {
+      const newVisibility = checked ? "public" : "private";
+      setVisibility(newVisibility);
+      if (initialLoadDone.current) {
+        saveSettings({ visibility: newVisibility });
+      }
+    },
+    [saveSettings]
+  );
+
+  const handleLayoutChange = useCallback(
+    (value: string) => {
+      const newLayout = value as PublicLayout;
+      setPublicLayout(newLayout);
+      if (initialLoadDone.current) {
+        saveSettings({ publicLayout: newLayout });
+      }
+    },
+    [saveSettings]
+  );
+
+  const handleDefaultSaveVisibilityChange = useCallback(
+    (value: string) => {
+      const newVisibility = value as SaveVisibility;
+      setDefaultSaveVisibility(newVisibility);
+      if (initialLoadDone.current) {
+        saveSettings({ defaultSaveVisibility: newVisibility });
+      }
+    },
+    [saveSettings]
+  );
 
   const handleSlugChange = useCallback((value: string) => {
     // Normalize: lowercase, remove invalid chars
@@ -171,24 +228,28 @@ export default function SettingsPage() {
     setSlugError(null);
   }, []);
 
-  const handleSlugSave = () => {
+  const handleSlugSave = async () => {
     if (slugInput === slug) {
       setIsEditingSlug(false);
       return;
     }
-    updateSlug.mutate({ slug: slugInput });
+    setIsUpdatingSlug(true);
+    try {
+      await updateSlugMutation({ slug: slugInput });
+      setSlug(slugInput);
+      setIsEditingSlug(false);
+      setSlugError(null);
+    } catch (error: any) {
+      setSlugError(error?.message || "Failed to update slug");
+    } finally {
+      setIsUpdatingSlug(false);
+    }
   };
 
   const handleSlugCancel = () => {
     setSlugInput(slug);
     setIsEditingSlug(false);
     setSlugError(null);
-  };
-
-  const handleAddDomain = () => {
-    if (!newDomain) return;
-    setDomainError(null);
-    addDomain.mutate({ domain: newDomain });
   };
 
   // Get slug status message
@@ -251,7 +312,21 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+            {saveStatus === "saving" && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Saving...
+              </span>
+            )}
+            {saveStatus === "saved" && (
+              <span className="flex items-center gap-1 text-sm text-green-600 animate-in fade-in duration-200">
+                <Check className="h-3.5 w-3.5" />
+                Saved
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground">Manage your space and public profile</p>
         </div>
 
@@ -268,10 +343,16 @@ export default function SettingsPage() {
                   Display Name
                 </Label>
                 <Input
+                  ref={nameInputRef}
                   id="name"
                   placeholder="Your name or title"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
+                  className={
+                    isNameHighlighted
+                      ? "ring-2 ring-denim ring-offset-2 ring-offset-background transition-all duration-300"
+                      : "transition-all duration-300"
+                  }
                 />
               </div>
 
@@ -360,13 +441,13 @@ export default function SettingsPage() {
                       size="sm"
                       onClick={handleSlugSave}
                       disabled={
-                        updateSlug.isPending ||
+                        isUpdatingSlug ||
                         slugInput === slug ||
                         slugStatus?.type === "error" ||
                         slugStatus?.type === "loading"
                       }
                     >
-                      {updateSlug.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isUpdatingSlug && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Save
                     </Button>
                     <Button size="sm" variant="outline" onClick={handleSlugCancel}>
@@ -389,6 +470,9 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Custom Domains */}
+          <CustomDomainsCard />
 
           {/* Space Visibility */}
           <Card>
@@ -414,7 +498,7 @@ export default function SettingsPage() {
                   )}
                   <Switch
                     checked={visibility === "public"}
-                    onCheckedChange={(checked) => setVisibility(checked ? "public" : "private")}
+                    onCheckedChange={handleVisibilityChange}
                   />
                 </div>
               </div>
@@ -427,10 +511,7 @@ export default function SettingsPage() {
                     <Label htmlFor="layout" className="block pb-2">
                       Default Layout
                     </Label>
-                    <Select
-                      value={publicLayout}
-                      onValueChange={(v) => setPublicLayout(v as PublicLayout)}
-                    >
+                    <Select value={publicLayout} onValueChange={handleLayoutChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -475,82 +556,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Custom Domain */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Custom Domain
-              </CardTitle>
-              <CardDescription>Use your own domain for your public space</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Existing domains */}
-              {domains && domains.length > 0 && (
-                <div className="space-y-3">
-                  {domains.map((domain) => (
-                    <DomainItem
-                      key={domain.id}
-                      domain={domain}
-                      onVerify={() => verifyDomain.mutate({ domainId: domain.id })}
-                      onRemove={() => removeDomain.mutate({ domainId: domain.id })}
-                      isVerifying={verifyDomain.isPending}
-                      isRemoving={removeDomain.isPending}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Add domain form */}
-              {isAddingDomain ? (
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="newDomain">Domain</Label>
-                    <Input
-                      id="newDomain"
-                      placeholder="yourdomain.com"
-                      value={newDomain}
-                      onChange={(e) => {
-                        setNewDomain(e.target.value);
-                        setDomainError(null);
-                      }}
-                    />
-                    {domainError && <p className="text-xs text-destructive">{domainError}</p>}
-                    <p className="text-xs text-muted-foreground">
-                      Enter your domain without http:// or https://
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={handleAddDomain} disabled={addDomain.isPending}>
-                      {addDomain.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Add Domain
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setIsAddingDomain(false);
-                        setNewDomain("");
-                        setDomainError(null);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsAddingDomain(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Custom Domain
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Default Save Visibility */}
           <Card>
             <CardHeader>
@@ -567,7 +572,7 @@ export default function SettingsPage() {
                 </Label>
                 <Select
                   value={defaultSaveVisibility}
-                  onValueChange={(v) => setDefaultSaveVisibility(v as SaveVisibility)}
+                  onValueChange={handleDefaultSaveVisibilityChange}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -607,18 +612,33 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Data Export */}
+          {/* Export Data */}
           <ExportDataCard />
-
-          {/* Save button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={updateSettings.isPending}>
-              {updateSettings.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </div>
         </div>
       </div>
+
+      {/* Floating save indicator - visible when scrolled */}
+      {saveStatus !== "idle" && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div
+            className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-lg transition-all duration-200 ${
+              saveStatus === "saving" ? "bg-muted text-muted-foreground" : "bg-green-600 text-white"
+            }`}
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm font-medium">Saving...</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                <span className="text-sm font-medium">Saved</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -790,134 +810,89 @@ function ThemeSelector() {
   );
 }
 
-// Export data card component
-function ExportDataCard() {
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportStats, setExportStats] = useState<{
-    saves: number;
-    tags: number;
-    collections: number;
-  } | null>(null);
+// Helper component for copying text
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
 
-  const exportData = trpc.space.exportAllData.useQuery(undefined, {
-    enabled: false, // Only fetch when triggered
-    staleTime: 0,
-  });
-
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      const result = await exportData.refetch();
-      if (result.data) {
-        // Create and download the JSON file
-        const json = JSON.stringify(result.data, null, 2);
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `backpocket-export-${new Date().toISOString().split("T")[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Show stats
-        setExportStats(result.data.counts);
-      }
-    } catch (error) {
-      console.error("Export failed:", error);
-    } finally {
-      setIsExporting(false);
-    }
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Download className="h-5 w-5" />
-          Export Data
-        </CardTitle>
-        <CardDescription>
-          Download all your saves, tags, and collections as a JSON file for backup or migration
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">What's included:</p>
-            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-              <li>All saved links with metadata</li>
-              <li>Tags and their associations</li>
-              <li>Collections and default tags</li>
-              <li>Space settings and profile</li>
-            </ul>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Export format is designed for easy import into other databases like Convex, Supabase, or
-            any JSON-compatible system.
-          </p>
-        </div>
-
-        {exportStats && (
-          <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-3">
-            <p className="text-sm text-green-800 dark:text-green-300 flex items-center gap-2">
-              <Check className="h-4 w-4" />
-              Successfully exported: {exportStats.saves} saves, {exportStats.tags} tags,{" "}
-              {exportStats.collections} collections
-            </p>
-          </div>
-        )}
-
-        <Button onClick={handleExport} disabled={isExporting} className="w-full">
-          {isExporting ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Exporting...
-            </>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" />
-              Export All Data
-            </>
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+    <Button variant="ghost" size="sm" onClick={handleCopy} className="h-8 w-8 p-0">
+      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+    </Button>
   );
 }
 
-// Domain item component
+// Domain item component with detailed status and verification info
 interface DomainData {
   id: string;
   domain: string;
   status: "pending_verification" | "verified" | "active" | "error" | "disabled";
-  spaceId: string;
-  verificationToken: string | null;
-  createdAt: Date | string;
-  updatedAt: Date | string;
 }
 
 function DomainItem({
   domain,
-  onVerify,
   onRemove,
-  isVerifying,
   isRemoving,
 }: {
   domain: DomainData;
-  onVerify: () => void;
   onRemove: () => void;
-  isVerifying: boolean;
   isRemoving: boolean;
 }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { data: status, refetch } = trpc.space.getDomainStatus.useQuery(
-    { domainId: domain.id },
-    { refetchInterval: domain.status === "pending_verification" ? 10000 : false }
-  );
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [status, setStatus] = useState<{
+    verified: boolean;
+    misconfigured: boolean;
+    verification?: Array<{ type: string; domain: string; value: string }>;
+  } | null>(null);
 
-  const isActive = status?.status === "active" || status?.verified;
+  const getDomainStatus = useGetDomainStatus();
+  const verifyDomainAction = useVerifyDomain();
+
+  // Fetch domain status on mount and periodically for pending domains
+  const fetchStatus = useCallback(async () => {
+    try {
+      const result = await getDomainStatus({ domainId: domain.id as DomainId });
+      if (result.success && result.data) {
+        setStatus({
+          verified: result.data.verified,
+          misconfigured: result.data.misconfigured,
+          verification: result.data.verification,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch domain status:", error);
+    }
+  }, [getDomainStatus, domain.id]);
+
+  useEffect(() => {
+    fetchStatus();
+
+    // Poll for status updates if pending
+    if (domain.status === "pending_verification") {
+      const interval = setInterval(fetchStatus, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [domain.status, fetchStatus]);
+
+  const handleVerify = async () => {
+    setIsVerifying(true);
+    try {
+      await verifyDomainAction({ domainId: domain.id as DomainId });
+      await fetchStatus();
+    } catch (error) {
+      console.error("Failed to verify domain:", error);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const isActive = status?.verified || domain.status === "active";
 
   return (
     <div className="rounded-lg border p-4">
@@ -950,10 +925,7 @@ function DomainItem({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                refetch();
-                onVerify();
-              }}
+              onClick={handleVerify}
               disabled={isVerifying}
               className="h-8 w-8 p-0"
             >
@@ -986,7 +958,7 @@ function DomainItem({
           <DialogHeader>
             <DialogTitle>Remove custom domain?</DialogTitle>
             <DialogDescription>
-              Are you sure you want to remove <strong>{domain.domain}</strong>? You'll need to
+              Are you sure you want to remove <strong>{domain.domain}</strong>? You&apos;ll need to
               reconfigure your DNS settings if you want to add it again.
             </DialogDescription>
           </DialogHeader>
@@ -1114,5 +1086,222 @@ function DomainItem({
         </div>
       )}
     </div>
+  );
+}
+
+// Custom Domains card component
+function CustomDomainsCard() {
+  const domains = useListDomains();
+  const addDomain = useAddDomain();
+  const removeDomain = useRemoveDomain();
+
+  const [isAdding, setIsAdding] = useState(false);
+  const [newDomain, setNewDomain] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [removingDomain, setRemovingDomain] = useState<DomainId | null>(null);
+
+  const isLoading = domains === undefined;
+
+  const handleAddDomain = useCallback(async () => {
+    if (!newDomain.trim()) return;
+
+    setIsSubmitting(true);
+    setAddError(null);
+
+    try {
+      const result = await addDomain({ domain: newDomain.trim().toLowerCase() });
+      if (result.success) {
+        setNewDomain("");
+        setIsAdding(false);
+      } else {
+        setAddError(result.error || "Failed to add domain");
+      }
+    } catch (error) {
+      setAddError(error instanceof Error ? error.message : "Failed to add domain");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [addDomain, newDomain]);
+
+  const handleRemoveDomain = useCallback(
+    async (domainId: DomainId) => {
+      setRemovingDomain(domainId);
+      try {
+        await removeDomain({ domainId });
+      } catch (error) {
+        console.error("Failed to remove domain:", error);
+      } finally {
+        setRemovingDomain(null);
+      }
+    },
+    [removeDomain]
+  );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Globe className="h-5 w-5" />
+          Custom Domain
+        </CardTitle>
+        <CardDescription>Use your own domain for your public space</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Domain List */}
+        {isLoading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-20 w-full" />
+          </div>
+        ) : domains && domains.length > 0 ? (
+          <div className="space-y-3">
+            {domains.map((domain) => (
+              <DomainItem
+                key={domain.id}
+                domain={domain as DomainData}
+                onRemove={() => handleRemoveDomain(domain.id as DomainId)}
+                isRemoving={removingDomain === domain.id}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {/* Add Domain Form */}
+        {isAdding ? (
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="space-y-2">
+              <Label htmlFor="newDomain">Domain</Label>
+              <Input
+                id="newDomain"
+                placeholder="yourdomain.com"
+                value={newDomain}
+                onChange={(e) => {
+                  setNewDomain(e.target.value);
+                  setAddError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddDomain();
+                  }
+                }}
+              />
+              {addError && <p className="text-xs text-destructive">{addError}</p>}
+              <p className="text-xs text-muted-foreground">
+                Enter your domain without http:// or https://
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleAddDomain} disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Domain
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setIsAdding(false);
+                  setNewDomain("");
+                  setAddError(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="outline" className="w-full" onClick={() => setIsAdding(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Custom Domain
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Export data card component
+function ExportDataCard() {
+  const exportData = useExportAllData();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = useCallback(() => {
+    if (!exportData) return;
+
+    setIsExporting(true);
+    try {
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `backpocket-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [exportData]);
+
+  const isLoading = exportData === undefined;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Download className="h-5 w-5" />
+          Export Data
+        </CardTitle>
+        <CardDescription>
+          Download all your saves, tags, and collections as a JSON file for backup or migration
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+          <p className="font-medium">What's included:</p>
+          <ul className="space-y-2 text-muted-foreground">
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>All saved links with metadata</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Tags and their associations</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Collections and default tags</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-current shrink-0" />
+              <span>Space settings and profile</span>
+            </li>
+          </ul>
+          <p className="text-sm text-muted-foreground pt-1">
+            Export format is designed for easy import into other databases like Convex, Supabase, or any JSON-compatible system.
+          </p>
+        </div>
+        <Button
+          className="w-full"
+          onClick={handleExport}
+          disabled={isLoading || !exportData || isExporting}
+        >
+          {isExporting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Export All Data
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

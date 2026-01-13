@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import Link from "next/link";
 import { UserButton } from "@/components/auth-components";
 import { Logo } from "@/components/logo";
+import { QuickAdd } from "@/components/quick-add";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { routes } from "@/lib/constants/routes";
 
@@ -25,6 +26,7 @@ export function MobileHeader({ onOpenMenu }: MobileHeaderProps) {
         <Logo size="sm" />
       </Link>
       <div className="ml-auto flex items-center gap-2">
+        <QuickAdd variant="icon" />
         <ThemeSwitcher />
         <UserButton />
       </div>
