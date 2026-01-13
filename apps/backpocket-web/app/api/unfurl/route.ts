@@ -1,6 +1,170 @@
+import { getDateFromSnowflakeId, parseTwitterUrl } from "@backpocket/utils";
 import { type NextRequest, NextResponse } from "next/server";
 
 const FETCH_TIMEOUT_MS = 8000; // 8 second timeout for preview
+
+// ============================================================================
+// Twitter/X oEmbed Support
+// ============================================================================
+
+const TWITTER_OEMBED_URL = "https://publish.twitter.com/oembed";
+
+interface TwitterOEmbedResponse {
+  author_name: string;
+  author_url: string;
+  html: string;
+}
+
+function isTwitterUrl(url: string): boolean {
+  const hostname = new URL(url).hostname.toLowerCase();
+  return (
+    hostname === "twitter.com" ||
+    hostname === "x.com" ||
+    hostname === "www.twitter.com" ||
+    hostname === "www.x.com" ||
+    hostname === "mobile.twitter.com" ||
+    hostname === "mobile.x.com"
+  );
+}
+
+function extractTweetTextFromHtml(html: string): string {
+  // The oEmbed HTML is a blockquote - extract text content
+  // Simple regex extraction since we don't have DOM parsing in edge runtime
+  const paragraphMatch = html.match(/<p[^>]*>([\s\S]*?)<\/p>/gi);
+  if (!paragraphMatch) return "";
+
+  return paragraphMatch
+    .map((p) => p.replace(/<[^>]+>/g, "").trim())
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+function formatTweetDate(date: Date): string {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // For recent tweets, show relative time
+  if (diffDays === 0) {
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours === 0) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return diffMinutes <= 1 ? "just now" : `${diffMinutes}m ago`;
+    }
+    return `${diffHours}h ago`;
+  }
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  // For older tweets, show the date
+  const sameYear = date.getFullYear() === now.getFullYear();
+  if (sameYear) {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function generateTweetTitle(username: string, content: string, date: Date | null): string {
+  const dateStr = date ? ` · ${formatTweetDate(date)}` : "";
+  const baseTitle = `@${username}${dateStr}`;
+
+  if (!content || content.trim().length === 0) {
+    return `Post by ${baseTitle}`;
+  }
+
+  const trimmed = content.trim();
+  const maxLength = 60;
+
+  if (trimmed.length <= maxLength) {
+    return `${baseTitle}: ${trimmed}`;
+  }
+
+  let truncated = trimmed.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  if (lastSpace > maxLength * 0.7) {
+    truncated = truncated.slice(0, lastSpace);
+  }
+
+  return `${baseTitle}: ${truncated}...`;
+}
+
+async function unfurlTwitterUrl(url: string): Promise<{
+  title: string | null;
+  description: string | null;
+  siteName: string;
+  imageUrl: string | null;
+  favicon: string;
+} | null> {
+  try {
+    // Try Twitter oEmbed API
+    const oembedUrl = new URL(TWITTER_OEMBED_URL);
+    oembedUrl.searchParams.set("url", url);
+    oembedUrl.searchParams.set("omit_script", "true");
+
+    const response = await fetch(oembedUrl.toString(), {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!response.ok) {
+      // Fall back to basic info from URL parsing
+      const twitterInfo = parseTwitterUrl(url);
+      if (twitterInfo) {
+        const date = getDateFromSnowflakeId(twitterInfo.tweetId);
+        const dateStr = date
+          ? ` · ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+          : "";
+        return {
+          title: `X post by @${twitterInfo.username}${dateStr}`,
+          description: null,
+          siteName: "X",
+          imageUrl: null,
+          favicon: "https://www.google.com/s2/favicons?domain=x.com&sz=64",
+        };
+      }
+      return null;
+    }
+
+    const data = (await response.json()) as TwitterOEmbedResponse;
+    const tweetText = extractTweetTextFromHtml(data.html);
+
+    // Extract username from author_url
+    const usernameMatch = data.author_url.match(/(?:twitter\.com|x\.com)\/(\w+)/i);
+    const username = usernameMatch ? usernameMatch[1] : data.author_name;
+
+    // Get date from tweet ID
+    const twitterInfo = parseTwitterUrl(url);
+    const tweetDate = twitterInfo ? getDateFromSnowflakeId(twitterInfo.tweetId) : null;
+
+    return {
+      title: generateTweetTitle(username, tweetText, tweetDate),
+      description: tweetText || null,
+      siteName: "X",
+      imageUrl: null, // Twitter oEmbed doesn't provide images
+      favicon: "https://www.google.com/s2/favicons?domain=x.com&sz=64",
+    };
+  } catch {
+    // On error, try to generate basic info from URL
+    const twitterInfo = parseTwitterUrl(url);
+    if (twitterInfo) {
+      const date = getDateFromSnowflakeId(twitterInfo.tweetId);
+      const dateStr = date
+        ? ` · ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+        : "";
+      return {
+        title: `X post by @${twitterInfo.username}${dateStr}`,
+        description: null,
+        siteName: "X",
+        imageUrl: null,
+        favicon: "https://www.google.com/s2/favicons?domain=x.com&sz=64",
+      };
+    }
+    return null;
+  }
+}
+
+// ============================================================================
+// Generic HTML Unfurling
+// ============================================================================
 
 // Blocked domains/patterns for SSRF protection
 const BLOCKED_HOSTNAMES = ["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"];
@@ -123,6 +287,15 @@ export async function POST(request: NextRequest) {
     // SSRF protection
     if (isBlockedHostname(parsedUrl.hostname)) {
       return NextResponse.json({ error: "Blocked URL" }, { status: 400 });
+    }
+
+    // Handle Twitter/X URLs specially (they require oEmbed API)
+    if (isTwitterUrl(url)) {
+      const twitterResult = await unfurlTwitterUrl(url);
+      if (twitterResult) {
+        return NextResponse.json(twitterResult);
+      }
+      // Fall through to generic handling if Twitter-specific fails
     }
 
     // Fetch the page

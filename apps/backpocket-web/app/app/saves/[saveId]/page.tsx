@@ -4,8 +4,10 @@ import type { SnapshotBlockedReason, SnapshotContent, SnapshotStatus } from "@ba
 import {
   Archive,
   ArrowLeft,
+  BookOpen,
   Calendar,
   Check,
+  ChevronDown,
   ExternalLink,
   Eye,
   EyeOff,
@@ -13,9 +15,11 @@ import {
   Folder,
   Globe,
   Hand,
+  ImageIcon,
   Loader2,
   Pencil,
   Plus,
+  RefreshCw,
   Star,
   Tag,
   Trash2,
@@ -38,6 +42,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
 import {
@@ -718,7 +729,8 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isRefreshingContent, setIsRefreshingContent] = useState(false);
+  const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
 
   // Dialog states
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -836,16 +848,56 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     }
   }, [saveId, toggleArchive]);
 
-  const handleRefreshSnapshot = useCallback(async () => {
-    setIsRefreshing(true);
+  const handleRefreshContent = useCallback(async () => {
+    setIsRefreshingContent(true);
     try {
       await requestSnapshot({ saveId: saveId as any, force: true });
     } catch (error) {
       console.error("Failed to request snapshot:", error);
     } finally {
-      setIsRefreshing(false);
+      setIsRefreshingContent(false);
     }
   }, [saveId, requestSnapshot]);
+
+  const handleRefreshMetadata = useCallback(async () => {
+    if (!save) return;
+    setIsRefreshingMetadata(true);
+    try {
+      // Fetch fresh metadata from the URL
+      const response = await fetch("/api/unfurl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: save.url }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Update save with fresh metadata (only update fields that have new values)
+        const updates: {
+          id: any;
+          title?: string;
+          description?: string;
+          imageUrl?: string;
+          siteName?: string;
+        } = {
+          id: saveId as any,
+        };
+        if (data.title) updates.title = data.title;
+        if (data.description) updates.description = data.description;
+        if (data.imageUrl) updates.imageUrl = data.imageUrl;
+        if (data.siteName) updates.siteName = data.siteName;
+        await updateSave(updates);
+      }
+    } catch (error) {
+      console.error("Failed to refresh metadata:", error);
+    } finally {
+      setIsRefreshingMetadata(false);
+    }
+  }, [save, saveId, updateSave]);
+
+  const handleRefreshAll = useCallback(async () => {
+    await Promise.all([handleRefreshMetadata(), handleRefreshContent()]);
+  }, [handleRefreshMetadata, handleRefreshContent]);
 
   if (isLoading) {
     return (
@@ -1022,6 +1074,47 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             <Archive className="h-4 w-4" />
             <span className="hidden sm:inline">{save.isArchived ? "Unarchive" : "Archive"}</span>
           </Button>
+
+          {/* Refresh dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={isRefreshingMetadata || isRefreshingContent}
+              >
+                {isRefreshingMetadata || isRefreshingContent ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                <span className="hidden sm:inline">Refresh</span>
+                <ChevronDown className="h-3 w-3 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={handleRefreshMetadata} disabled={isRefreshingMetadata}>
+                <ImageIcon className="h-4 w-4 mr-2" />
+                Refresh metadata
+                <span className="ml-auto text-xs text-muted-foreground">title, image</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleRefreshContent} disabled={isRefreshingContent}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Refresh content
+                <span className="ml-auto text-xs text-muted-foreground">reader mode</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleRefreshAll}
+                disabled={isRefreshingMetadata || isRefreshingContent}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh all
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="outline"
             size="sm"
@@ -1070,9 +1163,9 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             blockedReason={snapshotData?.snapshot?.blockedReason as SnapshotBlockedReason | null}
             content={snapshotData?.content as SnapshotContent | null}
             isLoading={snapshotData === undefined}
-            onRefresh={handleRefreshSnapshot}
-            isRefreshing={isRefreshing}
-            showRefreshButton={true}
+            onRefresh={handleRefreshContent}
+            isRefreshing={isRefreshingContent}
+            showRefreshButton={false}
             originalUrl={save.url}
           />
         </div>

@@ -1,7 +1,13 @@
 import { ConvexError, v } from "convex/values";
-import { internalMutation, mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
+import {
+  internalMutation,
+  type MutationCtx,
+  mutation,
+  type QueryCtx,
+  query,
+} from "./_generated/server";
 import { getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
 import { normalizeUrl } from "./lib/validators";
 import { visibilityValidator } from "./schema";
@@ -506,6 +512,8 @@ export const update = mutation({
     id: v.id("saves"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    siteName: v.optional(v.string()),
     visibility: v.optional(visibilityValidator),
     collectionIds: v.optional(v.array(v.id("collections"))),
     tagNames: v.optional(v.array(v.string())),
@@ -526,6 +534,8 @@ export const update = mutation({
     const updates: Partial<typeof save> = {};
     if (args.title !== undefined) updates.title = args.title;
     if (args.description !== undefined) updates.description = args.description;
+    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
+    if (args.siteName !== undefined) updates.siteName = args.siteName;
     if (args.visibility !== undefined) updates.visibility = args.visibility;
 
     if (Object.keys(updates).length > 0) {
