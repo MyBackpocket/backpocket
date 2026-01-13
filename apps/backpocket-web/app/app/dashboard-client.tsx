@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   Bookmark,
   Eye,
-  FolderOpen,
   Globe,
   Loader2,
   Plus,
@@ -45,18 +44,20 @@ function StatCard({
   title,
   value,
   icon: Icon,
+  iconClassName,
   href,
 }: {
   title: string;
   value: number | string;
   icon: React.ElementType;
+  iconClassName?: string;
   href?: string;
 }) {
   const content = (
     <Card className="card-hover">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={cn("h-4 w-4", iconClassName || "text-muted-foreground")} />
       </CardHeader>
       <CardContent>
         <p className="text-2xl font-bold">{value}</p>
@@ -88,10 +89,13 @@ function StatsSkeleton() {
   );
 }
 
+// Consistent height for recent saves content area to prevent layout shift
+const RECENT_SAVES_MIN_HEIGHT = "min-h-[200px]";
+
 function RecentSavesSkeleton() {
   return (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
+    <div className={`space-y-2 ${RECENT_SAVES_MIN_HEIGHT}`}>
+      {Array.from({ length: 3 }).map((_, i) => (
         <div
           key={i}
           className="flex items-center gap-4 rounded-lg border border-border/60 bg-card p-3"
@@ -101,9 +105,30 @@ function RecentSavesSkeleton() {
             <Skeleton className="h-5 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
           </div>
+          {/* Spacer for action buttons area */}
+          <Skeleton className="h-8 w-8 shrink-0 rounded-lg" />
         </div>
       ))}
     </div>
+  );
+}
+
+function PublicSpaceSkeleton() {
+  return (
+    <Card className="mt-8">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-32" />
+        </div>
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <Skeleton className="h-8 w-48 rounded-md" />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -186,59 +211,34 @@ export default function DashboardClient() {
             title="Total Saves"
             value={formatNumber(stats?.totalSaves ?? 0)}
             icon={Bookmark}
+            iconClassName="text-rose-500"
             href={routes.app.saves}
           />
           <StatCard
             title="Public Saves"
             value={formatNumber(stats?.publicSaves ?? 0)}
             icon={Globe}
+            iconClassName="text-emerald-500"
             href={savesWithFilter("public")}
           />
           <StatCard
             title="Favorites"
             value={formatNumber(stats?.favoriteSaves ?? 0)}
             icon={Star}
+            iconClassName="text-amber"
             href={savesWithFilter("favorites")}
           />
           <StatCard
             title="Visitors"
             value={formatNumber(visitCount?.total ?? 0)}
             icon={Eye}
+            iconClassName="text-violet-500"
           />
         </div>
       )}
 
-      {/* Quick actions + Recent saves */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Quick actions */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-2">
-            <Link href={routes.app.savesNew}>
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <Plus className="h-4 w-4" />
-                Add a new save
-              </Button>
-            </Link>
-            <Link href={routes.app.collections}>
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <FolderOpen className="h-4 w-4" />
-                Manage collections
-              </Button>
-            </Link>
-            <Link href={routes.app.settings}>
-              <Button variant="outline" className="w-full justify-start gap-2">
-                <Globe className="h-4 w-4" />
-                Public space settings
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        {/* Recent saves */}
-        <Card className="lg:col-span-2">
+      {/* Recent saves */}
+      <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-base">Recent Saves</CardTitle>
             <Link href={routes.app.saves}>
@@ -248,7 +248,7 @@ export default function DashboardClient() {
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className={RECENT_SAVES_MIN_HEIGHT}>
             {recentSavesData === undefined ? (
               <RecentSavesSkeleton />
             ) : recentSaves && recentSaves.length > 0 ? (
@@ -356,10 +356,11 @@ export default function DashboardClient() {
             )}
           </CardContent>
         </Card>
-      </div>
 
       {/* Public space preview */}
-      {space?.visibility === "public" && (
+      {space === undefined ? (
+        <PublicSpaceSkeleton />
+      ) : space?.visibility === "public" ? (
         <Card className="mt-8">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2">
@@ -408,7 +409,7 @@ export default function DashboardClient() {
             </div>
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
