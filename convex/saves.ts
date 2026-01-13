@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
-import { mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
+import { internalMutation, mutation, query, type QueryCtx, type MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
 import { normalizeUrl } from "./lib/validators";
@@ -457,6 +458,13 @@ export const create = mutation({
 
     const save = await ctx.db.get(saveId);
 
+    // Trigger snapshot processing for the new save
+    await ctx.scheduler.runAfter(0, internal.snapshots.createSnapshotRecord, {
+      saveId,
+      spaceId: space._id,
+      url: args.url,
+    });
+
     return {
       id: saveId,
       spaceId: space._id,
@@ -730,5 +738,41 @@ export const bulkDelete = mutation({
     }
 
     return { success: true, deletedCount };
+  },
+});
+
+// Internal mutation to update save metadata from snapshot processing
+// Called after successful snapshot extraction to backfill title, description, siteName, imageUrl
+export const updateSaveMetadata = internalMutation({
+  args: {
+    saveId: v.id("saves"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    siteName: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const save = await ctx.db.get(args.saveId);
+    if (!save) return;
+
+    // Only update fields that are currently empty and have new values
+    const updates: Record<string, string> = {};
+
+    if (!save.title && args.title) {
+      updates.title = args.title;
+    }
+    if (!save.description && args.description) {
+      updates.description = args.description;
+    }
+    if (!save.siteName && args.siteName) {
+      updates.siteName = args.siteName;
+    }
+    if (!save.imageUrl && args.imageUrl) {
+      updates.imageUrl = args.imageUrl;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      await ctx.db.patch(args.saveId, updates);
+    }
   },
 });

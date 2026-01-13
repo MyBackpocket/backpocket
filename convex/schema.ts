@@ -145,15 +145,19 @@ export default defineSchema({
     attempts: v.number(),
     nextAttemptAt: v.optional(v.number()),
     fetchedAt: v.optional(v.number()),
-    storageId: v.optional(v.id("_storage")), // Convex file storage
+    storageId: v.optional(v.id("_storage")), // Convex file storage (legacy, kept for backwards compat)
     canonicalUrl: v.optional(v.string()),
     title: v.optional(v.string()),
     byline: v.optional(v.string()),
     excerpt: v.optional(v.string()),
+    siteName: v.optional(v.string()),
     wordCount: v.optional(v.number()),
     language: v.optional(v.string()),
     contentSha256: v.optional(v.string()),
     errorMessage: v.optional(v.string()),
+    // Inline content fields (extracted via Mozilla Readability)
+    contentHtml: v.optional(v.string()), // Sanitized HTML content
+    contentText: v.optional(v.string()), // Plain text version
   })
     .index("by_saveId", ["saveId"])
     .index("by_spaceId", ["spaceId"])

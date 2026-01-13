@@ -884,13 +884,15 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     <div className="p-6 lg:p-8">
       <div className="mx-auto max-w-3xl">
         {/* Back link */}
-        <Link
-          href={routes.app.saves}
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to saves
-        </Link>
+        <div className="mb-6">
+          <Link
+            href={routes.app.saves}
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            Back to saves
+          </Link>
+        </div>
 
         {/* Mobile edit tip - only shows on first visit on mobile */}
         <MobileEditTip />

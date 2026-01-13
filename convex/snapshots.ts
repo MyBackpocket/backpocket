@@ -1,12 +1,11 @@
 import { ConvexError, v } from "convex/values";
-import { action, internalAction, internalMutation, mutation, query } from "./_generated/server";
+import { internalAction, internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { getUserSpace, requireAuth } from "./lib/auth";
 import type { Id } from "./_generated/dataModel";
 
 const SNAPSHOTS_ENABLED = true; // Feature flag
 const MAX_DAILY_SNAPSHOTS = 50; // Rate limit per user per day
-const MAX_CONTENT_SIZE = 5 * 1024 * 1024; // 5MB max content
 
 // Get snapshot for a save
 export const getSaveSnapshot = query({
@@ -62,7 +61,6 @@ export const getSaveSnapshot = query({
         siteName: string | null;
         length: number;
         language: string | null;
-        storageUrl?: string;
       };
     } = {
       snapshot: {
@@ -84,29 +82,18 @@ export const getSaveSnapshot = query({
       },
     };
 
-    // If content requested and snapshot is ready, get storage URL
-    // Client will need to fetch content from this URL
-    if (args.includeContent && snapshot.status === "ready" && snapshot.storageId) {
-      try {
-        const storageUrl = await ctx.storage.getUrl(snapshot.storageId);
-        if (storageUrl) {
-          // For now, return a placeholder - actual content fetching should be done client-side
-          // or via an action that can fetch the blob
-          result.content = {
-            title: snapshot.title ?? "",
-            byline: snapshot.byline ?? null,
-            content: "", // Content is stored in file
-            textContent: "",
-            excerpt: snapshot.excerpt ?? "",
-            siteName: null,
-            length: snapshot.wordCount ?? 0,
-            language: snapshot.language ?? null,
-            storageUrl, // Client can fetch from this URL
-          };
-        }
-      } catch (err) {
-        console.error("[snapshots] Failed to get content URL:", err);
-      }
+    // If content requested and snapshot is ready, return inline content
+    if (args.includeContent && snapshot.status === "ready" && snapshot.contentHtml) {
+      result.content = {
+        title: snapshot.title ?? "",
+        byline: snapshot.byline ?? null,
+        content: snapshot.contentHtml,
+        textContent: snapshot.contentText ?? "",
+        excerpt: snapshot.excerpt ?? "",
+        siteName: snapshot.siteName ?? null,
+        length: snapshot.wordCount ?? 0,
+        language: snapshot.language ?? null,
+      };
     }
 
     return result;
@@ -156,7 +143,6 @@ export const getPublicSaveSnapshot = query({
         siteName: string | null;
         length: number;
         language: string | null;
-        storageUrl?: string;
       };
     } = {
       snapshot: {
@@ -171,25 +157,18 @@ export const getPublicSaveSnapshot = query({
       },
     };
 
-    if (args.includeContent && snapshot.status === "ready" && snapshot.storageId) {
-      try {
-        const storageUrl = await ctx.storage.getUrl(snapshot.storageId);
-        if (storageUrl) {
-          result.content = {
-            title: snapshot.title ?? "",
-            byline: snapshot.byline ?? null,
-            content: "", // Content stored in file
-            textContent: "",
-            excerpt: snapshot.excerpt ?? "",
-            siteName: null,
-            length: snapshot.wordCount ?? 0,
-            language: snapshot.language ?? null,
-            storageUrl, // Client can fetch from this URL
-          };
-        }
-      } catch (err) {
-        console.error("[snapshots] Failed to get content URL:", err);
-      }
+    // Return inline content if available
+    if (args.includeContent && snapshot.status === "ready" && snapshot.contentHtml) {
+      result.content = {
+        title: snapshot.title ?? "",
+        byline: snapshot.byline ?? null,
+        content: snapshot.contentHtml,
+        textContent: snapshot.contentText ?? "",
+        excerpt: snapshot.excerpt ?? "",
+        siteName: snapshot.siteName ?? null,
+        length: snapshot.wordCount ?? 0,
+        language: snapshot.language ?? null,
+      };
     }
 
     return result;
@@ -347,9 +326,12 @@ export const updateSnapshotStatus = internalMutation({
     title: v.optional(v.string()),
     byline: v.optional(v.string()),
     excerpt: v.optional(v.string()),
+    siteName: v.optional(v.string()),
     wordCount: v.optional(v.number()),
     language: v.optional(v.string()),
     contentSha256: v.optional(v.string()),
+    contentHtml: v.optional(v.string()),
+    contentText: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const snapshot = await ctx.db
@@ -359,7 +341,7 @@ export const updateSnapshotStatus = internalMutation({
 
     if (!snapshot) return;
 
-    const updates: Record<string, any> = {
+    const updates: Record<string, unknown> = {
       status: args.status,
       attempts: snapshot.attempts + 1,
     };
@@ -372,176 +354,29 @@ export const updateSnapshotStatus = internalMutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.byline !== undefined) updates.byline = args.byline;
     if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
+    if (args.siteName !== undefined) updates.siteName = args.siteName;
     if (args.wordCount !== undefined) updates.wordCount = args.wordCount;
     if (args.language !== undefined) updates.language = args.language;
     if (args.contentSha256 !== undefined) updates.contentSha256 = args.contentSha256;
+    if (args.contentHtml !== undefined) updates.contentHtml = args.contentHtml;
+    if (args.contentText !== undefined) updates.contentText = args.contentText;
 
     await ctx.db.patch(snapshot._id, updates);
   },
 });
 
-// Internal action to process a snapshot
+// Internal action to process a snapshot - delegates to Node.js action for Readability parsing
 export const processSnapshot = internalAction({
   args: {
     saveId: v.id("saves"),
     url: v.string(),
   },
   handler: async (ctx, args) => {
-    // Mark as processing
-    await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
+    // Delegate to the Node.js action which has access to Readability + linkedom
+    await ctx.runAction(internal.lib.snapshot_processor.processSnapshotNode, {
       saveId: args.saveId,
-      status: "processing",
+      url: args.url,
     });
-
-    try {
-      // Validate URL
-      let parsedUrl: URL;
-      try {
-        parsedUrl = new URL(args.url);
-      } catch {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: "invalid_url",
-          errorMessage: "Invalid URL format",
-        });
-        return;
-      }
-
-      // Block private IPs (SSRF protection)
-      const hostname = parsedUrl.hostname;
-      if (
-        hostname === "localhost" ||
-        hostname.startsWith("127.") ||
-        hostname.startsWith("10.") ||
-        hostname.startsWith("192.168.") ||
-        hostname.startsWith("172.16.") ||
-        hostname.endsWith(".local")
-      ) {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: "ssrf_blocked",
-          errorMessage: "Private IP addresses are not allowed",
-        });
-        return;
-      }
-
-      // Fetch the page
-      const response = await fetch(args.url, {
-        headers: {
-          "User-Agent": "Backpocket/1.0 (https://backpocket.app)",
-          Accept: "text/html,application/xhtml+xml",
-        },
-        redirect: "follow",
-      });
-
-      if (!response.ok) {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: response.status === 403 ? "forbidden" : "fetch_error",
-          errorMessage: `HTTP ${response.status}: ${response.statusText}`,
-        });
-        return;
-      }
-
-      // Check content type
-      const contentType = response.headers.get("content-type") || "";
-      if (!contentType.includes("text/html") && !contentType.includes("application/xhtml")) {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: "not_html",
-          errorMessage: `Content type is ${contentType}`,
-        });
-        return;
-      }
-
-      // Get content
-      const html = await response.text();
-
-      // Check size
-      if (html.length > MAX_CONTENT_SIZE) {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: "too_large",
-          errorMessage: `Content size ${html.length} exceeds limit`,
-        });
-        return;
-      }
-
-      // Check for noarchive meta tag
-      if (html.includes('name="robots"') && html.includes("noarchive")) {
-        await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-          saveId: args.saveId,
-          status: "blocked",
-          blockedReason: "noarchive",
-          errorMessage: "Page has noarchive meta tag",
-        });
-        return;
-      }
-
-      // Parse with Readability (simplified - in production you'd use linkedom + @mozilla/readability)
-      // For now, we'll extract basic content
-      const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-      const title = titleMatch ? titleMatch[1].trim() : "Untitled";
-
-      // Extract text content (very simplified)
-      const textContent = html
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-
-      const excerpt = textContent.substring(0, 500);
-      const wordCount = textContent.split(/\s+/).length;
-
-      // Create content object
-      const content = {
-        title,
-        byline: null,
-        content: `<article><p>${excerpt}...</p></article>`, // Simplified
-        textContent: textContent.substring(0, 10000),
-        excerpt,
-        siteName: parsedUrl.hostname,
-        length: textContent.length,
-        language: null,
-      };
-
-      // Store content
-      const blob = new Blob([JSON.stringify(content)], { type: "application/json" });
-      const storageId = await ctx.storage.store(blob);
-
-      // Calculate content hash
-      const encoder = new TextEncoder();
-      const data = encoder.encode(JSON.stringify(content));
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const contentSha256 = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-
-      // Update snapshot as ready
-      await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-        saveId: args.saveId,
-        status: "ready",
-        storageId,
-        fetchedAt: Date.now(),
-        canonicalUrl: response.url,
-        title,
-        excerpt,
-        wordCount,
-        contentSha256,
-      });
-    } catch (error) {
-      console.error("[snapshots] Processing error:", error);
-      await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
-        saveId: args.saveId,
-        status: "failed",
-        errorMessage: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
   },
 });
 

@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
+import { getCurrentUser, getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
 import { isValidSlug, RESERVED_SLUGS } from "./lib/validators";
 import { publicLayoutValidator, visibilityValidator } from "./schema";
 
@@ -8,7 +8,13 @@ import { publicLayoutValidator, visibilityValidator } from "./schema";
 export const getMySpace = query({
   args: {},
   handler: async (ctx) => {
-    const user = await requireAuth(ctx);
+    // Use getCurrentUser instead of requireAuth to gracefully handle
+    // the race condition on page reload where auth may not be synced yet
+    const user = await getCurrentUser(ctx);
+    if (!user) {
+      return null;
+    }
+
     const space = await getUserSpace(ctx, user.userId);
 
     if (!space) {

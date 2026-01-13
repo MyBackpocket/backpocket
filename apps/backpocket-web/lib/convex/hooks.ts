@@ -1,8 +1,18 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+
+/**
+ * Hook to check if the user is authenticated.
+ * Returns true only when auth is loaded AND user is authenticated.
+ * This prevents queries from running before Clerk restores the session.
+ */
+function useIsAuthenticated() {
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  return !isLoading && isAuthenticated;
+}
 
 // Re-export types for convenience
 export type SaveId = Id<"saves">;
@@ -24,15 +34,18 @@ export function useListSaves(args?: {
   cursor?: number;
   limit?: number;
 }) {
-  return useQuery(api.saves.list, args ?? {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.saves.list, isAuthenticated ? (args ?? {}) : "skip");
 }
 
 export function useGetSave(saveId: SaveId | undefined) {
-  return useQuery(api.saves.get, saveId ? { saveId } : "skip");
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.saves.get, isAuthenticated && saveId ? { saveId } : "skip");
 }
 
 export function useCheckDuplicate(url: string | undefined) {
-  return useQuery(api.saves.checkDuplicate, url ? { url } : "skip");
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.saves.checkDuplicate, isAuthenticated && url ? { url } : "skip");
 }
 
 export function useCreateSave() {
@@ -64,7 +77,8 @@ export function useBulkDeleteSaves() {
 // ============================================================================
 
 export function useListTags() {
-  return useQuery(api.tags.list, {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.tags.list, isAuthenticated ? {} : "skip");
 }
 
 export function useCreateTag() {
@@ -88,11 +102,13 @@ export function useListCollections(args?: {
   visibility?: "public" | "private";
   defaultTagId?: TagId;
 }) {
-  return useQuery(api.collections.list, args ?? {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.collections.list, isAuthenticated ? (args ?? {}) : "skip");
 }
 
 export function useGetCollection(collectionId: CollectionId | undefined) {
-  return useQuery(api.collections.get, collectionId ? { collectionId } : "skip");
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.collections.get, isAuthenticated && collectionId ? { collectionId } : "skip");
 }
 
 export function useCreateCollection() {
@@ -112,7 +128,8 @@ export function useDeleteCollection() {
 // ============================================================================
 
 export function useGetMySpace() {
-  return useQuery(api.spaces.getMySpace, {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.spaces.getMySpace, isAuthenticated ? {} : "skip");
 }
 
 export function useEnsureSpace() {
@@ -128,11 +145,13 @@ export function useUpdateSlug() {
 }
 
 export function useCheckSlugAvailability(slug: string | undefined) {
-  return useQuery(api.spaces.checkSlugAvailability, slug ? { slug } : "skip");
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.spaces.checkSlugAvailability, isAuthenticated && slug ? { slug } : "skip");
 }
 
 export function useGetStats() {
-  return useQuery(api.spaces.getStats, {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.spaces.getStats, isAuthenticated ? {} : "skip");
 }
 
 // ============================================================================
@@ -140,9 +159,10 @@ export function useGetStats() {
 // ============================================================================
 
 export function useGetSaveSnapshot(saveId: SaveId | undefined, includeContent = false) {
+  const isAuthenticated = useIsAuthenticated();
   return useQuery(
     api.snapshots.getSaveSnapshot,
-    saveId ? { saveId, includeContent } : "skip"
+    isAuthenticated && saveId ? { saveId, includeContent } : "skip"
   );
 }
 
@@ -151,7 +171,8 @@ export function useRequestSaveSnapshot() {
 }
 
 export function useGetSnapshotQuota() {
-  return useQuery(api.snapshots.getSnapshotQuota, {});
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.snapshots.getSnapshotQuota, isAuthenticated ? {} : "skip");
 }
 
 // ============================================================================
