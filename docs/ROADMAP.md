@@ -4,6 +4,19 @@ Planned features and improvements for Backpocket.
 
 ---
 
+## Bug Fixes
+
+### Domain-Specific Link Processing
+
+- [ ] Fix X (Twitter) link processing issues
+- [ ] Fix Reddit link processing issues
+
+### Web App
+
+- [ ] Fix custom domain settings page card (regression)
+
+---
+
 ## Planned Features
 
 ### User Experience
