@@ -163,6 +163,206 @@ async function unfurlTwitterUrl(url: string): Promise<{
 }
 
 // ============================================================================
+// Reddit Support
+// ============================================================================
+
+const REDDIT_DOMAINS = [
+  "reddit.com",
+  "www.reddit.com",
+  "old.reddit.com",
+  "new.reddit.com",
+  "np.reddit.com",
+  "m.reddit.com",
+];
+
+// Post URL pattern: /r/subreddit/comments/postId/title_slug/
+const REDDIT_POST_PATTERN =
+  /^https?:\/\/(?:(?:www|old|new|np|m)\.)?reddit\.com\/r\/(\w+)\/comments\/(\w+)(?:\/([^/?#]+))?/i;
+
+// Comment URL pattern
+const REDDIT_COMMENT_PATTERN =
+  /^https?:\/\/(?:(?:www|old|new|np|m)\.)?reddit\.com\/r\/(\w+)\/comments\/(\w+)\/([^/?]+)\/(\w+)/i;
+
+// Subreddit URL pattern
+const REDDIT_SUBREDDIT_PATTERN =
+  /^https?:\/\/(?:(?:www|old|new|np|m)\.)?reddit\.com\/r\/(\w+)\/?(?:\?.*)?$/i;
+
+// User URL pattern
+const REDDIT_USER_PATTERN =
+  /^https?:\/\/(?:(?:www|old|new|np|m)\.)?reddit\.com\/u(?:ser)?\/([^/?]+)/i;
+
+function isRedditUrl(url: string): boolean {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (hostname === "redd.it") return true;
+    return REDDIT_DOMAINS.some((domain) => hostname === domain);
+  } catch {
+    return false;
+  }
+}
+
+interface RedditPostData {
+  title: string;
+  selftext?: string;
+  author: string;
+  subreddit: string;
+  created_utc: number;
+  thumbnail?: string;
+  url?: string;
+  is_self: boolean;
+}
+
+function formatRedditDate(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours === 0) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return diffMinutes <= 1 ? "just now" : `${diffMinutes}m ago`;
+    }
+    return `${diffHours}h ago`;
+  }
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  if (sameYear) {
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+async function unfurlRedditUrl(url: string): Promise<{
+  title: string | null;
+  description: string | null;
+  siteName: string;
+  imageUrl: string | null;
+  favicon: string;
+} | null> {
+  const favicon = "https://www.google.com/s2/favicons?domain=reddit.com&sz=64";
+
+  try {
+    // Check URL type and generate fallback title from URL
+    const postMatch = url.match(REDDIT_POST_PATTERN);
+    const commentMatch = url.match(REDDIT_COMMENT_PATTERN);
+    const subredditMatch = url.match(REDDIT_SUBREDDIT_PATTERN);
+    const userMatch = url.match(REDDIT_USER_PATTERN);
+
+    // For subreddit pages, just return basic info
+    if (subredditMatch && !postMatch) {
+      return {
+        title: `r/${subredditMatch[1]}`,
+        description: `The ${subredditMatch[1]} community on Reddit`,
+        siteName: "Reddit",
+        imageUrl: null,
+        favicon,
+      };
+    }
+
+    // For user pages
+    if (userMatch && !postMatch) {
+      return {
+        title: `u/${userMatch[1]}`,
+        description: `${userMatch[1]}'s profile on Reddit`,
+        siteName: "Reddit",
+        imageUrl: null,
+        favicon,
+      };
+    }
+
+    // For posts and comments, try to fetch via Reddit JSON API
+    if (postMatch || commentMatch) {
+      const subreddit = postMatch?.[1] || commentMatch?.[1];
+      const postId = postMatch?.[2] || commentMatch?.[2];
+      const titleSlug = postMatch?.[3] || commentMatch?.[3] || "";
+
+      // Try Reddit's JSON API
+      const jsonUrl = `https://www.reddit.com/r/${subreddit}/comments/${postId}/${titleSlug}.json`;
+      const response = await fetch(jsonUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; Backpocket/1.0)",
+          Accept: "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const post = data?.[0]?.data?.children?.[0]?.data as RedditPostData | undefined;
+
+        if (post) {
+          const dateStr = formatRedditDate(post.created_utc);
+          const prefix = `r/${post.subreddit} · ${dateStr}`;
+
+          // Truncate title if too long
+          let title = post.title;
+          if (title.length > 80) {
+            title = `${title.slice(0, 77)}...`;
+          }
+
+          // For comments, indicate it's a comment
+          const isComment = !!commentMatch;
+          const fullTitle = isComment ? `${prefix}: Comment on "${title}"` : `${prefix}: ${title}`;
+
+          // Get description from selftext or generate from title
+          const description = post.selftext
+            ? post.selftext.slice(0, 200) + (post.selftext.length > 200 ? "..." : "")
+            : null;
+
+          // Get thumbnail if available and valid
+          let imageUrl: string | null = null;
+          if (
+            post.thumbnail?.startsWith("http") &&
+            !["self", "default", "nsfw", "spoiler"].includes(post.thumbnail)
+          ) {
+            imageUrl = post.thumbnail;
+          }
+
+          return {
+            title: fullTitle,
+            description,
+            siteName: "Reddit",
+            imageUrl,
+            favicon,
+          };
+        }
+      }
+
+      // Fallback: generate title from URL
+      const decodedSlug = titleSlug ? decodeURIComponent(titleSlug).replace(/_/g, " ") : "Post";
+      return {
+        title: `r/${subreddit}: ${decodedSlug}`,
+        description: null,
+        siteName: "Reddit",
+        imageUrl: null,
+        favicon,
+      };
+    }
+
+    return null;
+  } catch {
+    // On error, try to extract info from URL
+    const postMatch = url.match(REDDIT_POST_PATTERN);
+    if (postMatch) {
+      const subreddit = postMatch[1];
+      const titleSlug = postMatch[3];
+      const decodedSlug = titleSlug ? decodeURIComponent(titleSlug).replace(/_/g, " ") : "Post";
+      return {
+        title: `r/${subreddit}: ${decodedSlug}`,
+        description: null,
+        siteName: "Reddit",
+        imageUrl: null,
+        favicon,
+      };
+    }
+    return null;
+  }
+}
+
+// ============================================================================
 // Generic HTML Unfurling
 // ============================================================================
 
@@ -298,6 +498,15 @@ export async function POST(request: NextRequest) {
       // Fall through to generic handling if Twitter-specific fails
     }
 
+    // Handle Reddit URLs specially (use JSON API for better metadata)
+    if (isRedditUrl(url)) {
+      const redditResult = await unfurlRedditUrl(url);
+      if (redditResult) {
+        return NextResponse.json(redditResult);
+      }
+      // Fall through to generic handling if Reddit-specific fails
+    }
+
     // Fetch the page
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -366,7 +575,7 @@ export async function POST(request: NextRequest) {
         imageUrl,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
       });
-    } catch (error) {
+    } catch (_error) {
       clearTimeout(timeout);
 
       // On any fetch error, return basic info
