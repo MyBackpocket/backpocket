@@ -13,6 +13,8 @@ import { useShareIntent } from "expo-share-intent";
 import {
   Bookmark,
   Check,
+  ChevronDown,
+  ChevronUp,
   ExternalLink,
   Globe,
   Lock,
@@ -272,6 +274,142 @@ function VisibilityToggleSection({ savedItem, colors }: VisibilityToggleSectionP
 interface QuickTagSectionProps {
   savedItem: Save;
   colors: ReturnType<typeof useThemeColors>;
+}
+
+/**
+ * Quick note section for post-save note editing
+ */
+interface QuickNoteSectionProps {
+  savedItem: Save;
+  colors: ReturnType<typeof useThemeColors>;
+}
+
+function QuickNoteSection({ savedItem, colors }: QuickNoteSectionProps) {
+  const updateSaveMutation = useUpdateSave();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [noteText, setNoteText] = useState(savedItem.note || "");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const handleToggleExpand = () => {
+    Haptics.selectionAsync();
+    setIsExpanded(!isExpanded);
+  };
+
+  const handleNoteChange = (text: string) => {
+    setNoteText(text);
+    setHasUnsavedChanges(text !== (savedItem.note || ""));
+  };
+
+  const handleSaveNote = async () => {
+    if (isUpdating || !hasUnsavedChanges) return;
+
+    setIsUpdating(true);
+    try {
+      await updateSaveMutation({
+        id: savedItem.id as any,
+        note: noteText || undefined,
+      });
+      setHasUnsavedChanges(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Collapse after saving if note is empty
+      if (!noteText) {
+        setIsExpanded(false);
+      }
+    } catch {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert("Couldn't save note", "Please try again from your library.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Auto-save on blur
+  const handleBlur = () => {
+    if (hasUnsavedChanges) {
+      handleSaveNote();
+    }
+  };
+
+  const hasNote = noteText.trim().length > 0;
+
+  return (
+    <View style={styles.noteSection}>
+      <Pressable
+        onPress={handleToggleExpand}
+        style={({ pressed }) => [
+          styles.noteSectionHeader,
+          {
+            backgroundColor: isExpanded ? `${colors.mutedForeground}08` : "transparent",
+            borderColor: colors.border,
+          },
+          pressed && { opacity: 0.8 },
+        ]}
+      >
+        <View style={styles.noteSectionHeaderLeft}>
+          <Bookmark
+            size={16}
+            color={hasNote ? brandColors.amber : colors.mutedForeground}
+            fill={hasNote ? brandColors.amber : "transparent"}
+          />
+          <Text style={[styles.noteSectionLabel, { color: colors.text }]}>
+            {hasNote ? "Note added" : "Add a note..."}
+          </Text>
+        </View>
+        {isExpanded ? (
+          <ChevronUp size={18} color={colors.mutedForeground} />
+        ) : (
+          <ChevronDown size={18} color={colors.mutedForeground} />
+        )}
+      </Pressable>
+
+      {isExpanded && (
+        <View style={styles.noteInputContainer}>
+          <TextInput
+            value={noteText}
+            onChangeText={handleNoteChange}
+            onBlur={handleBlur}
+            placeholder="Your thoughts, annotations, or commentary..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+            style={[
+              styles.noteInput,
+              {
+                backgroundColor: colors.muted,
+                borderColor: colors.border,
+                color: colors.text,
+              },
+            ]}
+          />
+          <View style={styles.noteInputFooter}>
+            <Text style={[styles.noteHint, { color: colors.mutedForeground }]}>
+              Supports Markdown
+            </Text>
+            {hasUnsavedChanges && (
+              <Pressable
+                onPress={handleSaveNote}
+                disabled={isUpdating}
+                style={({ pressed }) => [
+                  styles.noteSaveButton,
+                  { backgroundColor: brandColors.amber },
+                  pressed && { opacity: 0.8 },
+                  isUpdating && { opacity: 0.5 },
+                ]}
+              >
+                {isUpdating ? (
+                  <ActivityIndicator size="small" color="#141D22" />
+                ) : (
+                  <Text style={styles.noteSaveButtonText}>Save</Text>
+                )}
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
+    </View>
+  );
 }
 
 function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
@@ -962,6 +1100,9 @@ export default function ShareScreen() {
                 {/* Quick Tags */}
                 {savedItem && <QuickTagSection savedItem={savedItem} colors={colors} />}
 
+                {/* Quick Note */}
+                {savedItem && <QuickNoteSection savedItem={savedItem} colors={colors} />}
+
                 {/* Actions */}
                 <View style={styles.actions}>
                   <Pressable
@@ -1456,6 +1597,65 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
+  },
+  // Quick Note section styles
+  noteSection: {
+    width: "100%",
+    marginTop: 12,
+  },
+  noteSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderRadius: radii.md,
+    borderWidth: 1,
+  },
+  noteSectionHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  noteSectionLabel: {
+    fontSize: 14,
+    fontFamily: "DMSans-Medium",
+    fontWeight: "500",
+  },
+  noteInputContainer: {
+    marginTop: 8,
+  },
+  noteInput: {
+    minHeight: 100,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    lineHeight: 20,
+    textAlignVertical: "top",
+  },
+  noteInputFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  noteHint: {
+    fontSize: 11,
+    fontFamily: "DMSans",
+  },
+  noteSaveButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: radii.full,
+  },
+  noteSaveButtonText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    fontWeight: "500",
+    color: "#141D22",
   },
   // Duplicate state styles
   duplicateIconContainer: {

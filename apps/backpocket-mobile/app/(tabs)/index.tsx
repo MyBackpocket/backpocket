@@ -33,7 +33,6 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Button } from "@/components/ui/button";
 import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { SwipeableRow } from "@/components/ui/swipeable-row";
 import { brandColors, radii } from "@/constants/theme";
@@ -188,18 +187,19 @@ export default function DashboardScreen() {
   };
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
-      contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={isManualRefreshing}
-          onRefresh={handleManualRefresh}
-          tintColor={brandColors.rust.DEFAULT}
-        />
-      }
-    >
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.content, { paddingBottom: 24 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isManualRefreshing}
+            onRefresh={handleManualRefresh}
+            tintColor={brandColors.rust.DEFAULT}
+          />
+        }
+      >
       {/* Header */}
       <View style={styles.header}>
         {userImageUrl ? (
@@ -377,12 +377,6 @@ export default function DashboardScreen() {
         </Animated.View>
       )}
 
-      {/* Quick Add Button */}
-      <Button onPress={() => router.push("/save/new")} size="lg" style={styles.quickAddButton}>
-        <Plus size={22} color="#FFFFFF" strokeWidth={2.5} />
-        <Text style={styles.quickAddText}>Add New Save</Text>
-      </Button>
-
       {/* Recent Saves Section */}
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
@@ -548,7 +542,17 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
       </Modal>
-    </ScrollView>
+      </ScrollView>
+
+      {/* Floating Action Button */}
+      <TouchableOpacity
+        style={[styles.fab, { backgroundColor: brandColors.rust.DEFAULT }]}
+        onPress={() => router.push("/save/new")}
+        activeOpacity={0.8}
+      >
+        <Plus size={24} color="#FFFFFF" />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -682,6 +686,9 @@ function SaveListItem({
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   content: {
@@ -868,17 +875,20 @@ const styles = StyleSheet.create({
     fontFamily: "DMSans-Medium",
     fontWeight: "500",
   },
-  quickAddButton: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 32,
-    borderRadius: radii.xl,
-  },
-  quickAddText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "DMSans-Bold",
-    fontWeight: "600",
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
   },
   sectionContainer: {
     marginBottom: 16,

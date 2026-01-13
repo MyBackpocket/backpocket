@@ -53,6 +53,7 @@ const HEADER_BUTTON_SIZE = 36;
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 import {
@@ -256,6 +257,8 @@ const collectionChipStyles = StyleSheet.create({
 });
 
 // === Edit Save Modal ===
+type EditModalTab = "details" | "note";
+
 interface EditSaveModalProps {
   visible: boolean;
   onClose: () => void;
@@ -270,6 +273,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   const existingCollections = useListCollections() ?? [];
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingCollection, setIsCreatingCollection] = useState(false);
+  const [activeTab, setActiveTab] = useState<EditModalTab>("details");
 
   // Form state
   const [title, setTitle] = useState(save.title || "");
@@ -291,7 +295,17 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
     setVisibility(save.visibility);
     setTagNames(save.tags?.map((t) => t.name) || []);
     setSelectedCollectionIds(save.collections?.map((c) => c.id) || []);
+    setActiveTab("details");
   }, [save]);
+
+  // Tab segments configuration
+  const tabSegments = useMemo(
+    () => [
+      { value: "details", label: "Details" },
+      { value: "note", label: "Note", hasContent: !!note },
+    ],
+    [note]
+  );
 
   // Tag suggestions (existing tags not already added)
   const tagSuggestions = useMemo(() => {
@@ -394,109 +408,46 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
             <View style={{ width: 24 }} />
           </View>
 
-          <ScrollView
-            style={modalStyles.scrollView}
-            contentContainerStyle={modalStyles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* Title */}
-            <View style={modalStyles.field}>
-              <Text style={[modalStyles.label, { color: colors.text }]}>Title</Text>
-              <Input
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Enter title"
-                style={{ backgroundColor: colors.card }}
-              />
-            </View>
+          {/* Tab Selector */}
+          <View style={modalStyles.tabContainer}>
+            <SegmentedControl
+              segments={tabSegments}
+              selectedValue={activeTab}
+              onValueChange={(value) => setActiveTab(value as EditModalTab)}
+              colors={colors}
+            />
+          </View>
 
-            {/* Description */}
-            <View style={modalStyles.field}>
-              <Text style={[modalStyles.label, { color: colors.text }]}>Description</Text>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Add a description..."
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                numberOfLines={3}
-                style={[
-                  modalStyles.textArea,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    color: colors.text,
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Note */}
-            <View style={modalStyles.field}>
-              <Text style={[modalStyles.label, { color: colors.text }]}>Note</Text>
-              <TextInput
-                value={note}
-                onChangeText={setNote}
-                placeholder="Add your thoughts, annotations, or commentary..."
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                numberOfLines={4}
-                style={[
-                  modalStyles.textArea,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: colors.border,
-                    color: colors.text,
-                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-                    fontSize: 14,
-                  },
-                ]}
-              />
-              <Text style={[modalStyles.hint, { color: colors.mutedForeground }]}>
-                Supports markdown. Inherits visibility from save.
-              </Text>
-            </View>
-
-            {/* Visibility */}
-            <View style={modalStyles.field}>
-              <Text style={[modalStyles.label, { color: colors.text }]}>Visibility</Text>
-              <VisibilitySelector value={visibility} onChange={setVisibility} colors={colors} />
-            </View>
-
-            {/* Tags */}
-            <View style={modalStyles.field}>
-              <View style={modalStyles.fieldHeader}>
-                <Tag size={16} color={colors.mutedForeground} />
-                <Text style={[modalStyles.label, { color: colors.text, marginBottom: 0 }]}>
-                  Tags
-                </Text>
+          {/* Details Tab */}
+          {activeTab === "details" && (
+            <ScrollView
+              style={modalStyles.scrollView}
+              contentContainerStyle={modalStyles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* Title */}
+              <View style={modalStyles.field}>
+                <Text style={[modalStyles.label, { color: colors.text }]}>Title</Text>
+                <Input
+                  value={title}
+                  onChangeText={setTitle}
+                  placeholder="Enter title"
+                  style={{ backgroundColor: colors.card }}
+                />
               </View>
 
-              {/* Current tags */}
-              {tagNames.length > 0 && (
-                <View style={modalStyles.chipRow}>
-                  {tagNames.map((name) => (
-                    <TagChip
-                      key={name}
-                      name={name}
-                      onRemove={() => handleRemoveTag(name)}
-                      colors={colors}
-                    />
-                  ))}
-                </View>
-              )}
-
-              {/* Add tag input */}
-              <View style={modalStyles.addRow}>
+              {/* Description */}
+              <View style={modalStyles.field}>
+                <Text style={[modalStyles.label, { color: colors.text }]}>Description</Text>
                 <TextInput
-                  value={newTagInput}
-                  onChangeText={setNewTagInput}
-                  placeholder="Add a tag..."
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Add a description..."
                   placeholderTextColor={colors.mutedForeground}
-                  onSubmitEditing={() => handleAddTag(newTagInput)}
-                  returnKeyType="done"
+                  multiline
+                  numberOfLines={3}
                   style={[
-                    modalStyles.addInput,
+                    modalStyles.textArea,
                     {
                       backgroundColor: colors.card,
                       borderColor: colors.border,
@@ -504,78 +455,186 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
                     },
                   ]}
                 />
-                <TouchableOpacity
-                  onPress={() => handleAddTag(newTagInput)}
-                  disabled={!newTagInput.trim()}
-                  style={[
-                    modalStyles.addButton,
-                    {
-                      backgroundColor: newTagInput.trim() ? brandColors.amber : colors.muted,
-                    },
-                  ]}
-                >
-                  <Plus size={20} color={newTagInput.trim() ? "#141D22" : colors.mutedForeground} />
-                </TouchableOpacity>
               </View>
 
-              {/* Tag suggestions */}
-              {tagSuggestions.length > 0 && (
-                <View style={modalStyles.suggestions}>
-                  <Text style={[modalStyles.suggestionLabel, { color: colors.mutedForeground }]}>
-                    Suggestions:
+              {/* Visibility */}
+              <View style={modalStyles.field}>
+                <Text style={[modalStyles.label, { color: colors.text }]}>Visibility</Text>
+                <VisibilitySelector value={visibility} onChange={setVisibility} colors={colors} />
+              </View>
+
+              {/* Tags */}
+              <View style={modalStyles.field}>
+                <View style={modalStyles.fieldHeader}>
+                  <Tag size={16} color={colors.mutedForeground} />
+                  <Text style={[modalStyles.label, { color: colors.text, marginBottom: 0 }]}>
+                    Tags
                   </Text>
+                </View>
+
+                {/* Current tags */}
+                {tagNames.length > 0 && (
                   <View style={modalStyles.chipRow}>
-                    {tagSuggestions.map((tag) => (
-                      <TouchableOpacity
-                        key={tag.id}
-                        onPress={() => handleAddTag(tag.name)}
-                        style={[modalStyles.suggestionChip, { backgroundColor: colors.muted }]}
-                      >
-                        <Text style={[modalStyles.suggestionChipText, { color: colors.text }]}>
-                          + {tag.name}
-                        </Text>
-                      </TouchableOpacity>
+                    {tagNames.map((name) => (
+                      <TagChip
+                        key={name}
+                        name={name}
+                        onRemove={() => handleRemoveTag(name)}
+                        colors={colors}
+                      />
                     ))}
                   </View>
-                </View>
-              )}
-            </View>
+                )}
 
-            {/* Collections */}
-            <View style={modalStyles.field}>
-              <View style={modalStyles.fieldHeader}>
-                <FolderOpen size={16} color={colors.mutedForeground} />
-                <Text style={[modalStyles.label, { color: colors.text, marginBottom: 0 }]}>
-                  Collections
-                </Text>
+                {/* Add tag input */}
+                <View style={modalStyles.addRow}>
+                  <TextInput
+                    value={newTagInput}
+                    onChangeText={setNewTagInput}
+                    placeholder="Add a tag..."
+                    placeholderTextColor={colors.mutedForeground}
+                    onSubmitEditing={() => handleAddTag(newTagInput)}
+                    returnKeyType="done"
+                    style={[
+                      modalStyles.addInput,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                  />
+                  <TouchableOpacity
+                    onPress={() => handleAddTag(newTagInput)}
+                    disabled={!newTagInput.trim()}
+                    style={[
+                      modalStyles.addButton,
+                      {
+                        backgroundColor: newTagInput.trim() ? brandColors.amber : colors.muted,
+                      },
+                    ]}
+                  >
+                    <Plus
+                      size={20}
+                      color={newTagInput.trim() ? "#141D22" : colors.mutedForeground}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Tag suggestions */}
+                {tagSuggestions.length > 0 && (
+                  <View style={modalStyles.suggestions}>
+                    <Text style={[modalStyles.suggestionLabel, { color: colors.mutedForeground }]}>
+                      Suggestions:
+                    </Text>
+                    <View style={modalStyles.chipRow}>
+                      {tagSuggestions.map((tag) => (
+                        <TouchableOpacity
+                          key={tag.id}
+                          onPress={() => handleAddTag(tag.name)}
+                          style={[modalStyles.suggestionChip, { backgroundColor: colors.muted }]}
+                        >
+                          <Text style={[modalStyles.suggestionChipText, { color: colors.text }]}>
+                            + {tag.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
               </View>
 
-              {/* Existing collections */}
-              {existingCollections.length > 0 && (
-                <View style={modalStyles.chipRow}>
-                  {existingCollections.map((collection) => (
-                    <CollectionChip
-                      key={collection.id}
-                      name={collection.name}
-                      isSelected={selectedCollectionIds.includes(collection.id)}
-                      onToggle={() => handleToggleCollection(collection.id)}
-                      colors={colors}
-                    />
-                  ))}
+              {/* Collections */}
+              <View style={modalStyles.field}>
+                <View style={modalStyles.fieldHeader}>
+                  <FolderOpen size={16} color={colors.mutedForeground} />
+                  <Text style={[modalStyles.label, { color: colors.text, marginBottom: 0 }]}>
+                    Collections
+                  </Text>
                 </View>
-              )}
 
-              {/* Create new collection */}
-              <View style={modalStyles.addRow}>
+                {/* Existing collections */}
+                {existingCollections.length > 0 && (
+                  <View style={modalStyles.chipRow}>
+                    {existingCollections.map((collection) => (
+                      <CollectionChip
+                        key={collection.id}
+                        name={collection.name}
+                        isSelected={selectedCollectionIds.includes(collection.id)}
+                        onToggle={() => handleToggleCollection(collection.id)}
+                        colors={colors}
+                      />
+                    ))}
+                  </View>
+                )}
+
+                {/* Create new collection */}
+                <View style={modalStyles.addRow}>
+                  <TextInput
+                    value={newCollectionInput}
+                    onChangeText={setNewCollectionInput}
+                    placeholder="Create new collection..."
+                    placeholderTextColor={colors.mutedForeground}
+                    onSubmitEditing={handleCreateCollection}
+                    returnKeyType="done"
+                    style={[
+                      modalStyles.addInput,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                        color: colors.text,
+                      },
+                    ]}
+                  />
+                  <TouchableOpacity
+                    onPress={handleCreateCollection}
+                    disabled={!newCollectionInput.trim() || isCreatingCollection}
+                    style={[
+                      modalStyles.addButton,
+                      {
+                        backgroundColor: newCollectionInput.trim()
+                          ? brandColors.amber
+                          : colors.muted,
+                      },
+                    ]}
+                  >
+                    {isCreatingCollection ? (
+                      <ActivityIndicator size="small" color="#141D22" />
+                    ) : (
+                      <Plus
+                        size={20}
+                        color={newCollectionInput.trim() ? "#141D22" : colors.mutedForeground}
+                      />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <Text style={[modalStyles.hint, { color: colors.mutedForeground }]}>
+                  Click to select, or create a new collection
+                </Text>
+              </View>
+            </ScrollView>
+          )}
+
+          {/* Note Tab */}
+          {activeTab === "note" && (
+            <View style={modalStyles.noteTabContainer}>
+              <View style={modalStyles.noteInputWrapper}>
                 <TextInput
-                  value={newCollectionInput}
-                  onChangeText={setNewCollectionInput}
-                  placeholder="Create new collection..."
+                  value={note}
+                  onChangeText={setNote}
+                  placeholder="Add your thoughts, annotations, or commentary...
+
+You can use Markdown formatting:
+• **bold** and *italic*
+• # Headings
+• - Bullet lists
+• > Blockquotes
+• `code`"
                   placeholderTextColor={colors.mutedForeground}
-                  onSubmitEditing={handleCreateCollection}
-                  returnKeyType="done"
+                  multiline
+                  textAlignVertical="top"
                   style={[
-                    modalStyles.addInput,
+                    modalStyles.noteTextArea,
                     {
                       backgroundColor: colors.card,
                       borderColor: colors.border,
@@ -583,31 +642,15 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
                     },
                   ]}
                 />
-                <TouchableOpacity
-                  onPress={handleCreateCollection}
-                  disabled={!newCollectionInput.trim() || isCreatingCollection}
-                  style={[
-                    modalStyles.addButton,
-                    {
-                      backgroundColor: newCollectionInput.trim() ? brandColors.amber : colors.muted,
-                    },
-                  ]}
-                >
-                  {isCreatingCollection ? (
-                    <ActivityIndicator size="small" color="#141D22" />
-                  ) : (
-                    <Plus
-                      size={20}
-                      color={newCollectionInput.trim() ? "#141D22" : colors.mutedForeground}
-                    />
-                  )}
-                </TouchableOpacity>
               </View>
-              <Text style={[modalStyles.hint, { color: colors.mutedForeground }]}>
-                Click to select, or create a new collection
-              </Text>
+              <View style={modalStyles.noteFooterHint}>
+                <BookOpen size={14} color={colors.mutedForeground} />
+                <Text style={[modalStyles.noteHintText, { color: colors.mutedForeground }]}>
+                  Supports Markdown • Inherits visibility from save
+                </Text>
+              </View>
             </View>
-          </ScrollView>
+          )}
 
           {/* Footer */}
           <View style={[modalStyles.footer, { borderTopColor: colors.border }]}>
@@ -649,11 +692,17 @@ const modalStyles = StyleSheet.create({
     fontFamily: "DMSans-Bold",
     fontWeight: "600",
   },
+  tabContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+    paddingTop: 12,
     paddingBottom: 40,
   },
   field: {
@@ -735,6 +784,37 @@ const modalStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  // Note tab styles
+  noteTabContainer: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  noteInputWrapper: {
+    flex: 1,
+    marginBottom: 12,
+  },
+  noteTextArea: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: radii.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    lineHeight: 22,
+    textAlignVertical: "top",
+  },
+  noteFooterHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: 12,
+  },
+  noteHintText: {
+    fontSize: 12,
+    fontFamily: "DMSans",
   },
 });
 

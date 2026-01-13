@@ -18,11 +18,13 @@ import AndroidLogo from "@/assets/img/Android-Logo.svg";
 import AppleLogo from "@/assets/img/Apple-Logo.svg";
 import ChromeLogo from "@/assets/img/Chrome-Logo.svg";
 import FirefoxLogo from "@/assets/img/Firefox-Logo.svg";
-import { SignedIn, SignedOut } from "@/components/auth-components";
+import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
+import { DemoSection, FloatingCards } from "@/components/landing";
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { TypewriterUrl } from "@/components/typewriter-url";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { externalLinks } from "@/lib/constants/links";
 import { routes } from "@/lib/constants/routes";
 
@@ -38,6 +40,11 @@ export default function HomePage() {
 
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
+            {/* Skeleton while Clerk loads */}
+            <AuthLoading>
+              <Skeleton className="h-8 w-[60px] rounded-md" />
+              <Skeleton className="h-8 w-[92px] rounded-md" />
+            </AuthLoading>
             <SignedOut>
               <Link href={routes.signIn}>
                 <Button variant="ghost" size="sm">
@@ -70,6 +77,9 @@ export default function HomePage() {
           <div className="absolute bottom-20 left-1/3 h-64 w-64 rounded-full bg-amber/8 blur-3xl" />
         </div>
 
+        {/* Floating content cards */}
+        <FloatingCards />
+
         <div className="mx-auto max-w-6xl px-6">
           <div className="stagger-children mx-auto max-w-3xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-denim/20 bg-background/60 px-4 py-1.5 text-sm backdrop-blur-sm">
@@ -90,6 +100,11 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              {/* Skeleton while Clerk loads - matches button dimensions */}
+              <AuthLoading>
+                <Skeleton className="h-12 w-[156px] rounded-md" />
+                <Skeleton className="h-12 w-[138px] rounded-md" />
+              </AuthLoading>
               <SignedOut>
                 <Link href={routes.signUp}>
                   <Button size="lg" className="h-12 px-8 text-base">
@@ -206,6 +221,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Interactive Demo Section */}
+      <DemoSection />
 
       {/* No Social Section - with stitching detail */}
       <section className="relative border-y border-denim/20 bg-card/50 py-20 md:py-32">
@@ -430,41 +448,107 @@ export default function HomePage() {
             <div className="absolute inset-6 rounded-2xl border-2 border-dashed border-rust/40 pointer-events-none" />
 
             {/* Background pattern */}
-            <div className="absolute inset-0 -z-10 opacity-10">
+            <div className="absolute inset-0 opacity-10">
               <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2)_0%,transparent_50%)]" />
               <div className="absolute bottom-0 right-0 h-full w-full bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
             </div>
 
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Start building your collection
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-lg opacity-90">
-              Free to start. Save unlimited private links. Up to 100 public saves on your own
-              subdomain.
-            </p>
-            <div className="mt-10">
-              <SignedOut>
-                <Link href={routes.signUp}>
-                  <Button
-                    size="lg"
-                    className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white"
-                  >
-                    Create your space
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </SignedOut>
-              <SignedIn>
-                <Link href={routes.app.root}>
-                  <Button
-                    size="lg"
-                    className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white"
-                  >
-                    Open your library
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </SignedIn>
+            {/* Floating mini cards - left side */}
+            <div className="absolute left-4 top-1/4 hidden md:block animate-float-slow pointer-events-none">
+              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-[-8deg] border border-white/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-5 h-5 rounded bg-rust/30 flex items-center justify-center">
+                    <Bookmark className="w-3 h-3 text-rust" />
+                  </div>
+                  <span className="text-[9px] text-white/70">Article</span>
+                </div>
+                <div className="h-1.5 bg-white/20 rounded w-full mb-1" />
+                <div className="h-1.5 bg-white/15 rounded w-3/4" />
+              </div>
+            </div>
+
+            <div className="absolute left-12 bottom-1/4 hidden lg:block animate-float-medium pointer-events-none">
+              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-[6deg] border border-white/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-4 h-4 rounded bg-mint/30 flex items-center justify-center">
+                    <Globe className="w-2.5 h-2.5 text-mint" />
+                  </div>
+                  <span className="text-[8px] text-white/70">Link</span>
+                </div>
+                <div className="h-1 bg-white/20 rounded w-full mb-0.5" />
+                <div className="h-1 bg-white/15 rounded w-2/3" />
+              </div>
+            </div>
+
+            {/* Floating mini cards - right side */}
+            <div className="absolute right-4 top-1/3 hidden md:block animate-float-medium pointer-events-none">
+              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-[10deg] border border-white/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-5 h-5 rounded bg-amber/30 flex items-center justify-center">
+                    <Sparkles className="w-3 h-3 text-amber" />
+                  </div>
+                  <span className="text-[9px] text-white/70">Thread</span>
+                </div>
+                <div className="h-1.5 bg-white/20 rounded w-full mb-1" />
+                <div className="h-1.5 bg-white/15 rounded w-4/5" />
+              </div>
+            </div>
+
+            <div className="absolute right-8 bottom-1/3 hidden lg:block animate-float-fast pointer-events-none">
+              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-[-5deg] border border-white/20">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-4 h-4 rounded bg-teal/30 flex items-center justify-center">
+                    <FolderOpen className="w-2.5 h-2.5 text-teal" />
+                  </div>
+                  <span className="text-[8px] text-white/70">Collection</span>
+                </div>
+                <div className="h-1 bg-white/20 rounded w-full mb-0.5" />
+                <div className="h-1 bg-white/15 rounded w-1/2" />
+              </div>
+            </div>
+
+            {/* Animated accent shapes */}
+            <div className="absolute top-8 left-1/4 w-2 h-2 rounded-full bg-amber/40 animate-pulse" />
+            <div className="absolute bottom-12 right-1/4 w-3 h-3 rounded-full bg-mint/30 animate-pulse delay-300" />
+            <div className="absolute top-1/2 right-8 w-1.5 h-1.5 rounded-full bg-rust/50 animate-pulse delay-150 hidden md:block" />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
+                Start building your collection
+              </h2>
+              <p className="mx-auto mt-4 max-w-xl text-lg opacity-90">
+                Free to start. Save unlimited private links. Up to 100 public saves on your own
+                subdomain.
+              </p>
+              <div className="mt-10">
+                {/* Skeleton while Clerk loads */}
+                <AuthLoading>
+                  <Skeleton className="h-12 w-[180px] rounded-md mx-auto bg-white/20" />
+                </AuthLoading>
+                <SignedOut>
+                  <Link href={routes.signUp}>
+                    <Button
+                      size="lg"
+                      className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white shadow-lg shadow-rust/30 hover:shadow-xl hover:shadow-rust/40 transition-all hover:scale-105"
+                    >
+                      Create your space
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </SignedOut>
+                <SignedIn>
+                  <Link href={routes.app.root}>
+                    <Button
+                      size="lg"
+                      className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white shadow-lg shadow-rust/30 hover:shadow-xl hover:shadow-rust/40 transition-all hover:scale-105"
+                    >
+                      Open your library
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </SignedIn>
+              </div>
             </div>
           </div>
         </div>

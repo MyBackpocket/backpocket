@@ -324,10 +324,77 @@ html {
   animation: scaleIn 0.4s ease-out forwards;
 }
 
-/* Stagger children animations */
+/* Floating card animations for hero section - GPU accelerated */
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--rotation, 0deg));
+  }
+  50% {
+    transform: translateY(-20px) rotate(calc(var(--rotation, 0deg) + 2deg));
+  }
+}
+
+@keyframes float-medium {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--rotation, 0deg));
+  }
+  50% {
+    transform: translateY(-15px) rotate(calc(var(--rotation, 0deg) - 2deg));
+  }
+}
+
+@keyframes float-fast {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--rotation, 0deg));
+  }
+  50% {
+    transform: translateY(-12px) rotate(calc(var(--rotation, 0deg) + 1.5deg));
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 8s ease-in-out infinite;
+}
+
+.animate-float-medium {
+  animation: float-medium 6s ease-in-out infinite;
+  animation-delay: -2s;
+}
+
+.animate-float-fast {
+  animation: float-fast 4s ease-in-out infinite;
+  animation-delay: -1s;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-slow,
+  .animate-float-medium,
+  .animate-float-fast {
+    animation: none;
+  }
+}
+
+/* Stagger children animations - uses opacity only to prevent CLS */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .stagger-children > * {
   opacity: 0;
-  animation: slideUp 0.5s ease-out forwards;
+  animation: fadeInUp 0.5s ease-out forwards;
+  /* Ensure element reserves its full space even when transparent */
+  will-change: opacity, transform;
 }
 
 .stagger-children > *:nth-child(1) {
@@ -353,6 +420,15 @@ html {
 }
 .stagger-children > *:nth-child(8) {
   animation-delay: 420ms;
+}
+
+/* Reduced motion: skip animation, show immediately */
+@media (prefers-reduced-motion: reduce) {
+  .stagger-children > * {
+    opacity: 1;
+    animation: none;
+    will-change: auto;
+  }
 }
 
 /* Typography */

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ClerkLoading,
   SignedIn as ClerkSignedIn,
   SignedOut as ClerkSignedOut,
   UserButton as ClerkUserButton,
@@ -26,6 +27,18 @@ export function SignedOut({ children }: { children: React.ReactNode }) {
     return null;
   }
   return <ClerkSignedOut>{children}</ClerkSignedOut>;
+}
+
+/**
+ * Shows children while Clerk is loading auth state.
+ * Use this to display skeletons that prevent CLS.
+ */
+export function AuthLoading({ children }: { children: React.ReactNode }) {
+  if (!hasClerk) {
+    // Without Clerk, never show loading state
+    return null;
+  }
+  return <ClerkLoading>{children}</ClerkLoading>;
 }
 
 type UserButtonProps = React.ComponentProps<typeof ClerkUserButton> & {
