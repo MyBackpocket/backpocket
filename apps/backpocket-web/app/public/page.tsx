@@ -203,7 +203,7 @@ function PublicSpaceContent() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Profile info */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 min-w-0">
               {space.avatarUrl ? (
                 <div className="relative h-12 w-12 sm:h-14 sm:w-14 shrink-0">
                   <Image
@@ -221,7 +221,7 @@ function PublicSpaceContent() {
                 </div>
               )}
               <div>
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{space.name}</h1>
+                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate">{space.name}</h1>
                 {space.bio && (
                   <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1 max-w-md">
                     {space.bio}
@@ -231,7 +231,7 @@ function PublicSpaceContent() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 shrink-0">
               <VisitorCounter spaceId={space.id} initialCount={space.visitCount ?? 0} />
               <Link
                 href="/rss.xml"
