@@ -15,7 +15,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogoIcon } from "@/components/logo";
 import { ThemeSwitcherCompact } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -70,6 +70,11 @@ function PublicSpaceContent() {
 
   // Mobile filter panel state
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  // Pagination state
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
+  const [accumulatedSaves, setAccumulatedSaves] = useState<PublicSave[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Get space slug from current URL (subdomain handled by middleware)
   // For subdomain routing, the slug is passed via header, but on client we need to fetch
@@ -128,14 +133,55 @@ function PublicSpaceContent() {
       query: debouncedSearch || undefined,
       tagName: urlTag || undefined,
       collectionId: (urlCollection || undefined) as any,
+      cursor,
       limit: 20,
     };
-  }, [space?.id, debouncedSearch, urlTag, urlCollection]);
+  }, [space?.id, debouncedSearch, urlTag, urlCollection, cursor]);
 
   const savesData = useListPublicSaves(savesInput);
-  const savesLoading = savesInput !== undefined && savesData === undefined;
-  const saves = savesData?.items ?? [];
+  const savesLoading = savesInput !== undefined && savesData === undefined && !isLoadingMore;
   const hasNextPage = !!savesData?.nextCursor;
+
+  // Track filter changes to reset pagination
+  const filterKey = `${space?.id}-${debouncedSearch}-${urlTag}-${urlCollection}`;
+  const prevFilterKeyRef = useRef(filterKey);
+
+  // Handle data changes and filter resets
+  useEffect(() => {
+    const filtersChanged = prevFilterKeyRef.current !== filterKey;
+    prevFilterKeyRef.current = filterKey;
+
+    if (filtersChanged) {
+      // Filters changed - reset pagination state
+      setCursor(undefined);
+      setAccumulatedSaves(savesData?.items ?? []);
+      setIsLoadingMore(false);
+    } else if (savesData?.items) {
+      if (cursor === undefined) {
+        // Fresh query (no cursor) - replace saves
+        setAccumulatedSaves(savesData.items);
+      } else {
+        // Load more - append to existing saves
+        setAccumulatedSaves((prev) => {
+          const existingIds = new Set(prev.map((s) => s.id));
+          const newSaves = savesData.items.filter((s) => !existingIds.has(s.id));
+          return [...prev, ...newSaves];
+        });
+      }
+      setIsLoadingMore(false);
+    }
+  }, [savesData, cursor, filterKey]);
+
+  // Display accumulated saves
+  const saves = accumulatedSaves;
+
+  // Load more handler
+  const handleLoadMore = useCallback(() => {
+    if (savesData?.nextCursor && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setCursor(savesData.nextCursor);
+    }
+  }, [savesData?.nextCursor, isLoadingMore]);
 
   // Fetch tags and collections for filters
   const spaceIdForFilters = space?.id as any;
@@ -422,12 +468,15 @@ function PublicSpaceContent() {
                   </div>
                 )}
 
-                {/* Load more - Note: Convex doesn't have infinite query by default, 
-                    would need custom cursor handling for pagination */}
+                {/* Load more */}
                 {hasNextPage && (
                   <div className="mt-8 text-center">
-                    <Button variant="outline" disabled>
-                      Load more (pagination coming soon)
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMore}
+                      disabled={isLoadingMore}
+                    >
+                      {isLoadingMore ? "Loading..." : "Load more"}
                     </Button>
                   </div>
                 )}
