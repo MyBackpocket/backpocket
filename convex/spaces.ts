@@ -651,7 +651,8 @@ export const addDomain = action({
       };
     } catch (error) {
       console.error("Failed to add domain:", error);
-      return { success: false, error: "Failed to add domain" };
+      const errorMessage = error instanceof Error ? error.message : "Failed to add domain";
+      return { success: false, error: errorMessage };
     }
   },
 });

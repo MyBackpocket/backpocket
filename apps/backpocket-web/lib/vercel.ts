@@ -1,4 +1,5 @@
 import { Vercel } from "@vercel/sdk";
+import { VercelError } from "@vercel/sdk/models/vercelerror.js";
 
 // Initialize Vercel client
 const vercelToken = process.env.VERCEL_TOKEN;
@@ -74,8 +75,43 @@ export async function addDomainToProject(domain: string): Promise<AddDomainResul
       verification: response.verification,
     };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Failed to add domain";
     console.error("Failed to add domain to Vercel:", error);
+
+    // Extract detailed error from Vercel SDK
+    if (error instanceof VercelError) {
+      const body = error.body as { error?: { code?: string; message?: string } } | undefined;
+      const code = body?.error?.code;
+      const message = body?.error?.message;
+
+      // Return user-friendly error messages based on Vercel error codes
+      if (code === "domain_already_in_use") {
+        return {
+          success: false,
+          error: "This domain is already in use by another Vercel project. You may need to verify ownership.",
+        };
+      }
+      if (code === "invalid_domain") {
+        return { success: false, error: "Invalid domain format. Please check the domain name." };
+      }
+      if (code === "forbidden" || error.statusCode === 403) {
+        return {
+          success: false,
+          error: "Permission denied. The Vercel API token may lack required permissions.",
+        };
+      }
+      if (code === "rate_limit_exceeded") {
+        return { success: false, error: "Rate limit exceeded. Please try again later." };
+      }
+
+      // Return the Vercel error message if available
+      if (message) {
+        return { success: false, error: message };
+      }
+
+      return { success: false, error: `Vercel error (${error.statusCode}): ${code || "unknown"}` };
+    }
+
+    const errorMessage = error instanceof Error ? error.message : "Failed to add domain";
     return { success: false, error: errorMessage };
   }
 }
@@ -126,7 +162,8 @@ export async function verifyDomain(domain: string): Promise<{ verified: boolean;
 
     return { verified: response.verified || false };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Verification failed";
+    console.error("Failed to verify domain on Vercel:", error);
+    const errorMessage = extractVercelErrorMessage(error, "Verification failed");
     return { verified: false, error: errorMessage };
   }
 }
@@ -149,7 +186,31 @@ export async function removeDomainFromProject(
     });
     return { success: true };
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Failed to remove domain";
+    console.error("Failed to remove domain from Vercel:", error);
+    const errorMessage = extractVercelErrorMessage(error, "Failed to remove domain");
     return { success: false, error: errorMessage };
   }
+}
+
+/**
+ * Extract a user-friendly error message from a Vercel SDK error
+ */
+function extractVercelErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof VercelError) {
+    const body = error.body as { error?: { code?: string; message?: string } } | undefined;
+    const message = body?.error?.message;
+    if (message) {
+      return message;
+    }
+    const code = body?.error?.code;
+    if (code) {
+      return `Vercel error: ${code}`;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return fallback;
 }
