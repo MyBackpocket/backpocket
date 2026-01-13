@@ -13,6 +13,7 @@ import type * as lib_auth from "../lib/auth.js";
 import type * as lib_domain_extractors from "../lib/domain_extractors.js";
 import type * as lib_snapshot_processor from "../lib/snapshot_processor.js";
 import type * as lib_validators from "../lib/validators.js";
+import type * as lib_vercel from "../lib/vercel.js";
 import type * as migrations_fix_uppercase_slugs from "../migrations/fix_uppercase_slugs.js";
 import type * as public_ from "../public.js";
 import type * as saves from "../saves.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   "lib/domain_extractors": typeof lib_domain_extractors;
   "lib/snapshot_processor": typeof lib_snapshot_processor;
   "lib/validators": typeof lib_validators;
+  "lib/vercel": typeof lib_vercel;
   "migrations/fix_uppercase_slugs": typeof migrations_fix_uppercase_slugs;
   public: typeof public_;
   saves: typeof saves;
