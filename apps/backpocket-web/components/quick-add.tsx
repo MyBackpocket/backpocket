@@ -66,7 +66,11 @@ function EnrichmentIndicator() {
   );
 }
 
-export function QuickAdd() {
+interface QuickAddProps {
+  variant?: "default" | "icon";
+}
+
+export function QuickAdd({ variant = "default" }: QuickAddProps) {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
@@ -253,7 +257,12 @@ export function QuickAdd() {
 
   // Render a static button during SSR to prevent hydration mismatch with Radix UI
   if (!mounted) {
-    return (
+    return variant === "icon" ? (
+      <Button size="icon" className="h-9 w-9" disabled>
+        <Plus className="h-5 w-5" />
+        <span className="sr-only">Quick Add</span>
+      </Button>
+    ) : (
       <Button className="w-full gap-2" disabled>
         <Plus className="h-4 w-4" />
         Quick Add
@@ -276,10 +285,17 @@ export function QuickAdd() {
       />
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button className="w-full gap-2">
-            <Plus className="h-4 w-4" />
-            Quick Add
-          </Button>
+          {variant === "icon" ? (
+            <Button size="icon" className="h-9 w-9">
+              <Plus className="h-5 w-5" />
+              <span className="sr-only">Quick Add</span>
+            </Button>
+          ) : (
+            <Button className="w-full gap-2">
+              <Plus className="h-4 w-4" />
+              Quick Add
+            </Button>
+          )}
         </DialogTrigger>
         <DialogContent
           className="sm:max-w-lg"

@@ -19,6 +19,9 @@ const nextConfig: NextConfig = {
       "@convex": "../../convex",
     },
   },
+  experimental: {
+    devCacheControlNoCache: true,
+  },
 };
 
 export default nextConfig;
