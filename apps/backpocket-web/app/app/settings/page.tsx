@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   Check,
+  Download,
   Eye,
   EyeOff,
   Link as LinkIcon,
@@ -37,6 +38,7 @@ import { ROOT_DOMAIN } from "@/lib/config/public";
 import { buildSpaceUrl, isLocalhostHostname } from "@/lib/constants/urls";
 import {
   useCheckSlugAvailability,
+  useExportAllData,
   useGetMySpace,
   useUpdateSettings,
   useUpdateSlug,
@@ -586,6 +588,9 @@ export default function SettingsPage() {
               <ThemeSelector />
             </CardContent>
           </Card>
+
+          {/* Export Data */}
+          <ExportDataCard />
         </div>
       </div>
 
@@ -779,5 +784,86 @@ function ThemeSelector() {
         </button>
       ))}
     </div>
+  );
+}
+
+// Export data card component
+function ExportDataCard() {
+  const exportData = useExportAllData();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = useCallback(() => {
+    if (!exportData) return;
+
+    setIsExporting(true);
+    try {
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `backpocket-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [exportData]);
+
+  const isLoading = exportData === undefined;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Download className="h-5 w-5" />
+          Export Data
+        </CardTitle>
+        <CardDescription>
+          Download all your saves, collections, and tags as a JSON file
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">
+              {isLoading ? (
+                "Loading your data..."
+              ) : exportData ? (
+                <>
+                  {exportData.counts.saves} saves, {exportData.counts.tags} tags,{" "}
+                  {exportData.counts.collections} collections
+                </>
+              ) : (
+                "No data to export"
+              )}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Includes all metadata and relationships
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={isLoading || !exportData || isExporting}
+          >
+            {isExporting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Exporting...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Export All
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

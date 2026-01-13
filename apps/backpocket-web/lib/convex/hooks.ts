@@ -154,6 +154,11 @@ export function useGetStats() {
   return useQuery(api.spaces.getStats, isAuthenticated ? {} : "skip");
 }
 
+export function useExportAllData() {
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.spaces.exportAllData, isAuthenticated ? {} : "skip");
+}
+
 // ============================================================================
 // SNAPSHOTS HOOKS
 // ============================================================================

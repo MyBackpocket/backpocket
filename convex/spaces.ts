@@ -253,3 +253,136 @@ export const getStats = query({
     };
   },
 });
+
+/**
+ * Export all user data in a structured format.
+ * Designed for data portability and backup purposes.
+ */
+export const exportAllData = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx);
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) {
+      return null;
+    }
+
+    // Fetch all data in parallel
+    const [tags, collections, saves] = await Promise.all([
+      ctx.db
+        .query("tags")
+        .withIndex("by_spaceId", (q) => q.eq("spaceId", space._id))
+        .collect(),
+      ctx.db
+        .query("collections")
+        .withIndex("by_spaceId", (q) => q.eq("spaceId", space._id))
+        .collect(),
+      ctx.db
+        .query("saves")
+        .withIndex("by_spaceId", (q) => q.eq("spaceId", space._id))
+        .collect(),
+    ]);
+
+    // Fetch all junction table data in parallel
+    const saveIds = saves.map((s) => s._id);
+    const collectionIds = collections.map((c) => c._id);
+
+    const [allSaveTags, allSaveCollections, allCollectionDefaultTags] = await Promise.all([
+      // Get all save-tag relationships
+      Promise.all(
+        saveIds.map((saveId) =>
+          ctx.db
+            .query("saveTags")
+            .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+            .collect()
+        )
+      ),
+      // Get all save-collection relationships
+      Promise.all(
+        saveIds.map((saveId) =>
+          ctx.db
+            .query("saveCollections")
+            .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+            .collect()
+        )
+      ),
+      // Get all collection default tags
+      Promise.all(
+        collectionIds.map((collectionId) =>
+          ctx.db
+            .query("collectionDefaultTags")
+            .withIndex("by_collectionId", (q) => q.eq("collectionId", collectionId))
+            .collect()
+        )
+      ),
+    ]);
+
+    // Build lookup maps for relationships
+    const tagIdsBySaveId = new Map<string, string[]>();
+    saveIds.forEach((saveId, idx) => {
+      tagIdsBySaveId.set(saveId, allSaveTags[idx].map((st) => st.tagId));
+    });
+
+    const collectionIdsBySaveId = new Map<string, string[]>();
+    saveIds.forEach((saveId, idx) => {
+      collectionIdsBySaveId.set(saveId, allSaveCollections[idx].map((sc) => sc.collectionId));
+    });
+
+    const defaultTagIdsByCollectionId = new Map<string, string[]>();
+    collectionIds.forEach((collectionId, idx) => {
+      defaultTagIdsByCollectionId.set(
+        collectionId,
+        allCollectionDefaultTags[idx].map((cdt) => cdt.tagId)
+      );
+    });
+
+    return {
+      version: "1.0" as const,
+      exportedAt: new Date().toISOString(),
+      space: {
+        id: space._id,
+        slug: space.slug,
+        name: space.name,
+        bio: space.bio ?? null,
+        visibility: space.visibility,
+        publicLayout: space.publicLayout,
+        defaultSaveVisibility: space.defaultSaveVisibility,
+        createdAt: space._creationTime,
+      },
+      tags: tags.map((tag) => ({
+        id: tag._id,
+        name: tag.name,
+        createdAt: tag._creationTime,
+      })),
+      collections: collections.map((col) => ({
+        id: col._id,
+        name: col.name,
+        visibility: col.visibility,
+        createdAt: col._creationTime,
+        defaultTagIds: defaultTagIdsByCollectionId.get(col._id) || [],
+      })),
+      saves: saves.map((save) => ({
+        id: save._id,
+        url: save.url,
+        normalizedUrl: save.normalizedUrl ?? null,
+        title: save.title ?? null,
+        description: save.description ?? null,
+        siteName: save.siteName ?? null,
+        imageUrl: save.imageUrl ?? null,
+        contentType: save.contentType ?? null,
+        visibility: save.visibility,
+        isArchived: save.isArchived,
+        isFavorite: save.isFavorite,
+        savedAt: save.savedAt,
+        createdAt: save._creationTime,
+        tagIds: tagIdsBySaveId.get(save._id) || [],
+        collectionIds: collectionIdsBySaveId.get(save._id) || [],
+      })),
+      counts: {
+        saves: saves.length,
+        tags: tags.length,
+        collections: collections.length,
+      },
+    };
+  },
+});

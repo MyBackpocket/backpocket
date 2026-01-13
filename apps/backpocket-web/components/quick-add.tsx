@@ -4,11 +4,11 @@ import {
   Check,
   ChevronDown,
   Globe,
-  Info,
   Link as LinkIcon,
   Loader2,
   Lock,
   Plus,
+  Sparkles,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -33,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateSave, useGetMySpace, useListCollections } from "@/lib/convex";
 import type { SaveVisibility } from "@/lib/types";
 
-type QuickAddState = "idle" | "loading" | "preview" | "saving" | "success";
+type QuickAddState = "idle" | "fetching" | "preview" | "saving" | "success";
 
 interface FetchedMetadata {
   title: string;
@@ -43,59 +43,25 @@ interface FetchedMetadata {
   favicon: string | null;
 }
 
-const PLACEHOLDER_PHRASES = [
-  "Analyzing page content",
-  "Extracting key details",
-  "Reading metadata",
-  "Processing page info",
-  "Gathering description",
-];
-
-function AnimatedDescriptionPlaceholder() {
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [dots, setDots] = useState("");
-
-  useEffect(() => {
-    // Cycle through phrases
-    const phraseInterval = setInterval(() => {
-      setPhraseIndex((prev) => (prev + 1) % PLACEHOLDER_PHRASES.length);
-    }, 2400);
-
-    // Animate dots
-    const dotInterval = setInterval(() => {
-      setDots((prev) => (prev.length >= 3 ? "" : `${prev}.`));
-    }, 400);
-
-    return () => {
-      clearInterval(phraseInterval);
-      clearInterval(dotInterval);
-    };
-  }, []);
-
+function EnrichmentIndicator() {
   return (
-    <div className="space-y-2">
-      {/* Skeleton container with cycling text */}
-      <div className="relative">
-        <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-muted animate-pulse" />
-          <span className="text-sm text-muted-foreground/70 italic">
-            {PLACEHOLDER_PHRASES[phraseIndex]}
-            {dots}
-          </span>
-        </div>
-        {/* Skeleton lines to simulate description */}
-        <div className="mt-2 space-y-1.5">
-          <div className="h-2.5 bg-muted/60 rounded animate-pulse w-full" />
-          <div className="h-2.5 bg-muted/60 rounded animate-pulse w-4/5" />
-        </div>
-      </div>
-      {/* Background processing disclaimer */}
-      <div className="flex items-start gap-1.5 pt-1">
-        <Info className="h-3 w-3 text-muted-foreground/50 mt-0.5 shrink-0" />
-        <p className="text-xs text-muted-foreground/50">
-          You can close this — we'll continue processing in the background
-        </p>
-      </div>
+    <div className="flex items-center gap-2 mt-1.5">
+      {/* Animated dots that wave */}
+      <span className="flex gap-0.5">
+        {[0, 1, 2].map((i) => (
+          <span
+            key={i}
+            className="w-1 h-1 rounded-full bg-primary/60"
+            style={{
+              animation: "wave 1.2s ease-in-out infinite",
+              animationDelay: `${i * 0.15}s`,
+            }}
+          />
+        ))}
+      </span>
+      <span className="text-xs text-muted-foreground/50">
+        enriching
+      </span>
     </div>
   );
 }
@@ -150,14 +116,9 @@ export function QuickAdd() {
     }
   }, [open]);
 
-  // Simulate metadata fetching (in real app, this would call an API)
+  // Fetch actual metadata from URL via API
   const fetchMetadata = useCallback(async (inputUrl: string) => {
-    setState("loading");
-
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    // Extract domain for mock data
+    // Extract domain for fallback
     let domain = "example.com";
     try {
       domain = new URL(inputUrl).hostname.replace("www.", "");
@@ -165,18 +126,40 @@ export function QuickAdd() {
       // Invalid URL, use default
     }
 
-    // Generate mock metadata based on URL
-    const mockMetadata: FetchedMetadata = {
+    // Show immediate preview with basic info while fetching
+    const fallbackMetadata: FetchedMetadata = {
       title: generateTitleFromUrl(inputUrl),
-      description: null, // Real API would fetch actual meta description
+      description: null,
       siteName: domain.charAt(0).toUpperCase() + domain.slice(1).split(".")[0],
-      imageUrl: inputUrl.includes("youtube")
-        ? "https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg"
-        : null,
+      imageUrl: null,
       favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
     };
 
-    setMetadata(mockMetadata);
+    setMetadata(fallbackMetadata);
+    setState("fetching");
+
+    // Fetch real metadata from API
+    try {
+      const response = await fetch("/api/unfurl", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: inputUrl }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMetadata({
+          title: data.title || fallbackMetadata.title,
+          description: data.description,
+          siteName: data.siteName || fallbackMetadata.siteName,
+          imageUrl: data.imageUrl,
+          favicon: data.favicon || fallbackMetadata.favicon,
+        });
+      }
+    } catch {
+      // Keep fallback metadata on error
+    }
+
     setState("preview");
   }, []);
 
@@ -217,10 +200,10 @@ export function QuickAdd() {
         collectionIds: selectedCollection ? [selectedCollection as any] : undefined,
       });
       setState("success");
-      // Auto-close after 3 seconds
+      // Auto-close after success
       const timer = setTimeout(() => {
         resetAndClose();
-      }, 3000);
+      }, 1500);
       setAutoCloseTimer(timer);
     } catch (error: any) {
       // Check if this is a duplicate error
@@ -311,8 +294,8 @@ export function QuickAdd() {
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* URL Input - Always visible in idle state */}
-            {(state === "idle" || state === "loading") && (
+            {/* URL Input - visible in idle state */}
+            {state === "idle" && (
               <form onSubmit={handleSubmit}>
                 <div className="relative">
                   <Input
@@ -322,53 +305,64 @@ export function QuickAdd() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     onPaste={handlePaste}
-                    disabled={state === "loading"}
                     className="pr-10 h-12 text-base"
                     autoComplete="off"
                   />
-                  {state === "loading" ? (
-                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 animate-spin text-muted-foreground" />
-                  ) : (
-                    url &&
-                    isValidUrl(url) && (
-                      <Button
-                        type="submit"
-                        size="sm"
-                        variant="ghost"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3"
-                      >
-                        Fetch
-                      </Button>
-                    )
+                  {url && isValidUrl(url) && (
+                    <Button
+                      type="submit"
+                      size="sm"
+                      variant="ghost"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 px-3"
+                    >
+                      Go
+                    </Button>
                   )}
                 </div>
-                {state === "loading" && (
-                  <p className="text-sm text-muted-foreground mt-2 animate-pulse">
-                    Fetching page info...
-                  </p>
-                )}
               </form>
             )}
 
             {/* Preview Card */}
-            {(state === "preview" || state === "saving" || state === "success") && metadata && (
+            {(state === "fetching" || state === "preview" || state === "saving" || state === "success") && metadata && (
               <div className="space-y-4">
                 {/* Fetched Content Preview */}
-                <div className="rounded-lg border bg-card overflow-hidden">
+                <div 
+                  className={`
+                    relative rounded-xl border bg-card overflow-hidden
+                    transition-all duration-500
+                    ${state === "fetching" ? "ring-1 ring-primary/20" : ""}
+                  `}
+                >
+                  {/* Subtle shimmer overlay when fetching */}
+                  {state === "fetching" && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
+                      aria-hidden="true"
+                    >
+                      <div 
+                        className="absolute inset-0"
+                        style={{
+                          background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.04), transparent)",
+                          animation: "shimmer 2.5s ease-in-out infinite",
+                        }}
+                      />
+                    </div>
+                  )}
+                  
                   {metadata.imageUrl && (
                     <div className="relative aspect-video bg-muted">
                       <Image src={metadata.imageUrl} alt="" fill className="object-cover" />
                     </div>
                   )}
-                  <div className="p-4 space-y-2">
+                  <div className="p-4">
                     <div className="flex items-start gap-3">
                       {metadata.favicon && (
-                        <div className="relative w-5 h-5 shrink-0 mt-0.5">
+                        <div className="relative w-6 h-6 shrink-0 mt-0.5 rounded-md overflow-hidden bg-muted/50 flex items-center justify-center">
                           <Image
                             src={metadata.favicon}
                             alt=""
                             fill
-                            className="rounded object-contain"
+                            className="object-contain p-0.5"
                           />
                         </div>
                       )}
@@ -377,24 +371,30 @@ export function QuickAdd() {
                           {metadata.title}
                         </h3>
                         {metadata.description ? (
-                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                          <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
                             {metadata.description}
                           </p>
-                        ) : (
-                          <div className="mt-2">
-                            <AnimatedDescriptionPlaceholder />
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {metadata.siteName || new URL(url).hostname}
-                        </p>
+                        ) : state === "fetching" ? (
+                          <EnrichmentIndicator />
+                        ) : null}
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {metadata.siteName || new URL(url).hostname}
+                          </span>
+                          {state === "fetching" && (
+                            <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded-full">
+                              <Sparkles className="w-2.5 h-2.5" />
+                              fetching
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Quick Options */}
-                {state !== "success" && (
+                {state !== "success" && state !== "fetching" && (
                   <div className="flex items-center gap-2">
                     {/* Visibility Toggle */}
                     <DropdownMenu>
@@ -492,21 +492,16 @@ export function QuickAdd() {
                 {/* Save Button */}
                 <Button
                   onClick={handleSave}
-                  disabled={state === "saving" || state === "success"}
+                  disabled={state === "fetching" || state === "saving" || state === "success"}
                   className="w-full h-11"
                 >
+                  {state === "fetching" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {state === "saving" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {state === "success" && <Check className="mr-2 h-4 w-4 text-green-500" />}
-                  {state === "success" ? "Saved!" : state === "saving" ? "Saving..." : "Save"}
+                  {state === "success" ? "Saved!" : state === "saving" ? "Saving..." : state === "fetching" ? "Fetching..." : "Save"}
                   {state === "preview" && <span className="ml-2 text-xs opacity-70">⌘↵</span>}
                 </Button>
 
-                {/* Auto-close notice when still processing */}
-                {state === "success" && !metadata?.description && (
-                  <p className="text-center text-xs text-muted-foreground animate-in fade-in">
-                    Closing automatically — processing continues in the background
-                  </p>
-                )}
               </div>
             )}
           </div>
