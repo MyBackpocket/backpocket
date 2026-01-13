@@ -6,10 +6,11 @@
  */
 
 import { Readability } from "@mozilla/readability";
-import { parseHTML } from "linkedom";
-import { internalAction } from "../_generated/server";
-import { internal } from "../_generated/api";
 import { v } from "convex/values";
+import { parseHTML } from "linkedom";
+import { internal } from "../_generated/api";
+import { internalAction } from "../_generated/server";
+import { getDomainExtractor } from "./domain_extractors";
 
 // Constants
 const MAX_CONTENT_SIZE = 5 * 1024 * 1024; // 5MB max content
@@ -18,13 +19,7 @@ const EXCERPT_LENGTH = 500;
 const FETCH_TIMEOUT_MS = 15_000; // 15 seconds
 
 // Blocked domains/patterns for SSRF protection
-const BLOCKED_HOSTNAMES = [
-  "localhost",
-  "127.0.0.1",
-  "0.0.0.0",
-  "::1",
-  "[::1]",
-];
+const BLOCKED_HOSTNAMES = ["localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]"];
 
 const BLOCKED_HOSTNAME_PREFIXES = [
   "10.",
@@ -98,6 +93,61 @@ export const processSnapshotNode = internalAction({
         return;
       }
 
+      // Check for domain-specific extractor (Reddit, Twitter, etc.)
+      // These sites don't work well with standard Readability parsing
+      const domainExtractor = getDomainExtractor(args.url);
+      if (domainExtractor) {
+        try {
+          const domainResult = await domainExtractor(args.url);
+          if (domainResult) {
+            // Calculate content hash
+            const encoder = new TextEncoder();
+            const data = encoder.encode(domainResult.content);
+            const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const contentSha256 = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+
+            // Calculate word count
+            const wordCount = domainResult.textContent
+              .split(/\s+/)
+              .filter((word) => word.length > 0).length;
+
+            // Update snapshot with extracted content
+            await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
+              saveId: args.saveId,
+              status: "ready",
+              fetchedAt: Date.now(),
+              canonicalUrl: args.url,
+              excerpt: domainResult.excerpt,
+              wordCount,
+              contentHtml: domainResult.content,
+              contentText: domainResult.textContent,
+              contentSha256,
+              title: domainResult.title,
+              ...(domainResult.byline && { byline: domainResult.byline }),
+              siteName: domainResult.siteName,
+              ...(domainResult.language && { language: domainResult.language }),
+            });
+
+            // Update save metadata
+            await ctx.runMutation(internal.saves.updateSaveMetadata, {
+              saveId: args.saveId,
+              title: domainResult.title,
+              siteName: domainResult.siteName,
+            });
+
+            return;
+          }
+          // Domain extractor returned null, fall through to standard flow
+          console.log(
+            `[snapshots] Domain extractor for ${parsedUrl.hostname} returned null, falling back to Readability`
+          );
+        } catch (error) {
+          // Domain extractor threw an error, fall through to standard flow
+          console.error(`[snapshots] Domain extractor error for ${parsedUrl.hostname}:`, error);
+        }
+      }
+
       // Fetch the page with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -131,7 +181,8 @@ export const processSnapshotNode = internalAction({
         await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
           saveId: args.saveId,
           status: "blocked",
-          blockedReason: response.status === 403 || response.status === 401 ? "forbidden" : "fetch_error",
+          blockedReason:
+            response.status === 403 || response.status === 401 ? "forbidden" : "fetch_error",
           errorMessage: `HTTP ${response.status}: ${response.statusText}`,
         });
         return;
@@ -233,9 +284,7 @@ export const processSnapshotNode = internalAction({
       const siteName = article.siteName || ogSiteName || twitterSite || null;
 
       // Extract og:image for save thumbnail
-      const ogImage = document
-        .querySelector('meta[property="og:image"]')
-        ?.getAttribute("content");
+      const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute("content");
       const twitterImage = document
         .querySelector('meta[name="twitter:image"]')
         ?.getAttribute("content");
@@ -257,9 +306,7 @@ export const processSnapshotNode = internalAction({
       const twitterDesc = document
         .querySelector('meta[name="twitter:description"]')
         ?.getAttribute("content");
-      const metaDesc = document
-        .querySelector('meta[name="description"]')
-        ?.getAttribute("content");
+      const metaDesc = document.querySelector('meta[name="description"]')?.getAttribute("content");
       const metaDescription = ogDesc || twitterDesc || metaDesc || null;
 
       // Detect language
@@ -270,9 +317,7 @@ export const processSnapshotNode = internalAction({
       const language = htmlLang || metaLang || article.lang || null;
 
       // Calculate word count
-      const wordCount = textContent
-        .split(/\s+/)
-        .filter((word) => word.length > 0).length;
+      const wordCount = textContent.split(/\s+/).filter((word) => word.length > 0).length;
 
       // Calculate content hash
       const encoder = new TextEncoder();

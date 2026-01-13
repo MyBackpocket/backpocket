@@ -7,6 +7,13 @@ import { useSyncExternalStore } from "react";
  * This enables stale-while-revalidate behavior for Convex queries.
  */
 const queryCache = new Map<string, unknown>();
+
+/**
+ * Separate cache for paginated/accumulated items.
+ * Stores { items: T[], cursor: number | undefined } for each key.
+ */
+const paginatedCache = new Map<string, { items: unknown[]; cursor: unknown }>();
+
 const subscribers = new Set<() => void>();
 
 function notifySubscribers() {
@@ -88,5 +95,27 @@ export function cacheKey(prefix: string, args?: Record<string, unknown>): string
  */
 export function clearQueryCache() {
   queryCache.clear();
+  paginatedCache.clear();
   notifySubscribers();
+}
+
+/**
+ * Get cached paginated items for a given key.
+ */
+export function getPaginatedCache<T>(key: string): { items: T[]; cursor: unknown } | undefined {
+  return paginatedCache.get(key) as { items: T[]; cursor: unknown } | undefined;
+}
+
+/**
+ * Set cached paginated items for a given key.
+ */
+export function setPaginatedCache<T>(key: string, items: T[], cursor: unknown): void {
+  paginatedCache.set(key, { items, cursor });
+}
+
+/**
+ * Clear paginated cache for a specific key (e.g., when filters change).
+ */
+export function clearPaginatedCache(key: string): void {
+  paginatedCache.delete(key);
 }

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PrefetchLink } from "@/components/prefetch-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,13 @@ import {
   useToggleArchive,
   useToggleFavorite,
 } from "@/lib/convex";
-import { cacheKey, useCachedQuery } from "@/lib/hooks/use-cached-query";
+import {
+  cacheKey,
+  clearPaginatedCache,
+  getPaginatedCache,
+  setPaginatedCache,
+  useCachedQuery,
+} from "@/lib/hooks/use-cached-query";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { usePrefetchTargets } from "@/lib/hooks/use-prefetch";
 import type { SaveVisibility } from "@/lib/types";
@@ -454,6 +460,14 @@ export default function SavesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
+  // Pagination state - items restored from cache for instant display, but always fetch fresh
+  const [cursor, setCursor] = useState<number | undefined>(undefined);
+  const [allItems, setAllItems] = useState<SaveItem[]>(() => {
+    const cached = getPaginatedCache<SaveItem>("saves:paginated");
+    return cached?.items ?? [];
+  });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
   // Prefetch hook for warming up save detail data on hover
   const prefetch = usePrefetchTargets();
   const prefetchSave = useCallback((saveId: string) => () => prefetch.save(saveId), [prefetch]);
@@ -479,8 +493,21 @@ export default function SavesPage() {
         ? ("private" as SaveVisibility)
         : undefined,
     tagId: (tagFilter as any) || undefined,
-    limit: 20,
+    cursor,
+    limit: 6,
   };
+
+  // Reset pagination when filters change
+  const filterKey = `${debouncedSearch}|${debouncedFiltersArray}|${tagFilter}`;
+  const prevFilterKey = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKey.current !== filterKey) {
+      setCursor(undefined);
+      setAllItems([]);
+      clearPaginatedCache("saves:paginated");
+      prevFilterKey.current = filterKey;
+    }
+  }, [filterKey]);
 
   // Toggle a filter option
   const toggleFilter = (option: FilterOption) => {
@@ -516,9 +543,70 @@ export default function SavesPage() {
   const data = useCachedQuery(cacheKey("saves:list", queryOptions), rawData);
   const allTags = useCachedQuery("saves:tags", rawTags);
 
-  // Only show loading if no cached data available
-  const isLoading = data === undefined;
+  // Only show loading if no cached data available (first page only)
+  const isLoading = data === undefined && cursor === undefined;
   const isTagsLoading = allTags === undefined;
+
+  // Accumulate items when data arrives
+  const lastProcessedData = useRef<typeof data | undefined>(undefined);
+  useEffect(() => {
+    if (!data || data === lastProcessedData.current) return;
+    lastProcessedData.current = data;
+
+    setAllItems((prev) => {
+      if (cursor === undefined) {
+        // First page fetch
+        if (prev.length > 0) {
+          // We have cached items - check if fresh data matches the first page
+          const freshIds = new Set((data.items as SaveItem[]).map((s) => s.id));
+          const firstPageOfCache = prev.slice(0, data.items.length);
+          const cacheIsValid = firstPageOfCache.every((s) => freshIds.has(s.id));
+
+          if (cacheIsValid) {
+            // Cache is still valid - keep all accumulated items, don't update cache
+            return prev;
+          }
+          // Data changed - replace with fresh page 1
+          const newItems = data.items as SaveItem[];
+          setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+          return newItems;
+        }
+        // No cache - just use fresh data
+        const newItems = data.items as SaveItem[];
+        setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+        return newItems;
+      }
+
+      // Load more - append avoiding duplicates
+      const existingIds = new Set(prev.map((s) => s.id));
+      const additions = (data.items as SaveItem[]).filter((s) => !existingIds.has(s.id));
+      const newItems = [...prev, ...additions];
+      setPaginatedCache("saves:paginated", newItems, data.nextCursor);
+      return newItems;
+    });
+    setIsLoadingMore(false);
+  }, [data, cursor]);
+
+  // Display items (accumulated or current data)
+  const displayItems = allItems.length > 0 ? allItems : ((data?.items as SaveItem[]) ?? []);
+
+  // Check hasMore from fresh data, or from cache if we're using cached items
+  const cachedData = getPaginatedCache<SaveItem>("saves:paginated");
+  const hasMore = allItems.length > (data?.items?.length ?? 0)
+    ? !!cachedData?.cursor // Using cached items, use cached cursor
+    : !!data?.nextCursor; // Using fresh data
+
+  const handleLoadMore = () => {
+    // Use cached cursor if we have more items than fresh data (restored from cache)
+    const nextCursor = allItems.length > (data?.items?.length ?? 0)
+      ? (cachedData?.cursor as number | undefined)
+      : data?.nextCursor;
+
+    if (nextCursor) {
+      setIsLoadingMore(true);
+      setCursor(nextCursor);
+    }
+  };
 
   // Get the selected tag name for display
   const selectedTagName = tagFilter && allTags?.find((t) => t.id === tagFilter)?.name;
@@ -531,7 +619,7 @@ export default function SavesPage() {
 
   const isSelectionMode = selectedIds.size > 0;
   const allSelected =
-    data?.items && data.items.length > 0 && selectedIds.size === data.items.length;
+    displayItems.length > 0 && selectedIds.size === displayItems.length;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -546,11 +634,11 @@ export default function SavesPage() {
   };
 
   const selectAll = () => {
-    if (!data?.items) return;
+    if (displayItems.length === 0) return;
     if (allSelected) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(data.items.map((s) => s.id)));
+      setSelectedIds(new Set(displayItems.map((s) => s.id)));
     }
   };
 
@@ -616,7 +704,7 @@ export default function SavesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Saves</h1>
           <p className="text-muted-foreground">
-            {data?.items?.length ?? 0} saves in your collection
+            {displayItems.length} saves in your collection{hasMore ? "+" : ""}
           </p>
         </div>
         <Link href={routes.app.savesNew}>
@@ -634,7 +722,7 @@ export default function SavesPage() {
           variant="outline"
           onClick={selectAll}
           className="gap-2 h-10 shrink-0"
-          disabled={!data?.items?.length}
+          disabled={displayItems.length === 0}
         >
           <div
             className={cn(
@@ -837,38 +925,61 @@ export default function SavesPage() {
       {/* Saves list/grid */}
       {isLoading ? (
         <SavesSkeleton viewMode={viewMode} />
-      ) : data?.items && data.items.length > 0 ? (
-        viewMode === "list" ? (
-          <div className="space-y-3">
-            {data.items.map((save) => (
-              <SaveListItem
-                key={save.id}
-                save={save as SaveItem}
-                isSelected={selectedIds.has(save.id)}
-                isSelectionMode={isSelectionMode}
-                onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => handleToggleFavorite(save.id)}
-                onToggleArchive={() => handleToggleArchive(save.id)}
-                onDelete={() => handleSingleDelete(save as SaveItem)}
-                onPrefetch={prefetchSave(save.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {data.items.map((save) => (
-              <SaveGridCard
-                key={save.id}
-                save={save as SaveItem}
-                isSelected={selectedIds.has(save.id)}
-                isSelectionMode={isSelectionMode}
-                onSelect={() => toggleSelect(save.id)}
-                onToggleFavorite={() => handleToggleFavorite(save.id)}
-                onPrefetch={prefetchSave(save.id)}
-              />
-            ))}
-          </div>
-        )
+      ) : displayItems.length > 0 ? (
+        <>
+          {viewMode === "list" ? (
+            <div className="space-y-3">
+              {displayItems.map((save) => (
+                <SaveListItem
+                  key={save.id}
+                  save={save}
+                  isSelected={selectedIds.has(save.id)}
+                  isSelectionMode={isSelectionMode}
+                  onSelect={() => toggleSelect(save.id)}
+                  onToggleFavorite={() => handleToggleFavorite(save.id)}
+                  onToggleArchive={() => handleToggleArchive(save.id)}
+                  onDelete={() => handleSingleDelete(save)}
+                  onPrefetch={prefetchSave(save.id)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {displayItems.map((save) => (
+                <SaveGridCard
+                  key={save.id}
+                  save={save}
+                  isSelected={selectedIds.has(save.id)}
+                  isSelectionMode={isSelectionMode}
+                  onSelect={() => toggleSelect(save.id)}
+                  onToggleFavorite={() => handleToggleFavorite(save.id)}
+                  onPrefetch={prefetchSave(save.id)}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Load more button */}
+          {hasMore && (
+            <div className="mt-8 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="gap-2"
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          )}
+        </>
       ) : (
         <div className="py-20 text-center">
           <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-muted">

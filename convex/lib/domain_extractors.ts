@@ -1,13 +1,35 @@
+"use node";
+
 /**
- * Reddit domain-specific extractor
- *
- * Uses old.reddit.com HTML for extraction since it has cleaner,
- * more predictable HTML structure without JavaScript requirements.
+ * Domain-specific content extractors for sites that don't work well with Readability
+ * (Twitter, Reddit, Instagram, etc.)
  */
 
 import { parseHTML } from "linkedom";
-import { SNAPSHOT_EXCERPT_LENGTH } from "@/lib/constants/snapshots";
-import type { SnapshotContent } from "@/lib/types";
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface ExtractedContent {
+  title: string;
+  byline: string | null;
+  content: string;
+  textContent: string;
+  excerpt: string;
+  siteName: string;
+  language: string | null;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const EXCERPT_LENGTH = 250;
+
+// ============================================================================
+// Reddit Extractor
+// ============================================================================
 
 // Reddit URL patterns
 const REDDIT_DOMAINS = [
@@ -25,7 +47,7 @@ const REDDIT_SHORT_PATTERN = /^https?:\/\/redd\.it\/(\w+)/i;
 
 // Post URL pattern: /r/subreddit/comments/postId/title_slug/
 const REDDIT_POST_PATTERN =
-  /^https?:\/\/(?:(?:www|old|new|np|m|i)\.)?reddit\.com\/r\/(\w+)\/comments\/(\w+)(?:\/([^/?]+))?/i;
+  /^https?:\/\/(?:(?:www|old|new|np|m|i)\.)?reddit\.com\/r\/(\w+)\/comments\/(\w+)(?:\/([^/?#]+))?/i;
 
 // Comment URL pattern: /r/subreddit/comments/postId/title_slug/commentId/
 const REDDIT_COMMENT_PATTERN =
@@ -40,7 +62,7 @@ const REDDIT_USER_PATTERN =
   /^https?:\/\/(?:(?:www|old|new|np|m|i)\.)?reddit\.com\/u(?:ser)?\/([^/?]+)/i;
 
 // Content indicators for error states
-const ERROR_INDICATORS = [
+const REDDIT_ERROR_INDICATORS = [
   /this community is private/i,
   /you must be invited/i,
   /page not found/i,
@@ -168,9 +190,10 @@ function toOldRedditUrl(info: RedditUrlInfo): string {
   }
 }
 
-/**
- * Simple HTML escaping for user content
- */
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -180,15 +203,12 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
-/**
- * Generate an excerpt from text content
- */
 function generateExcerpt(text: string): string {
   let excerpt = text.trim();
-  if (excerpt.length > SNAPSHOT_EXCERPT_LENGTH) {
-    excerpt = excerpt.slice(0, SNAPSHOT_EXCERPT_LENGTH);
+  if (excerpt.length > EXCERPT_LENGTH) {
+    excerpt = excerpt.slice(0, EXCERPT_LENGTH);
     const lastSpace = excerpt.lastIndexOf(" ");
-    if (lastSpace > SNAPSHOT_EXCERPT_LENGTH * 0.8) {
+    if (lastSpace > EXCERPT_LENGTH * 0.8) {
       excerpt = `${excerpt.slice(0, lastSpace)}...`;
     } else {
       excerpt = `${excerpt}...`;
@@ -197,9 +217,6 @@ function generateExcerpt(text: string): string {
   return excerpt;
 }
 
-/**
- * Format a date for display in byline (e.g., "Jan 5, 2026")
- */
 function formatBylineDate(date: Date): string {
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -208,9 +225,6 @@ function formatBylineDate(date: Date): string {
   });
 }
 
-/**
- * Parse Reddit's time element to get a Date
- */
 function parseRedditTime(timeElement: Element | null): Date | null {
   if (!timeElement) return null;
 
@@ -233,17 +247,11 @@ function parseRedditTime(timeElement: Element | null): Date | null {
   return null;
 }
 
-/**
- * Check if content appears to be an error page
- */
 function isErrorPage(document: Document): boolean {
   const pageContent = document.body?.textContent || "";
-  return ERROR_INDICATORS.some((pattern) => pattern.test(pageContent));
+  return REDDIT_ERROR_INDICATORS.some((pattern) => pattern.test(pageContent));
 }
 
-/**
- * Check if content has been deleted or removed
- */
 function isDeletedContent(text: string): boolean {
   const trimmed = text.trim();
   return DELETED_CONTENT_INDICATORS.some((indicator) =>
@@ -251,9 +259,27 @@ function isDeletedContent(text: string): boolean {
   );
 }
 
-/**
- * Fetch a page from old.reddit.com
- */
+function generatePostTitle(author: string, subreddit: string, title: string): string {
+  const prefix = subreddit ? `Post in r/${subreddit.replace(/^r\//, "")}` : `Post by u/${author}`;
+
+  const maxLength = 60;
+  if (title.length <= maxLength) {
+    return `${prefix}: ${title}`;
+  }
+
+  let truncated = title.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+  if (lastSpace > maxLength * 0.7) {
+    truncated = truncated.slice(0, lastSpace);
+  }
+
+  return `${prefix}: ${truncated}...`;
+}
+
+// ============================================================================
+// Reddit Fetch & Extract
+// ============================================================================
+
 async function fetchOldReddit(url: string): Promise<Document | null> {
   try {
     const response = await fetch(url, {
@@ -277,10 +303,7 @@ async function fetchOldReddit(url: string): Promise<Document | null> {
   }
 }
 
-/**
- * Extract content from a Reddit post
- */
-async function extractRedditPost(info: RedditUrlInfo): Promise<SnapshotContent | null> {
+async function extractRedditPost(info: RedditUrlInfo): Promise<ExtractedContent | null> {
   const url = toOldRedditUrl(info);
   const document = await fetchOldReddit(url);
 
@@ -288,7 +311,7 @@ async function extractRedditPost(info: RedditUrlInfo): Promise<SnapshotContent |
     return null;
   }
 
-  // Find the post container - old.reddit uses .thing with data-fullname
+  // Find the post container - old.reddit uses .thing with class link
   const postContainer =
     document.querySelector(".thing.link") || document.querySelector('[data-type="link"]');
 
@@ -365,10 +388,10 @@ async function extractRedditPost(info: RedditUrlInfo): Promise<SnapshotContent |
   // Build byline
   const dateStr = postDate ? ` · ${formatBylineDate(postDate)}` : "";
   const scoreStr = score ? ` · ${score} points` : "";
-  const bylineHtml = `<a href="https://reddit.com/u/${escapeHtml(author)}" rel="noopener noreferrer" target="_blank">u/${escapeHtml(author)}</a> in <a href="https://reddit.com/r/${escapeHtml(subreddit.replace(/^r\//, ""))}" rel="noopener noreferrer" target="_blank">${escapeHtml(subreddit)}</a>${scoreStr}${dateStr}`;
+  const bylineHtml = `<a href="https://reddit.com/u/${escapeHtml(author)}" rel="noopener noreferrer" target="_blank">u/${escapeHtml(author)}</a> in <a href="https://reddit.com/r/${escapeHtml(subreddit.replace(/^r\//, ""))}" rel="noopener noreferrer" target="_blank">${escapeHtml(subreddit || info.subreddit || "reddit")}</a>${scoreStr}${dateStr}`;
 
   // Generate title with content snippet
-  const displayTitle = generatePostTitle(author, subreddit, title);
+  const displayTitle = generatePostTitle(author, subreddit || info.subreddit || "", title);
 
   return {
     title: displayTitle,
@@ -377,35 +400,11 @@ async function extractRedditPost(info: RedditUrlInfo): Promise<SnapshotContent |
     textContent,
     excerpt: generateExcerpt(textContent),
     siteName: "Reddit",
-    length: textContent.length,
     language: null,
   };
 }
 
-/**
- * Generate a descriptive title for a post
- */
-function generatePostTitle(author: string, subreddit: string, title: string): string {
-  const prefix = subreddit ? `Post in r/${subreddit.replace(/^r\//, "")}` : `Post by u/${author}`;
-
-  const maxLength = 60;
-  if (title.length <= maxLength) {
-    return `${prefix}: ${title}`;
-  }
-
-  let truncated = title.slice(0, maxLength);
-  const lastSpace = truncated.lastIndexOf(" ");
-  if (lastSpace > maxLength * 0.7) {
-    truncated = truncated.slice(0, lastSpace);
-  }
-
-  return `${prefix}: ${truncated}...`;
-}
-
-/**
- * Extract content from a Reddit comment
- */
-async function extractRedditComment(info: RedditUrlInfo): Promise<SnapshotContent | null> {
+async function extractRedditComment(info: RedditUrlInfo): Promise<ExtractedContent | null> {
   const url = toOldRedditUrl(info);
   const document = await fetchOldReddit(url);
 
@@ -475,21 +474,21 @@ async function extractRedditComment(info: RedditUrlInfo): Promise<SnapshotConten
     textContent: commentText,
     excerpt: generateExcerpt(commentText),
     siteName: "Reddit",
-    length: commentText.length,
     language: null,
   };
 }
 
-/**
- * Extract information about a subreddit
- */
-async function extractSubredditInfo(info: RedditUrlInfo): Promise<SnapshotContent | null> {
+async function extractSubredditInfo(info: RedditUrlInfo): Promise<ExtractedContent | null> {
   const url = toOldRedditUrl(info);
   const document = await fetchOldReddit(url);
 
-  if (!document || isErrorPage(document)) {
-    // Check if it's a private subreddit
-    const pageContent = document?.body?.textContent || "";
+  if (!document) {
+    return null;
+  }
+
+  // Check if it's a private subreddit
+  if (isErrorPage(document)) {
+    const pageContent = document.body?.textContent || "";
     if (/this community is private/i.test(pageContent)) {
       return {
         title: `r/${info.subreddit}`,
@@ -498,7 +497,6 @@ async function extractSubredditInfo(info: RedditUrlInfo): Promise<SnapshotConten
         textContent: "This subreddit is private.",
         excerpt: "This subreddit is private.",
         siteName: "Reddit",
-        length: 0,
         language: null,
       };
     }
@@ -563,15 +561,11 @@ async function extractSubredditInfo(info: RedditUrlInfo): Promise<SnapshotConten
     textContent,
     excerpt: generateExcerpt(textContent),
     siteName: "Reddit",
-    length: textContent.length,
     language: null,
   };
 }
 
-/**
- * Extract information about a Reddit user
- */
-async function extractUserProfile(info: RedditUrlInfo): Promise<SnapshotContent | null> {
+async function extractUserProfile(info: RedditUrlInfo): Promise<ExtractedContent | null> {
   const url = toOldRedditUrl(info);
   const document = await fetchOldReddit(url);
 
@@ -653,14 +647,10 @@ async function extractUserProfile(info: RedditUrlInfo): Promise<SnapshotContent 
     textContent,
     excerpt: generateExcerpt(textContent),
     siteName: "Reddit",
-    length: textContent.length,
     language: null,
   };
 }
 
-/**
- * Resolve a redd.it short URL to get the full URL info
- */
 async function resolveShortUrl(info: RedditUrlInfo): Promise<RedditUrlInfo | null> {
   const shortUrl = `https://redd.it/${info.postId}`;
 
@@ -693,9 +683,9 @@ async function resolveShortUrl(info: RedditUrlInfo): Promise<RedditUrlInfo | nul
 }
 
 /**
- * Main extraction function - handles all Reddit URL types
+ * Main extraction function for Reddit - handles all Reddit URL types
  */
-export async function extractReddit(url: string): Promise<SnapshotContent | null> {
+export async function extractReddit(url: string): Promise<ExtractedContent | null> {
   const urlInfo = parseRedditUrl(url);
 
   if (!urlInfo) {
@@ -728,4 +718,411 @@ export async function extractReddit(url: string): Promise<SnapshotContent | null
     default:
       return null;
   }
+}
+
+// ============================================================================
+// Twitter/X Extractor
+// ============================================================================
+
+// Twitter oEmbed API endpoint
+const TWITTER_OEMBED_URL = "https://publish.twitter.com/oembed";
+
+// Regex patterns to match Twitter/X URLs and extract tweet IDs
+const TWITTER_TWEET_PATTERNS = [
+  /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i,
+  /^https?:\/\/(?:mobile\.)?(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i,
+];
+
+// X Articles use /article/ instead of /status/
+const TWITTER_ARTICLE_PATTERN =
+  /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/(\w+)\/article\/(\d+)/i;
+
+// Content that indicates we got an error/login page instead of actual content
+const TWITTER_ERROR_PAGE_INDICATORS = [
+  /^log\s*in$/i,
+  /^sign\s*up$/i,
+  /^something went wrong/i,
+  /^tweet$/i, // Generic "Tweet" title without username
+];
+
+interface TwitterOEmbedResponse {
+  url: string;
+  author_name: string;
+  author_url: string;
+  html: string;
+  provider_name: string;
+  provider_url: string;
+}
+
+interface TweetInfo {
+  username: string;
+  tweetId: string;
+}
+
+// Twitter epoch: November 4, 2010 at 01:42:54.657 UTC
+const TWITTER_EPOCH = BigInt("1288834974657");
+
+/**
+ * Extract timestamp from a Twitter/X Snowflake ID
+ * Twitter IDs encode the creation timestamp in the upper bits
+ */
+function getDateFromSnowflakeId(id: string): Date | null {
+  try {
+    const snowflakeId = BigInt(id);
+    // Timestamp is in the upper 41 bits (shift right 22 bits)
+    const timestampMs = (snowflakeId >> BigInt(22)) + TWITTER_EPOCH;
+    return new Date(Number(timestampMs));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate a descriptive title from username and tweet content
+ * Format: "Tweet by @username: first ~50 chars..."
+ */
+function generateTweetTitle(username: string, content: string): string {
+  const baseTitle = `Tweet by @${username}`;
+
+  if (!content || content.trim().length === 0) {
+    return baseTitle;
+  }
+
+  const trimmedContent = content.trim();
+  const maxLength = 50;
+
+  if (trimmedContent.length <= maxLength) {
+    return `${baseTitle}: ${trimmedContent}`;
+  }
+
+  // Truncate at word boundary
+  let truncated = trimmedContent.slice(0, maxLength);
+  const lastSpace = truncated.lastIndexOf(" ");
+
+  // If there's a reasonable word boundary (at least 70% of max length), use it
+  if (lastSpace > maxLength * 0.7) {
+    truncated = truncated.slice(0, lastSpace);
+  }
+
+  return `${baseTitle}: ${truncated}...`;
+}
+
+/**
+ * Check if content appears to be from an error/login page
+ */
+function isTwitterErrorPageContent(content: string | null | undefined): boolean {
+  if (!content) return true;
+  const trimmed = content.trim();
+  if (trimmed.length === 0) return true;
+  return TWITTER_ERROR_PAGE_INDICATORS.some((pattern) => pattern.test(trimmed));
+}
+
+/**
+ * Check if a URL is a Twitter/X tweet URL
+ */
+export function isTwitterUrl(url: string): boolean {
+  return (
+    TWITTER_TWEET_PATTERNS.some((pattern) => pattern.test(url)) || TWITTER_ARTICLE_PATTERN.test(url)
+  );
+}
+
+/**
+ * Check if a URL is an X Article (not a regular tweet)
+ */
+function isArticleUrl(url: string): boolean {
+  return TWITTER_ARTICLE_PATTERN.test(url);
+}
+
+/**
+ * Parse tweet info from a Twitter/X URL
+ */
+function parseTweetUrl(url: string): TweetInfo | null {
+  for (const pattern of TWITTER_TWEET_PATTERNS) {
+    const match = url.match(pattern);
+    if (match) {
+      return {
+        username: match[1],
+        tweetId: match[2],
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Extract tweet text from oEmbed HTML response
+ * The HTML is a blockquote containing the tweet content
+ */
+function extractTweetTextFromHtml(html: string): string {
+  try {
+    const { document } = parseHTML(html);
+
+    // The oEmbed HTML is a blockquote with the tweet content
+    const blockquote = document.querySelector("blockquote");
+    if (!blockquote) {
+      return "";
+    }
+
+    // Get all paragraph elements (tweet content)
+    const paragraphs = blockquote.querySelectorAll("p");
+    const textParts: string[] = [];
+
+    for (const p of paragraphs) {
+      const text = p.textContent?.trim();
+      if (text) {
+        textParts.push(text);
+      }
+    }
+
+    return textParts.join("\n\n");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Try to extract tweet via Twitter's official oEmbed API
+ */
+async function tryTwitterOEmbed(url: string): Promise<ExtractedContent | null> {
+  try {
+    const oembedUrl = new URL(TWITTER_OEMBED_URL);
+    oembedUrl.searchParams.set("url", url);
+    oembedUrl.searchParams.set("omit_script", "true");
+
+    const response = await fetch(oembedUrl.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = (await response.json()) as TwitterOEmbedResponse;
+
+    // Extract the tweet text from the HTML blockquote
+    const tweetText = extractTweetTextFromHtml(data.html);
+
+    if (!tweetText) {
+      return null;
+    }
+
+    // Build excerpt
+    let excerpt = tweetText;
+    if (excerpt.length > EXCERPT_LENGTH) {
+      excerpt = excerpt.slice(0, EXCERPT_LENGTH);
+      const lastSpace = excerpt.lastIndexOf(" ");
+      if (lastSpace > EXCERPT_LENGTH * 0.8) {
+        excerpt = `${excerpt.slice(0, lastSpace)}...`;
+      } else {
+        excerpt = `${excerpt}...`;
+      }
+    }
+
+    // Extract username from author URL (e.g., "https://twitter.com/4nzn" -> "4nzn")
+    const usernameMatch = data.author_url.match(/(?:twitter\.com|x\.com)\/(\w+)/i);
+    const username = usernameMatch ? usernameMatch[1] : data.author_name;
+
+    // Extract tweet date from Snowflake ID
+    const tweetInfo = parseTweetUrl(url);
+    const tweetDate = tweetInfo ? getDateFromSnowflakeId(tweetInfo.tweetId) : null;
+    const dateStr = tweetDate ? ` · ${formatBylineDate(tweetDate)}` : "";
+
+    // Build readable HTML content
+    const paragraphs = tweetText.split("\n\n").filter((p) => p.trim());
+
+    const content =
+      paragraphs.length > 0 ? paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n") : "";
+
+    // Byline with link to author profile and date
+    const bylineHtml = `<a href="${data.author_url}" rel="noopener noreferrer" target="_blank">@${username}</a>${dateStr}`;
+
+    return {
+      title: generateTweetTitle(username, tweetText),
+      byline: bylineHtml,
+      content,
+      textContent: tweetText,
+      excerpt,
+      siteName: data.provider_name || "Twitter",
+      language: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try to extract tweet via FxTwitter (fallback)
+ * FxTwitter provides better OG tags for tweets
+ */
+async function tryFxTwitter(url: string): Promise<ExtractedContent | null> {
+  const tweetInfo = parseTweetUrl(url);
+  if (!tweetInfo) {
+    return null;
+  }
+
+  try {
+    const fxUrl = `https://fxtwitter.com/${tweetInfo.username}/status/${tweetInfo.tweetId}`;
+
+    const response = await fetch(fxUrl, {
+      headers: {
+        "User-Agent": "bot",
+        Accept: "text/html",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const html = await response.text();
+    const { document } = parseHTML(html);
+
+    // Extract OG metadata
+    const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute("content");
+    const ogDescription = document
+      .querySelector('meta[property="og:description"]')
+      ?.getAttribute("content");
+    const ogSiteName = document
+      .querySelector('meta[property="og:site_name"]')
+      ?.getAttribute("content");
+
+    // Check if we got error page content instead of actual tweet
+    if (
+      !ogDescription ||
+      isTwitterErrorPageContent(ogDescription) ||
+      isTwitterErrorPageContent(ogTitle)
+    ) {
+      return null;
+    }
+
+    // Build excerpt
+    let excerpt = ogDescription;
+    if (excerpt.length > EXCERPT_LENGTH) {
+      excerpt = excerpt.slice(0, EXCERPT_LENGTH);
+      const lastSpace = excerpt.lastIndexOf(" ");
+      if (lastSpace > EXCERPT_LENGTH * 0.8) {
+        excerpt = `${excerpt.slice(0, lastSpace)}...`;
+      } else {
+        excerpt = `${excerpt}...`;
+      }
+    }
+
+    // Build readable HTML content
+    const paragraphs = ogDescription.split("\n\n").filter((p) => p.trim());
+
+    const content =
+      paragraphs.length > 0 ? paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join("\n") : "";
+
+    // Extract tweet date from Snowflake ID
+    const tweetDate = getDateFromSnowflakeId(tweetInfo.tweetId);
+    const dateStr = tweetDate ? ` · ${formatBylineDate(tweetDate)}` : "";
+
+    // Byline with link to author profile and date
+    const authorUrl = `https://twitter.com/${tweetInfo.username}`;
+    const bylineHtml = `<a href="${authorUrl}" rel="noopener noreferrer" target="_blank">@${tweetInfo.username}</a>${dateStr}`;
+
+    return {
+      title: generateTweetTitle(tweetInfo.username, ogDescription),
+      byline: bylineHtml,
+      content,
+      textContent: ogDescription,
+      excerpt,
+      siteName: ogSiteName || "Twitter",
+      language: null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract tweet content from a Twitter/X URL
+ * Tries oEmbed first, falls back to FxTwitter
+ */
+export async function extractTweet(url: string): Promise<ExtractedContent | null> {
+  // X Articles (/article/) are not supported - they require authentication
+  // and don't work with oEmbed or FxTwitter
+  if (isArticleUrl(url)) {
+    // Return a placeholder result so we don't fall back to Readability
+    // (which would just extract the login page)
+    const match = url.match(TWITTER_ARTICLE_PATTERN);
+    const username = match ? match[1] : "unknown";
+    const articleId = match ? match[2] : null;
+
+    // Extract article date from Snowflake ID
+    const articleDate = articleId ? getDateFromSnowflakeId(articleId) : null;
+    const dateStr = articleDate ? ` · ${formatBylineDate(articleDate)}` : "";
+
+    return {
+      title: `X Article by @${username}`,
+      byline: `<a href="https://x.com/${username}" rel="noopener noreferrer" target="_blank">@${username}</a>${dateStr}`,
+      content: `<p>X Articles require authentication and cannot be snapshotted. <a href="${url}" rel="noopener noreferrer" target="_blank">View the original article on X</a>.</p>`,
+      textContent: "X Articles require authentication and cannot be snapshotted.",
+      excerpt: "X Articles require authentication and cannot be snapshotted.",
+      siteName: "X",
+      language: null,
+    };
+  }
+
+  // Try Twitter oEmbed API first (official, most reliable)
+  const oembedResult = await tryTwitterOEmbed(url);
+  if (oembedResult) {
+    return oembedResult;
+  }
+
+  // Fall back to FxTwitter
+  const fxResult = await tryFxTwitter(url);
+  if (fxResult) {
+    return fxResult;
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Domain Extractor Registry
+// ============================================================================
+
+interface DomainHandler {
+  matcher: (url: string) => boolean;
+  extractor: (url: string) => Promise<ExtractedContent | null>;
+}
+
+/**
+ * Registry of domain-specific extractors
+ * Order matters - first match wins
+ */
+const DOMAIN_HANDLERS: DomainHandler[] = [
+  {
+    matcher: isTwitterUrl,
+    extractor: extractTweet,
+  },
+  {
+    matcher: isRedditUrl,
+    extractor: extractReddit,
+  },
+];
+
+/**
+ * Get a domain-specific extractor for a URL, if one exists
+ * Returns null if no specialized handler is registered for this domain
+ */
+export function getDomainExtractor(
+  url: string
+): ((url: string) => Promise<ExtractedContent | null>) | null {
+  for (const handler of DOMAIN_HANDLERS) {
+    if (handler.matcher(url)) {
+      return handler.extractor;
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if a URL has a domain-specific extractor available
+ */
+export function hasDomainExtractor(url: string): boolean {
+  return getDomainExtractor(url) !== null;
 }
