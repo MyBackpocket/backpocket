@@ -1,5 +1,6 @@
 "use client";
 
+import { getDateFromSnowflakeId, parseTwitterUrl } from "@backpocket/utils";
 import {
   Check,
   ChevronDown,
@@ -59,9 +60,7 @@ function EnrichmentIndicator() {
           />
         ))}
       </span>
-      <span className="text-xs text-muted-foreground/50">
-        enriching
-      </span>
+      <span className="text-xs text-muted-foreground/50">enriching</span>
     </div>
   );
 }
@@ -339,187 +338,199 @@ export function QuickAdd({ variant = "default" }: QuickAddProps) {
             )}
 
             {/* Preview Card */}
-            {(state === "fetching" || state === "preview" || state === "saving" || state === "success") && metadata && (
-              <div className="space-y-4">
-                {/* Fetched Content Preview */}
-                <div 
-                  className={`
+            {(state === "fetching" ||
+              state === "preview" ||
+              state === "saving" ||
+              state === "success") &&
+              metadata && (
+                <div className="space-y-4">
+                  {/* Fetched Content Preview */}
+                  <div
+                    className={`
                     relative rounded-xl border bg-card overflow-hidden
                     transition-all duration-500
                     ${state === "fetching" ? "ring-1 ring-primary/20" : ""}
                   `}
-                >
-                  {/* Subtle shimmer overlay when fetching */}
-                  {state === "fetching" && (
-                    <div 
-                      className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
-                      aria-hidden="true"
-                    >
-                      <div 
-                        className="absolute inset-0"
-                        style={{
-                          background: "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.04), transparent)",
-                          animation: "shimmer 2.5s ease-in-out infinite",
-                        }}
-                      />
-                    </div>
-                  )}
-                  
-                  {metadata.imageUrl && (
-                    <div className="relative aspect-video bg-muted">
-                      <Image src={metadata.imageUrl} alt="" fill className="object-cover" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start gap-3">
-                      {metadata.favicon && (
-                        <div className="relative w-6 h-6 shrink-0 mt-0.5 rounded-md overflow-hidden bg-muted/50 flex items-center justify-center">
-                          <Image
-                            src={metadata.favicon}
-                            alt=""
-                            fill
-                            className="object-contain p-0.5"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-base leading-tight line-clamp-2">
-                          {metadata.title}
-                        </h3>
-                        {metadata.description ? (
-                          <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-                            {metadata.description}
-                          </p>
-                        ) : state === "fetching" ? (
-                          <EnrichmentIndicator />
-                        ) : null}
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-muted-foreground">
-                            {metadata.siteName || new URL(url).hostname}
-                          </span>
-                          {state === "fetching" && (
-                            <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded-full">
-                              <Sparkles className="w-2.5 h-2.5" />
-                              fetching
+                  >
+                    {/* Subtle shimmer overlay when fetching */}
+                    {state === "fetching" && (
+                      <div
+                        className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl"
+                        aria-hidden="true"
+                      >
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            background:
+                              "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.04), transparent)",
+                            animation: "shimmer 2.5s ease-in-out infinite",
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {metadata.imageUrl && (
+                      <div className="relative aspect-video bg-muted">
+                        <Image src={metadata.imageUrl} alt="" fill className="object-cover" />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        {metadata.favicon && (
+                          <div className="relative w-6 h-6 shrink-0 mt-0.5 rounded-md overflow-hidden bg-muted/50 flex items-center justify-center">
+                            <Image
+                              src={metadata.favicon}
+                              alt=""
+                              fill
+                              className="object-contain p-0.5"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-base leading-tight line-clamp-2">
+                            {metadata.title}
+                          </h3>
+                          {metadata.description ? (
+                            <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
+                              {metadata.description}
+                            </p>
+                          ) : state === "fetching" ? (
+                            <EnrichmentIndicator />
+                          ) : null}
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-xs text-muted-foreground">
+                              {metadata.siteName || new URL(url).hostname}
                             </span>
-                          )}
+                            {state === "fetching" && (
+                              <span className="inline-flex items-center gap-1 text-[10px] text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded-full">
+                                <Sparkles className="w-2.5 h-2.5" />
+                                fetching
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Quick Options */}
-                {state !== "success" && state !== "fetching" && (
-                  <div className="flex items-center gap-2">
-                    {/* Visibility Toggle */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          disabled={state === "saving"}
-                        >
-                          {effectiveVisibility === "private" ? (
-                            <Lock className="h-3.5 w-3.5" />
-                          ) : (
-                            <Globe className="h-3.5 w-3.5" />
-                          )}
-                          {effectiveVisibility === "private" ? "Private" : "Public"}
-                          <ChevronDown className="h-3 w-3 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem onClick={() => setVisibility("private")}>
-                          <Lock className="h-4 w-4 mr-2" />
-                          Private
-                          {effectiveVisibility === "private" && (
-                            <Check className="h-4 w-4 ml-auto" />
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setVisibility("public")}>
-                          <Globe className="h-4 w-4 mr-2" />
-                          Public
-                          {effectiveVisibility === "public" && (
-                            <Check className="h-4 w-4 ml-auto" />
-                          )}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-
-                    {/* Collection Picker */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          disabled={state === "saving"}
-                        >
-                          {selectedCollectionName || "No collection"}
-                          <ChevronDown className="h-3 w-3 opacity-50" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="start">
-                        <DropdownMenuItem onClick={() => setSelectedCollection(null)}>
-                          No collection
-                          {!selectedCollection && <Check className="h-4 w-4 ml-auto" />}
-                        </DropdownMenuItem>
-                        {collections && collections.length > 0 && <DropdownMenuSeparator />}
-                        {collections?.map((col) => (
-                          <DropdownMenuItem
-                            key={col.id}
-                            onClick={() => setSelectedCollection(col.id)}
+                  {/* Quick Options */}
+                  {state !== "success" && state !== "fetching" && (
+                    <div className="flex items-center gap-2">
+                      {/* Visibility Toggle */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            disabled={state === "saving"}
                           >
-                            {col.name}
-                            {selectedCollection === col.id && <Check className="h-4 w-4 ml-auto" />}
+                            {effectiveVisibility === "private" ? (
+                              <Lock className="h-3.5 w-3.5" />
+                            ) : (
+                              <Globe className="h-3.5 w-3.5" />
+                            )}
+                            {effectiveVisibility === "private" ? "Private" : "Public"}
+                            <ChevronDown className="h-3 w-3 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => setVisibility("private")}>
+                            <Lock className="h-4 w-4 mr-2" />
+                            Private
+                            {effectiveVisibility === "private" && (
+                              <Check className="h-4 w-4 ml-auto" />
+                            )}
                           </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          <DropdownMenuItem onClick={() => setVisibility("public")}>
+                            <Globe className="h-4 w-4 mr-2" />
+                            Public
+                            {effectiveVisibility === "public" && (
+                              <Check className="h-4 w-4 ml-auto" />
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                    <div className="flex-1" />
+                      {/* Collection Picker */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            disabled={state === "saving"}
+                          >
+                            {selectedCollectionName || "No collection"}
+                            <ChevronDown className="h-3 w-3 opacity-50" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          <DropdownMenuItem onClick={() => setSelectedCollection(null)}>
+                            No collection
+                            {!selectedCollection && <Check className="h-4 w-4 ml-auto" />}
+                          </DropdownMenuItem>
+                          {collections && collections.length > 0 && <DropdownMenuSeparator />}
+                          {collections?.map((col) => (
+                            <DropdownMenuItem
+                              key={col.id}
+                              onClick={() => setSelectedCollection(col.id)}
+                            >
+                              {col.name}
+                              {selectedCollection === col.id && (
+                                <Check className="h-4 w-4 ml-auto" />
+                              )}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
 
-                    {/* Edit link */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        // Navigate to full form with pre-filled data
-                        const params = new URLSearchParams({
-                          url,
-                          title: metadata.title,
-                          visibility: effectiveVisibility,
-                        });
-                        if (selectedCollection) {
-                          params.set("collection", selectedCollection);
-                        }
-                        router.push(`/app/saves/new?${params.toString()}`);
-                        resetAndClose();
-                      }}
-                      disabled={state === "saving"}
-                    >
-                      More options
-                    </Button>
-                  </div>
-                )}
+                      <div className="flex-1" />
 
-                {/* Save Button */}
-                <Button
-                  onClick={handleSave}
-                  disabled={state === "fetching" || state === "saving" || state === "success"}
-                  className="w-full h-11"
-                >
-                  {state === "fetching" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {state === "saving" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {state === "success" && <Check className="mr-2 h-4 w-4 text-green-500" />}
-                  {state === "success" ? "Saved!" : state === "saving" ? "Saving..." : state === "fetching" ? "Fetching..." : "Save"}
-                  {state === "preview" && <span className="ml-2 text-xs opacity-70">⌘↵</span>}
-                </Button>
+                      {/* Edit link */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          // Navigate to full form with pre-filled data
+                          const params = new URLSearchParams({
+                            url,
+                            title: metadata.title,
+                            visibility: effectiveVisibility,
+                          });
+                          if (selectedCollection) {
+                            params.set("collection", selectedCollection);
+                          }
+                          router.push(`/app/saves/new?${params.toString()}`);
+                          resetAndClose();
+                        }}
+                        disabled={state === "saving"}
+                      >
+                        More options
+                      </Button>
+                    </div>
+                  )}
 
-              </div>
-            )}
+                  {/* Save Button */}
+                  <Button
+                    onClick={handleSave}
+                    disabled={state === "fetching" || state === "saving" || state === "success"}
+                    className="w-full h-11"
+                  >
+                    {state === "fetching" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {state === "saving" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {state === "success" && <Check className="mr-2 h-4 w-4 text-green-500" />}
+                    {state === "success"
+                      ? "Saved!"
+                      : state === "saving"
+                        ? "Saving..."
+                        : state === "fetching"
+                          ? "Fetching..."
+                          : "Save"}
+                    {state === "preview" && <span className="ml-2 text-xs opacity-70">⌘↵</span>}
+                  </Button>
+                </div>
+              )}
           </div>
         </DialogContent>
       </Dialog>
@@ -547,7 +558,15 @@ function generateTitleFromUrl(url: string): string {
       return "YouTube Video";
     }
     if (url.includes("twitter.com") || url.includes("x.com")) {
-      return "Tweet";
+      const twitterInfo = parseTwitterUrl(url);
+      if (twitterInfo) {
+        const date = getDateFromSnowflakeId(twitterInfo.tweetId);
+        const dateStr = date
+          ? ` · ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+          : "";
+        return `X post by @${twitterInfo.username}${dateStr}`;
+      }
+      return "X post";
     }
     if (url.includes("github.com")) {
       const parts = path.split("/").filter(Boolean);

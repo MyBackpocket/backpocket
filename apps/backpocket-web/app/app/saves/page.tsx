@@ -592,15 +592,17 @@ export default function SavesPage() {
 
   // Check hasMore from fresh data, or from cache if we're using cached items
   const cachedData = getPaginatedCache<SaveItem>("saves:paginated");
-  const hasMore = allItems.length > (data?.items?.length ?? 0)
-    ? !!cachedData?.cursor // Using cached items, use cached cursor
-    : !!data?.nextCursor; // Using fresh data
+  const hasMore =
+    allItems.length > (data?.items?.length ?? 0)
+      ? !!cachedData?.cursor // Using cached items, use cached cursor
+      : !!data?.nextCursor; // Using fresh data
 
   const handleLoadMore = () => {
     // Use cached cursor if we have more items than fresh data (restored from cache)
-    const nextCursor = allItems.length > (data?.items?.length ?? 0)
-      ? (cachedData?.cursor as number | undefined)
-      : data?.nextCursor;
+    const nextCursor =
+      allItems.length > (data?.items?.length ?? 0)
+        ? (cachedData?.cursor as number | undefined)
+        : data?.nextCursor;
 
     if (nextCursor) {
       setIsLoadingMore(true);
@@ -618,8 +620,7 @@ export default function SavesPage() {
   const bulkDeleteSaves = useBulkDeleteSaves();
 
   const isSelectionMode = selectedIds.size > 0;
-  const allSelected =
-    displayItems.length > 0 && selectedIds.size === displayItems.length;
+  const allSelected = displayItems.length > 0 && selectedIds.size === displayItems.length;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {

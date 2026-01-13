@@ -9,14 +9,14 @@ import { useTheme } from "@/lib/theme/provider";
 type ColorKey = keyof typeof Colors.light;
 
 export function useThemeColor(colorKey: ColorKey): string {
-	const { colorScheme } = useTheme();
-	return Colors[colorScheme][colorKey];
+  const { colorScheme } = useTheme();
+  return Colors[colorScheme][colorKey];
 }
 
 /**
  * Get all colors for current theme
  */
 export function useThemeColors() {
-	const { colors } = useTheme();
-	return colors;
+  const { colors } = useTheme();
+  return colors;
 }

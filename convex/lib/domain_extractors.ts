@@ -5,6 +5,7 @@
  * (Twitter, Reddit, Instagram, etc.)
  */
 
+import { getDateFromSnowflakeId, isTwitterUrl, parseTwitterUrl } from "@backpocket/utils";
 import { parseHTML } from "linkedom";
 
 // ============================================================================
@@ -727,12 +728,6 @@ export async function extractReddit(url: string): Promise<ExtractedContent | nul
 // Twitter oEmbed API endpoint
 const TWITTER_OEMBED_URL = "https://publish.twitter.com/oembed";
 
-// Regex patterns to match Twitter/X URLs and extract tweet IDs
-const TWITTER_TWEET_PATTERNS = [
-  /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i,
-  /^https?:\/\/(?:mobile\.)?(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/i,
-];
-
 // X Articles use /article/ instead of /status/
 const TWITTER_ARTICLE_PATTERN =
   /^https?:\/\/(?:www\.)?(?:twitter\.com|x\.com)\/(\w+)\/article\/(\d+)/i;
@@ -752,29 +747,6 @@ interface TwitterOEmbedResponse {
   html: string;
   provider_name: string;
   provider_url: string;
-}
-
-interface TweetInfo {
-  username: string;
-  tweetId: string;
-}
-
-// Twitter epoch: November 4, 2010 at 01:42:54.657 UTC
-const TWITTER_EPOCH = BigInt("1288834974657");
-
-/**
- * Extract timestamp from a Twitter/X Snowflake ID
- * Twitter IDs encode the creation timestamp in the upper bits
- */
-function getDateFromSnowflakeId(id: string): Date | null {
-  try {
-    const snowflakeId = BigInt(id);
-    // Timestamp is in the upper 41 bits (shift right 22 bits)
-    const timestampMs = (snowflakeId >> BigInt(22)) + TWITTER_EPOCH;
-    return new Date(Number(timestampMs));
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -818,35 +790,10 @@ function isTwitterErrorPageContent(content: string | null | undefined): boolean 
 }
 
 /**
- * Check if a URL is a Twitter/X tweet URL
- */
-export function isTwitterUrl(url: string): boolean {
-  return (
-    TWITTER_TWEET_PATTERNS.some((pattern) => pattern.test(url)) || TWITTER_ARTICLE_PATTERN.test(url)
-  );
-}
-
-/**
  * Check if a URL is an X Article (not a regular tweet)
  */
 function isArticleUrl(url: string): boolean {
   return TWITTER_ARTICLE_PATTERN.test(url);
-}
-
-/**
- * Parse tweet info from a Twitter/X URL
- */
-function parseTweetUrl(url: string): TweetInfo | null {
-  for (const pattern of TWITTER_TWEET_PATTERNS) {
-    const match = url.match(pattern);
-    if (match) {
-      return {
-        username: match[1],
-        tweetId: match[2],
-      };
-    }
-  }
-  return null;
 }
 
 /**
@@ -925,7 +872,7 @@ async function tryTwitterOEmbed(url: string): Promise<ExtractedContent | null> {
     const username = usernameMatch ? usernameMatch[1] : data.author_name;
 
     // Extract tweet date from Snowflake ID
-    const tweetInfo = parseTweetUrl(url);
+    const tweetInfo = parseTwitterUrl(url);
     const tweetDate = tweetInfo ? getDateFromSnowflakeId(tweetInfo.tweetId) : null;
     const dateStr = tweetDate ? ` · ${formatBylineDate(tweetDate)}` : "";
 
@@ -957,7 +904,7 @@ async function tryTwitterOEmbed(url: string): Promise<ExtractedContent | null> {
  * FxTwitter provides better OG tags for tweets
  */
 async function tryFxTwitter(url: string): Promise<ExtractedContent | null> {
-  const tweetInfo = parseTweetUrl(url);
+  const tweetInfo = parseTwitterUrl(url);
   if (!tweetInfo) {
     return null;
   }

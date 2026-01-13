@@ -32,7 +32,7 @@ function createClient(token: string) {
  */
 export async function createSave(input: CreateSaveInput, token: string): Promise<Save> {
   const client = createClient(token);
-  
+
   try {
     const result = await client.mutation(api.saves.create, {
       url: input.url,
@@ -93,10 +93,10 @@ export async function createSave(input: CreateSaveInput, token: string): Promise
  */
 export async function listTags(token: string): Promise<Tag[]> {
   const client = createClient(token);
-  
+
   try {
     const result = await client.query(api.tags.list, {});
-    
+
     return result.map((t: any) => ({
       id: t.id,
       spaceId: t.spaceId,
@@ -118,7 +118,7 @@ export async function listTags(token: string): Promise<Tag[]> {
  */
 export async function checkDuplicate(url: string, token: string): Promise<any | null> {
   const client = createClient(token);
-  
+
   try {
     return await client.query(api.saves.checkDuplicate, { url });
   } catch (error) {

@@ -11,10 +11,6 @@ Planned features and improvements for Backpocket.
 - [ ] Fix X (Twitter) link processing issues
 - [ ] Fix Reddit link processing issues
 
-### Web App
-
-- [ ] Fix custom domain settings page card (regression)
-
 ---
 
 ## Planned Features
@@ -46,82 +42,82 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 
 ### Currently Implemented
 
-| Platform | Status | Method |
-|----------|--------|--------|
+| Platform  | Status  | Method                          |
+| --------- | ------- | ------------------------------- |
 | Twitter/X | ✅ Done | oEmbed API + FxTwitter fallback |
-| Reddit | ✅ Done | old.reddit.com scraping |
+| Reddit    | ✅ Done | old.reddit.com scraping         |
 
 ### Social Media / Microblogging
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Threads (threads.net) | Medium | No public API, may need scraping |
-| Bluesky (bsky.app) | Medium | Public API (AT Protocol) |
-| Mastodon | Low | Has oEmbed, federated instances |
-| LinkedIn posts | Low | Requires auth, limited |
+| Platform              | Priority | Notes                            |
+| --------------------- | -------- | -------------------------------- |
+| Threads (threads.net) | Medium   | No public API, may need scraping |
+| Bluesky (bsky.app)    | Medium   | Public API (AT Protocol)         |
+| Mastodon              | Low      | Has oEmbed, federated instances  |
+| LinkedIn posts        | Low      | Requires auth, limited           |
 
 ### Video Platforms
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| YouTube | High | Has oEmbed; transcript via captions API |
-| Vimeo | Medium | Has oEmbed support |
-| TikTok | Medium | Has oEmbed via oembed.tiktok.com |
-| Twitch clips | Low | Has oEmbed for clips |
-| Dailymotion | Low | Has oEmbed |
+| Platform     | Priority | Notes                                   |
+| ------------ | -------- | --------------------------------------- |
+| YouTube      | High     | Has oEmbed; transcript via captions API |
+| Vimeo        | Medium   | Has oEmbed support                      |
+| TikTok       | Medium   | Has oEmbed via oembed.tiktok.com        |
+| Twitch clips | Low      | Has oEmbed for clips                    |
+| Dailymotion  | Low      | Has oEmbed                              |
 
 ### Discussion / Forums
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Hacker News | High | Simple HTML, easy to parse |
-| Stack Overflow | Medium | Structured data, relatively easy |
-| Discourse forums | Low | Varies by instance |
+| Platform         | Priority | Notes                            |
+| ---------------- | -------- | -------------------------------- |
+| Hacker News      | High     | Simple HTML, easy to parse       |
+| Stack Overflow   | Medium   | Structured data, relatively easy |
+| Discourse forums | Low      | Varies by instance               |
 
 ### Image Sharing
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Instagram | Low | No public API, very locked down; bibliogram proxies |
-| Pinterest | Low | Has oEmbed (limited) |
-| Imgur | Medium | Has API |
-| Flickr | Low | Has oEmbed |
+| Platform  | Priority | Notes                                               |
+| --------- | -------- | --------------------------------------------------- |
+| Instagram | Low      | No public API, very locked down; bibliogram proxies |
+| Pinterest | Low      | Has oEmbed (limited)                                |
+| Imgur     | Medium   | Has API                                             |
+| Flickr    | Low      | Has oEmbed                                          |
 
 ### Code / Developer Platforms
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| GitHub | High | Repos, gists, issues, PRs; has API; README previews |
-| GitLab | Medium | Similar to GitHub |
-| CodePen | Low | Has oEmbed |
-| JSFiddle | Low | Has oEmbed |
-| Gist | Medium | Has oEmbed |
+| Platform | Priority | Notes                                               |
+| -------- | -------- | --------------------------------------------------- |
+| GitHub   | High     | Repos, gists, issues, PRs; has API; README previews |
+| GitLab   | Medium   | Similar to GitHub                                   |
+| CodePen  | Low      | Has oEmbed                                          |
+| JSFiddle | Low      | Has oEmbed                                          |
+| Gist     | Medium   | Has oEmbed                                          |
 
 ### Long-form / Newsletters
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Substack | Medium | Generally works, may need paywall handling |
-| Medium | Medium | Paywall bypass via scribe.rip / freedium |
-| Notion public pages | Low | Dynamic rendering, special handling |
-| Google Docs (published) | Low | Export as HTML |
+| Platform                | Priority | Notes                                      |
+| ----------------------- | -------- | ------------------------------------------ |
+| Substack                | Medium   | Generally works, may need paywall handling |
+| Medium                  | Medium   | Paywall bypass via scribe.rip / freedium   |
+| Notion public pages     | Low      | Dynamic rendering, special handling        |
+| Google Docs (published) | Low      | Export as HTML                             |
 
 ### Audio / Podcasts
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Spotify | Medium | Has oEmbed for tracks/episodes/playlists |
-| SoundCloud | Medium | Has oEmbed |
-| Apple Podcasts | Low | No oEmbed, would need scraping |
+| Platform       | Priority | Notes                                    |
+| -------------- | -------- | ---------------------------------------- |
+| Spotify        | Medium   | Has oEmbed for tracks/episodes/playlists |
+| SoundCloud     | Medium   | Has oEmbed                               |
+| Apple Podcasts | Low      | No oEmbed, would need scraping           |
 
 ### Other
 
-| Platform | Priority | Notes |
-|----------|----------|-------|
-| Google Maps | Low | Has embed URLs, extract place info |
-| Amazon products | Low | Scrape product details, images |
-| Goodreads | Low | Book info extraction |
-| Wikipedia | Low | Already works, enhance with infobox |
+| Platform        | Priority | Notes                               |
+| --------------- | -------- | ----------------------------------- |
+| Google Maps     | Low      | Has embed URLs, extract place info  |
+| Amazon products | Low      | Scrape product details, images      |
+| Goodreads       | Low      | Book info extraction                |
+| Wikipedia       | Low      | Already works, enhance with infobox |
 
 ### Suggested Priority Order
 

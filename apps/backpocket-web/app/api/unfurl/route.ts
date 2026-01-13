@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const FETCH_TIMEOUT_MS = 8000; // 8 second timeout for preview
 
@@ -133,8 +133,7 @@ export async function POST(request: NextRequest) {
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (compatible; Backpocket/1.0; +https://backpocket.app)",
+          "User-Agent": "Mozilla/5.0 (compatible; Backpocket/1.0; +https://backpocket.app)",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",

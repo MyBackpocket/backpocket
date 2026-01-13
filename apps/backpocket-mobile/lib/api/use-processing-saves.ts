@@ -31,17 +31,17 @@ export const PROCESSING_POLL_INTERVAL_MS = 3000; // 3 seconds
  * as processing forever.
  */
 export function isSaveProcessing(save: Save): boolean {
-	// If we have a title, the save has been processed
-	if (save.title !== null) {
-		return false;
-	}
+  // If we have a title, the save has been processed
+  if (save.title !== null) {
+    return false;
+  }
 
-	// Check if the save is recent enough to still be processing
-	const createdAt = new Date(save.createdAt).getTime();
-	const now = Date.now();
-	const age = now - createdAt;
+  // Check if the save is recent enough to still be processing
+  const createdAt = new Date(save.createdAt).getTime();
+  const now = Date.now();
+  const age = now - createdAt;
 
-	return age < PROCESSING_MAX_AGE_MS;
+  return age < PROCESSING_MAX_AGE_MS;
 }
 
 /**
@@ -49,7 +49,7 @@ export function isSaveProcessing(save: Save): boolean {
  * Useful for enabling/disabling polling at the query level
  */
 export function hasProcessingSaves(saves: Save[]): boolean {
-	return saves.some(isSaveProcessing);
+  return saves.some(isSaveProcessing);
 }
 
 /**
@@ -65,12 +65,10 @@ export function hasProcessingSaves(saves: Save[]): boolean {
  * })
  * ```
  */
-export function getProcessingRefetchInterval(
-	saves: Save[] | undefined,
-): number | false {
-	if (!saves || saves.length === 0) {
-		return false;
-	}
+export function getProcessingRefetchInterval(saves: Save[] | undefined): number | false {
+  if (!saves || saves.length === 0) {
+    return false;
+  }
 
-	return hasProcessingSaves(saves) ? PROCESSING_POLL_INTERVAL_MS : false;
+  return hasProcessingSaves(saves) ? PROCESSING_POLL_INTERVAL_MS : false;
 }

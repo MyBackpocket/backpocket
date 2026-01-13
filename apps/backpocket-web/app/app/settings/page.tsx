@@ -1281,7 +1281,8 @@ function ExportDataCard() {
             </li>
           </ul>
           <p className="text-sm text-muted-foreground pt-1">
-            Export format is designed for easy import into other databases like Convex, Supabase, or any JSON-compatible system.
+            Export format is designed for easy import into other databases like Convex, Supabase, or
+            any JSON-compatible system.
           </p>
         </div>
         <Button

@@ -5,9 +5,9 @@
 
 import { ClerkLoaded, ClerkProvider } from "@clerk/clerk-expo";
 import {
-	DarkTheme,
-	DefaultTheme,
-	ThemeProvider as NavigationThemeProvider,
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
 import { ShareIntentProvider } from "expo-share-intent";
 import type React from "react";
@@ -16,103 +16,88 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import { tokenCache } from "@/lib/auth/token-cache";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/constants";
 import { ConvexProvider } from "@/lib/convex";
-import {
-	SettingsContext,
-	type ThemePreference,
-	useSettingsStore,
-} from "@/lib/settings";
+import { SettingsContext, type ThemePreference, useSettingsStore } from "@/lib/settings";
 import { ThemeProvider } from "@/lib/theme/provider";
 
 // Custom navigation themes with Backpocket colors
 const BackpocketLightTheme = {
-	...DefaultTheme,
-	colors: {
-		...DefaultTheme.colors,
-		primary: brandColors.rust.DEFAULT,
-		background: Colors.light.background,
-		card: Colors.light.card,
-		text: Colors.light.text,
-		border: Colors.light.border,
-		notification: brandColors.rust.DEFAULT,
-	},
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: brandColors.rust.DEFAULT,
+    background: Colors.light.background,
+    card: Colors.light.card,
+    text: Colors.light.text,
+    border: Colors.light.border,
+    notification: brandColors.rust.DEFAULT,
+  },
 };
 
 const BackpocketDarkTheme = {
-	...DarkTheme,
-	colors: {
-		...DarkTheme.colors,
-		primary: brandColors.amber,
-		background: Colors.dark.background,
-		card: Colors.dark.card,
-		text: Colors.dark.text,
-		border: Colors.dark.border,
-		notification: brandColors.amber,
-	},
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: brandColors.amber,
+    background: Colors.dark.background,
+    card: Colors.dark.card,
+    text: Colors.dark.text,
+    border: Colors.dark.border,
+    notification: brandColors.amber,
+  },
 };
 
 interface ProvidersProps {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }
 
 interface InnerProvidersProps extends ProvidersProps {
-	themePreference: ThemePreference;
+  themePreference: ThemePreference;
 }
 
 function InnerProviders({ children, themePreference }: InnerProvidersProps) {
-	const colorScheme = useColorScheme();
+  const colorScheme = useColorScheme();
 
-	// Determine effective color scheme based on preference
-	const effectiveScheme =
-		themePreference === "system" ? colorScheme : themePreference;
-	const navigationTheme =
-		effectiveScheme === "dark" ? BackpocketDarkTheme : BackpocketLightTheme;
+  // Determine effective color scheme based on preference
+  const effectiveScheme = themePreference === "system" ? colorScheme : themePreference;
+  const navigationTheme = effectiveScheme === "dark" ? BackpocketDarkTheme : BackpocketLightTheme;
 
-	return (
-		<ThemeProvider forcedColorScheme={themePreference}>
-			<ConvexProvider>
-				<NavigationThemeProvider value={navigationTheme}>
-					{children}
-				</NavigationThemeProvider>
-			</ConvexProvider>
-		</ThemeProvider>
-	);
+  return (
+    <ThemeProvider forcedColorScheme={themePreference}>
+      <ConvexProvider>
+        <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
+      </ConvexProvider>
+    </ThemeProvider>
+  );
 }
 
 function SettingsWrapper({ children }: ProvidersProps) {
-	const settingsStore = useSettingsStore();
+  const settingsStore = useSettingsStore();
 
-	return (
-		<SettingsContext.Provider value={settingsStore}>
-			<InnerProviders themePreference={settingsStore.settings.theme}>
-				{children}
-			</InnerProviders>
-		</SettingsContext.Provider>
-	);
+  return (
+    <SettingsContext.Provider value={settingsStore}>
+      <InnerProviders themePreference={settingsStore.settings.theme}>{children}</InnerProviders>
+    </SettingsContext.Provider>
+  );
 }
 
 export function Providers({ children }: ProvidersProps) {
-	// If Clerk key is not configured, render without Clerk (for development)
-	if (!CLERK_PUBLISHABLE_KEY) {
-		console.warn(
-			"[auth] Clerk publishable key not configured. Auth features disabled.",
-		);
-		return (
-			<ShareIntentProvider options={{ debug: true }}>
-				<SettingsWrapper>{children}</SettingsWrapper>
-			</ShareIntentProvider>
-		);
-	}
+  // If Clerk key is not configured, render without Clerk (for development)
+  if (!CLERK_PUBLISHABLE_KEY) {
+    console.warn("[auth] Clerk publishable key not configured. Auth features disabled.");
+    return (
+      <ShareIntentProvider options={{ debug: true }}>
+        <SettingsWrapper>{children}</SettingsWrapper>
+      </ShareIntentProvider>
+    );
+  }
 
-	return (
-		<ShareIntentProvider options={{ debug: true }}>
-			<ClerkProvider
-				publishableKey={CLERK_PUBLISHABLE_KEY}
-				tokenCache={tokenCache}
-			>
-				<ClerkLoaded>
-					<SettingsWrapper>{children}</SettingsWrapper>
-				</ClerkLoaded>
-			</ClerkProvider>
-		</ShareIntentProvider>
-	);
+  return (
+    <ShareIntentProvider options={{ debug: true }}>
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+        <ClerkLoaded>
+          <SettingsWrapper>{children}</SettingsWrapper>
+        </ClerkLoaded>
+      </ClerkProvider>
+    </ShareIntentProvider>
+  );
 }

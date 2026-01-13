@@ -16,75 +16,73 @@ import { brandColors } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 
 export default function NotFoundScreen() {
-	const pathname = usePathname();
-	const params = useGlobalSearchParams();
-	const colors = useThemeColors();
-	const [shouldRedirect, setShouldRedirect] = useState<string | null>(null);
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  const colors = useThemeColors();
+  const [shouldRedirect, setShouldRedirect] = useState<string | null>(null);
 
-	useEffect(() => {
-		// Debug logging
-		console.log("[+not-found] === Not Found Screen ===");
-		console.log("[+not-found] pathname:", pathname);
-		console.log("[+not-found] params:", JSON.stringify(params, null, 2));
+  useEffect(() => {
+    // Debug logging
+    console.log("[+not-found] === Not Found Screen ===");
+    console.log("[+not-found] pathname:", pathname);
+    console.log("[+not-found] params:", JSON.stringify(params, null, 2));
 
-		// Get initial URL for more context
-		Linking.getInitialURL().then((url) => {
-			console.log("[+not-found] Initial URL:", url);
-		});
+    // Get initial URL for more context
+    Linking.getInitialURL().then((url) => {
+      console.log("[+not-found] Initial URL:", url);
+    });
 
-		// Check if this is an expo-share-intent deep link
-		// Format: backpocket://dataUrl=backpocketShareKey#type
-		const isShareIntent =
-			pathname.includes("dataUrl") ||
-			pathname.includes("backpocketShareKey") ||
-			Object.keys(params).some(
-				(key) =>
-					key.includes("dataUrl") ||
-					key.includes("backpocketShareKey") ||
-					key === "weburl" ||
-					key === "media" ||
-					key === "text" ||
-					key === "file",
-			);
+    // Check if this is an expo-share-intent deep link
+    // Format: backpocket://dataUrl=backpocketShareKey#type
+    const isShareIntent =
+      pathname.includes("dataUrl") ||
+      pathname.includes("backpocketShareKey") ||
+      Object.keys(params).some(
+        (key) =>
+          key.includes("dataUrl") ||
+          key.includes("backpocketShareKey") ||
+          key === "weburl" ||
+          key === "media" ||
+          key === "text" ||
+          key === "file"
+      );
 
-		console.log("[+not-found] isShareIntent:", isShareIntent);
+    console.log("[+not-found] isShareIntent:", isShareIntent);
 
-		if (isShareIntent) {
-			console.log("[+not-found] Redirecting to /share");
-			setShouldRedirect("/share");
-			return;
-		}
+    if (isShareIntent) {
+      console.log("[+not-found] Redirecting to /share");
+      setShouldRedirect("/share");
+      return;
+    }
 
-		// For other unmatched routes, redirect to home
-		console.log("[+not-found] Redirecting to /(tabs)");
-		setShouldRedirect("/(tabs)");
-	}, [pathname, params]);
+    // For other unmatched routes, redirect to home
+    console.log("[+not-found] Redirecting to /(tabs)");
+    setShouldRedirect("/(tabs)");
+  }, [pathname, params]);
 
-	// Redirect once we've determined where to go
-	if (shouldRedirect) {
-		return <Redirect href={shouldRedirect as "/(tabs)"} />;
-	}
+  // Redirect once we've determined where to go
+  if (shouldRedirect) {
+    return <Redirect href={shouldRedirect as "/(tabs)"} />;
+  }
 
-	// Show loading while determining redirect
-	return (
-		<View style={[styles.container, { backgroundColor: colors.background }]}>
-			<ActivityIndicator size="large" color={brandColors.rust.DEFAULT} />
-			<Text style={[styles.text, { color: colors.mutedForeground }]}>
-				Loading...
-			</Text>
-		</View>
-	);
+  // Show loading while determining redirect
+  return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={brandColors.rust.DEFAULT} />
+      <Text style={[styles.text, { color: colors.mutedForeground }]}>Loading...</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		justifyContent: "center",
-		alignItems: "center",
-		gap: 16,
-	},
-	text: {
-		fontSize: 16,
-		fontFamily: "DMSans",
-	},
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 16,
+  },
+  text: {
+    fontSize: 16,
+    fontFamily: "DMSans",
+  },
 });

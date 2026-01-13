@@ -14,18 +14,15 @@ import { AppState, type AppStateStatus } from "react-native";
  * This ensures queries refetch properly when the app comes to the foreground.
  */
 function setupFocusManager() {
-	focusManager.setEventListener((handleFocus) => {
-		const subscription = AppState.addEventListener(
-			"change",
-			(status: AppStateStatus) => {
-				handleFocus(status === "active");
-			},
-		);
+  focusManager.setEventListener((handleFocus) => {
+    const subscription = AppState.addEventListener("change", (status: AppStateStatus) => {
+      handleFocus(status === "active");
+    });
 
-		return () => {
-			subscription.remove();
-		};
-	});
+    return () => {
+      subscription.remove();
+    };
+  });
 }
 
 // Initialize focus manager on module load
@@ -41,16 +38,16 @@ setupFocusManager();
  * - refetchOnMount: true (ensures fresh data when navigating back)
  */
 export const queryClient = new QueryClient({
-	defaultOptions: {
-		queries: {
-			staleTime: 1000 * 60, // 1 minute
-			gcTime: 1000 * 60 * 30, // 30 minutes
-			retry: 2,
-			refetchOnWindowFocus: true,
-			refetchOnMount: true,
-		},
-		mutations: {
-			retry: 0, // Disable retry for mutations to make debugging easier
-		},
-	},
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // 1 minute
+      gcTime: 1000 * 60 * 30, // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+    },
+    mutations: {
+      retry: 0, // Disable retry for mutations to make debugging easier
+    },
+  },
 });

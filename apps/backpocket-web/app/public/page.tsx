@@ -24,10 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VisitorCounter } from "@/components/visitor-counter";
 import { MARKETING_URL } from "@/lib/constants/links";
-import {
-  extractCustomDomain,
-  isCustomDomainSlug,
-} from "@/lib/constants/public-space";
+import { extractCustomDomain, isCustomDomainSlug } from "@/lib/constants/public-space";
 import {
   useListPublicCollections,
   useListPublicSaves,
@@ -114,7 +111,7 @@ function PublicSpaceContent() {
   // Determine if this is a custom domain or a regular slug
   const isCustomDomain = spaceSlug ? isCustomDomainSlug(spaceSlug) : false;
   const customDomain = isCustomDomain ? extractCustomDomain(spaceSlug!) : undefined;
-  const regularSlug = !isCustomDomain ? spaceSlug ?? undefined : undefined;
+  const regularSlug = !isCustomDomain ? (spaceSlug ?? undefined) : undefined;
 
   // Resolve space by slug or domain depending on the case
   const spaceBySlug = useResolveSpaceBySlug(regularSlug);
@@ -267,7 +264,12 @@ function PublicSpaceContent() {
                   </span>
                 </div>
               )}
-              <h1 className="text-xl sm:text-2xl font-semibold tracking-tight truncate min-w-0" title={space.name}>{space.name}</h1>
+              <h1
+                className="text-xl sm:text-2xl font-semibold tracking-tight truncate min-w-0"
+                title={space.name}
+              >
+                {space.name}
+              </h1>
             </div>
 
             {/* Actions */}
@@ -284,11 +286,7 @@ function PublicSpaceContent() {
           </div>
 
           {/* Bio/Description */}
-          {space.bio && (
-            <p className="mt-3 text-sm text-muted-foreground max-w-2xl">
-              {space.bio}
-            </p>
-          )}
+          {space.bio && <p className="mt-3 text-sm text-muted-foreground max-w-2xl">{space.bio}</p>}
 
           {/* Search bar */}
           <div className="mt-4 flex gap-2">
@@ -471,11 +469,7 @@ function PublicSpaceContent() {
                 {/* Load more */}
                 {hasNextPage && (
                   <div className="mt-8 text-center">
-                    <Button
-                      variant="outline"
-                      onClick={handleLoadMore}
-                      disabled={isLoadingMore}
-                    >
+                    <Button variant="outline" onClick={handleLoadMore} disabled={isLoadingMore}>
                       {isLoadingMore ? "Loading..." : "Load more"}
                     </Button>
                   </div>
