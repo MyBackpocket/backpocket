@@ -25,9 +25,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VisitorCounter } from "@/components/visitor-counter";
 import { MARKETING_URL } from "@/lib/constants/links";
 import {
+  extractCustomDomain,
+  isCustomDomainSlug,
+} from "@/lib/constants/public-space";
+import {
   useListPublicCollections,
   useListPublicSaves,
   useListPublicTags,
+  useResolveSpaceByDomain,
   useResolveSpaceBySlug,
 } from "@/lib/convex";
 import { useDebounce } from "@/lib/hooks/use-debounce";
@@ -101,9 +106,17 @@ function PublicSpaceContent() {
     }
   }, []);
 
-  // Resolve space by slug
-  // Pass undefined (not the string "skip") when spaceSlug is null to properly skip the query
-  const space = useResolveSpaceBySlug(spaceSlug ?? undefined);
+  // Determine if this is a custom domain or a regular slug
+  const isCustomDomain = spaceSlug ? isCustomDomainSlug(spaceSlug) : false;
+  const customDomain = isCustomDomain ? extractCustomDomain(spaceSlug!) : undefined;
+  const regularSlug = !isCustomDomain ? spaceSlug ?? undefined : undefined;
+
+  // Resolve space by slug or domain depending on the case
+  const spaceBySlug = useResolveSpaceBySlug(regularSlug);
+  const spaceByDomain = useResolveSpaceByDomain(customDomain);
+
+  // Use the appropriate result based on whether it's a custom domain
+  const space = isCustomDomain ? spaceByDomain : spaceBySlug;
   // Loading if we haven't determined the slug yet OR if we're fetching the space
   const spaceLoading = spaceSlug === null || space === undefined;
 
