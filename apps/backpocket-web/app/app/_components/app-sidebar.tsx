@@ -34,16 +34,6 @@ const navigation = [
   { name: "Collections", href: routes.app.collections, icon: FolderOpen },
 ];
 
-/**
- * Format a name with possessive 's or just ' for names ending in s
- */
-function formatPossessive(name: string): string {
-  if (name.toLowerCase().endsWith("s")) {
-    return `${name}'`;
-  }
-  return `${name}'s`;
-}
-
 interface SpaceLinksDropdownProps {
   space: Space;
   domains: DomainMapping[];
@@ -251,9 +241,7 @@ export function AppSidebar({ space, domains = [], isOpen, onClose }: AppSidebarP
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
-                <p className="text-sm font-medium">
-                  {space?.name ? `${formatPossessive(space.name)}` : "Your Space"}
-                </p>
+                <p className="text-sm font-medium">{space?.name ?? "Your Space"}</p>
                 <Link
                   href={routes.app.settings}
                   onClick={handleEditSpaceName}
