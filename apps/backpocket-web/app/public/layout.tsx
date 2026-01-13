@@ -4,6 +4,9 @@ import { ROOT_DOMAIN } from "@/lib/config/public";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import { extractCustomDomain, isCustomDomainSlug } from "@/lib/constants/public-space";
 
+// Force dynamic rendering - this route depends on runtime headers (subdomain/custom domain)
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const headersList = await headers();
   const spaceSlug = headersList.get(SPACE_SLUG_HEADER);
