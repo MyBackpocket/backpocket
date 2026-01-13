@@ -1,3 +1,6 @@
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { fetchQuery } from "convex/nextjs";
 import {
   ArrowLeft,
   BookOpen,
@@ -13,9 +16,6 @@ import {
 import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { fetchQuery } from "convex/nextjs";
-import { api } from "@convex/_generated/api";
-import type { Id } from "@convex/_generated/dataModel";
 import { LogoIcon } from "@/components/logo";
 import { ScrollNavigator } from "@/components/scroll-navigator";
 import { ThemeSwitcherCompact } from "@/components/theme-switcher";

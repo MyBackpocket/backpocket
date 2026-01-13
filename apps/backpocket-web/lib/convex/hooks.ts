@@ -1,8 +1,8 @@
 "use client";
 
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 
 /**
  * Hook to check if the user is authenticated.
@@ -187,22 +187,23 @@ export function useResolveSpaceByDomain(domain: string | undefined) {
   return useQuery(api.public.resolveSpaceByDomain, domain ? { domain } : "skip");
 }
 
-export function useListPublicSaves(args: {
-  spaceId: SpaceId;
-  query?: string;
-  tagName?: string;
-  collectionId?: CollectionId;
-  cursor?: number;
-  limit?: number;
-} | undefined) {
+export function useListPublicSaves(
+  args:
+    | {
+        spaceId: SpaceId;
+        query?: string;
+        tagName?: string;
+        collectionId?: CollectionId;
+        cursor?: number;
+        limit?: number;
+      }
+    | undefined
+) {
   return useQuery(api.public.listPublicSaves, args ?? "skip");
 }
 
 export function useGetPublicSave(spaceId: SpaceId | undefined, saveId: SaveId | undefined) {
-  return useQuery(
-    api.public.getPublicSave,
-    spaceId && saveId ? { spaceId, saveId } : "skip"
-  );
+  return useQuery(api.public.getPublicSave, spaceId && saveId ? { spaceId, saveId } : "skip");
 }
 
 export function useListPublicTags(spaceId: SpaceId | undefined) {

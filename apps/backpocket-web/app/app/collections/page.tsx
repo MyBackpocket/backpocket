@@ -62,6 +62,7 @@ import {
   useListTags,
   useUpdateCollection,
 } from "@/lib/convex";
+import { cacheKey, useCachedQuery } from "@/lib/hooks/use-cached-query";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import type { CollectionVisibility } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -356,12 +357,18 @@ export default function CollectionsPage() {
       : debouncedFilters.has("private")
         ? ("private" as CollectionVisibility)
         : undefined,
-    defaultTagId: tagFilter as any || undefined,
+    defaultTagId: (tagFilter as any) || undefined,
   };
 
-  // Convex queries
-  const collections = useListCollections(queryOptions);
-  const allTags = useListTags();
+  // Convex queries with stale-while-revalidate caching
+  const rawCollections = useListCollections(queryOptions);
+  const rawTags = useListTags();
+
+  // Cache to eliminate loading flash on back-navigation
+  const collections = useCachedQuery(cacheKey("collections:list", queryOptions), rawCollections);
+  const allTags = useCachedQuery("collections:tags", rawTags);
+
+  // Only show loading if no cached data available
   const isLoading = collections === undefined;
   const isTagsLoading = allTags === undefined;
 

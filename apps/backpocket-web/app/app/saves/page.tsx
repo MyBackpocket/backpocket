@@ -24,7 +24,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { PrefetchLink } from "@/components/prefetch-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -64,7 +65,9 @@ import {
   useToggleArchive,
   useToggleFavorite,
 } from "@/lib/convex";
+import { cacheKey, useCachedQuery } from "@/lib/hooks/use-cached-query";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { usePrefetchTargets } from "@/lib/hooks/use-prefetch";
 import type { SaveVisibility } from "@/lib/types";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
@@ -102,6 +105,7 @@ function SaveListItem({
   onToggleFavorite,
   onToggleArchive,
   onDelete,
+  onPrefetch,
 }: {
   save: SaveItem;
   isSelected: boolean;
@@ -110,6 +114,7 @@ function SaveListItem({
   onToggleFavorite: () => void;
   onToggleArchive: () => void;
   onDelete: () => void;
+  onPrefetch?: () => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -176,12 +181,13 @@ function SaveListItem({
               <VisIcon className="h-3 w-3" />
               {vis.label}
             </Badge>
-            <Link
+            <PrefetchLink
               href={`/app/saves/${save.id}`}
+              onPrefetch={onPrefetch}
               className="font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-1"
             >
               {save.title || save.url}
-            </Link>
+            </PrefetchLink>
           </div>
 
           {save.description && (
@@ -197,7 +203,7 @@ function SaveListItem({
           </span>
           <span className="flex items-center gap-1.5">
             <Calendar className="h-3 w-3" />
-            {formatDate(typeof save.savedAt === 'number' ? new Date(save.savedAt) : save.savedAt)}
+            {formatDate(typeof save.savedAt === "number" ? new Date(save.savedAt) : save.savedAt)}
           </span>
           {save.tags && save.tags.length > 0 && (
             <div className="flex items-center gap-1.5">
@@ -287,12 +293,14 @@ function SaveGridCard({
   isSelectionMode,
   onSelect,
   onToggleFavorite,
+  onPrefetch,
 }: {
   save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: () => void;
   onToggleFavorite: () => void;
+  onPrefetch?: () => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -369,12 +377,13 @@ function SaveGridCard({
       </a>
 
       <div className="p-4">
-        <Link
+        <PrefetchLink
           href={`/app/saves/${save.id}`}
+          onPrefetch={onPrefetch}
           className="block font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-2"
         >
           {save.title || save.url}
-        </Link>
+        </PrefetchLink>
 
         {save.description && (
           <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
@@ -445,6 +454,10 @@ export default function SavesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
+  // Prefetch hook for warming up save detail data on hover
+  const prefetch = usePrefetchTargets();
+  const prefetchSave = useCallback((saveId: string) => () => prefetch.save(saveId), [prefetch]);
+
   // Debounce search to avoid firing on every keystroke (300ms delay)
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -465,7 +478,7 @@ export default function SavesPage() {
       : debouncedFilters.has("private")
         ? ("private" as SaveVisibility)
         : undefined,
-    tagId: tagFilter as any || undefined,
+    tagId: (tagFilter as any) || undefined,
     limit: 20,
   };
 
@@ -495,9 +508,15 @@ export default function SavesPage() {
     return `${activeFilters.size} filters`;
   };
 
-  // Convex queries
-  const data = useListSaves(queryOptions);
-  const allTags = useListTags();
+  // Convex queries with stale-while-revalidate caching
+  const rawData = useListSaves(queryOptions);
+  const rawTags = useListTags();
+
+  // Cache to eliminate loading flash on back-navigation
+  const data = useCachedQuery(cacheKey("saves:list", queryOptions), rawData);
+  const allTags = useCachedQuery("saves:tags", rawTags);
+
+  // Only show loading if no cached data available
   const isLoading = data === undefined;
   const isTagsLoading = allTags === undefined;
 
@@ -831,6 +850,7 @@ export default function SavesPage() {
                 onToggleFavorite={() => handleToggleFavorite(save.id)}
                 onToggleArchive={() => handleToggleArchive(save.id)}
                 onDelete={() => handleSingleDelete(save as SaveItem)}
+                onPrefetch={prefetchSave(save.id)}
               />
             ))}
           </div>
@@ -844,6 +864,7 @@ export default function SavesPage() {
                 isSelectionMode={isSelectionMode}
                 onSelect={() => toggleSelect(save.id)}
                 onToggleFavorite={() => handleToggleFavorite(save.id)}
+                onPrefetch={prefetchSave(save.id)}
               />
             ))}
           </div>
@@ -886,11 +907,7 @@ export default function SavesPage() {
             <Button variant="outline" onClick={() => setShowBulkDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmBulkDelete}
-              disabled={isBulkDeleting}
-            >
+            <Button variant="destructive" onClick={confirmBulkDelete} disabled={isBulkDeleting}>
               {isBulkDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -921,11 +938,7 @@ export default function SavesPage() {
             <Button variant="outline" onClick={() => setSingleDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={confirmSingleDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={confirmSingleDelete} disabled={isDeleting}>
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

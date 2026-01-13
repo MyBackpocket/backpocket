@@ -14,7 +14,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { PrefetchLink } from "@/components/prefetch-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -38,6 +39,8 @@ import {
   useToggleArchive,
   useToggleFavorite,
 } from "@/lib/convex";
+import { cacheKey, useCachedQuery } from "@/lib/hooks/use-cached-query";
+import { usePrefetchTargets } from "@/lib/hooks/use-prefetch";
 import { cn, formatNumber } from "@/lib/utils";
 
 function StatCard({
@@ -142,16 +145,35 @@ export default function DashboardClient() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Convex queries - these are reactive and will auto-update
-  const space = useGetMySpace();
-  const stats = useGetStats();
-  const recentSavesData = useListSaves({ limit: 5, isArchived: false });
-  const visitCount = useGetVisitCount(space?.id as any);
+  const rawSpace = useGetMySpace();
+  const rawStats = useGetStats();
+  const rawRecentSaves = useListSaves({ limit: 5, isArchived: false });
+  const rawVisitCount = useGetVisitCount(rawSpace?.id as any);
+
+  // Wrap with stale-while-revalidate cache to eliminate loading flash on navigation
+  const space = useCachedQuery("dashboard:space", rawSpace);
+  const stats = useCachedQuery("dashboard:stats", rawStats);
+  const recentSavesData = useCachedQuery(
+    cacheKey("dashboard:recentSaves", { limit: 5, isArchived: false }),
+    rawRecentSaves
+  );
+  const visitCount = useCachedQuery(
+    cacheKey("dashboard:visitCount", { spaceId: rawSpace?.id }),
+    rawVisitCount
+  );
 
   // Convex mutations
   const toggleFavorite = useToggleFavorite();
   const toggleArchive = useToggleArchive();
   const deleteSaveMutation = useDeleteSave();
 
+  // Prefetch targets for hover intent
+  const prefetch = usePrefetchTargets();
+
+  // Memoized prefetch callback for individual saves
+  const prefetchSave = useCallback((saveId: string) => () => prefetch.save(saveId), [prefetch]);
+
+  // Only show loading state on first load (no cached data available)
   const isLoading = space === undefined || stats === undefined;
   const recentSaves = recentSavesData?.items;
   const firstName = user?.firstName;
@@ -239,123 +261,128 @@ export default function DashboardClient() {
 
       {/* Recent saves */}
       <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-base">Recent Saves</CardTitle>
-            <Link href={routes.app.saves}>
-              <Button variant="ghost" size="sm">
-                View all
-                <ArrowUpRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent className={RECENT_SAVES_MIN_HEIGHT}>
-            {recentSavesData === undefined ? (
-              <RecentSavesSkeleton />
-            ) : recentSaves && recentSaves.length > 0 ? (
-              <div className="space-y-2">
-                {recentSaves.map((save) => (
-                  <div
-                    key={save.id}
-                    className="group relative flex items-center rounded-lg border border-border/60 bg-card p-3 transition-all duration-200 hover:border-border hover:bg-accent hover:shadow-sm"
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base">Recent Saves</CardTitle>
+          <PrefetchLink href={routes.app.saves} onPrefetch={prefetch.saves}>
+            <Button variant="ghost" size="sm">
+              View all
+              <ArrowUpRight className="ml-1 h-3 w-3" />
+            </Button>
+          </PrefetchLink>
+        </CardHeader>
+        <CardContent className={RECENT_SAVES_MIN_HEIGHT}>
+          {recentSavesData === undefined ? (
+            <RecentSavesSkeleton />
+          ) : recentSaves && recentSaves.length > 0 ? (
+            <div className="space-y-2">
+              {recentSaves.map((save) => (
+                <div
+                  key={save.id}
+                  className="group relative flex items-center rounded-lg border border-border/60 bg-card p-3 transition-all duration-200 hover:border-border hover:bg-accent hover:shadow-sm"
+                >
+                  {/* Thumbnail - prefetches save details on hover */}
+                  <PrefetchLink
+                    href={routes.app.save(save.id)}
+                    onPrefetch={prefetchSave(save.id)}
+                    className="shrink-0"
                   >
-                    {/* Thumbnail */}
-                    <Link href={routes.app.save(save.id)} className="shrink-0">
-                      {save.imageUrl ? (
-                        <div className="relative h-12 w-16 rounded-md overflow-hidden">
-                          <Image src={save.imageUrl} alt="" fill className="object-cover" />
-                        </div>
-                      ) : (
-                        <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted">
-                          <Bookmark className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </Link>
-
-                    {/* Content with gradient fade */}
-                    <Link
-                      href={routes.app.save(save.id)}
-                      className="flex-1 min-w-0 ml-4 mr-2 relative"
-                    >
-                      <div className="relative">
-                        <p className="font-medium truncate pr-8 group-hover:pr-0">
-                          {save.title || save.url}
-                        </p>
-                        {/* Gradient fade overlay on hover */}
-                        <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                    {save.imageUrl ? (
+                      <div className="relative h-12 w-16 rounded-md overflow-hidden">
+                        <Image src={save.imageUrl} alt="" fill className="object-cover" />
                       </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {save.siteName || new URL(save.url).hostname}
+                    ) : (
+                      <div className="flex h-12 w-16 items-center justify-center rounded-md bg-muted">
+                        <Bookmark className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                  </PrefetchLink>
+
+                  {/* Content with gradient fade - prefetches save details on hover */}
+                  <PrefetchLink
+                    href={routes.app.save(save.id)}
+                    onPrefetch={prefetchSave(save.id)}
+                    className="flex-1 min-w-0 ml-4 mr-2 relative"
+                  >
+                    <div className="relative">
+                      <p className="font-medium truncate pr-8 group-hover:pr-0">
+                        {save.title || save.url}
                       </p>
-                    </Link>
+                      {/* Gradient fade overlay on hover */}
+                      <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-accent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {save.siteName || new URL(save.url).hostname}
+                    </p>
+                  </PrefetchLink>
 
-                    {/* Action buttons container - slides in from right */}
-                    <div className="flex items-center shrink-0">
-                      {/* Archive & Delete - hidden by default, slide in on hover */}
-                      <div className="flex items-center gap-0.5 overflow-hidden transition-all duration-200 ease-out w-0 opacity-0 group-hover:w-[68px] group-hover:opacity-100">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleToggleArchive(save.id);
-                          }}
-                          className={cn(
-                            "h-8 w-8 rounded-lg text-muted-foreground hover:text-denim",
-                            save.isArchived && "bg-denim/10 text-denim"
-                          )}
-                        >
-                          <Archive className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setDeleteTarget({
-                              id: save.id,
-                              title: save.title,
-                              url: save.url,
-                            });
-                          }}
-                          className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Star button - always visible, part of the sliding group */}
+                  {/* Action buttons container - slides in from right */}
+                  <div className="flex items-center shrink-0">
+                    {/* Archive & Delete - hidden by default, slide in on hover */}
+                    <div className="flex items-center gap-0.5 overflow-hidden transition-all duration-200 ease-out w-0 opacity-0 group-hover:w-[68px] group-hover:opacity-100">
                       <Button
                         variant="ghost"
                         size="icon"
                         onClick={(e) => {
                           e.preventDefault();
-                          handleToggleFavorite(save.id);
+                          handleToggleArchive(save.id);
                         }}
                         className={cn(
-                          "h-8 w-8 rounded-lg transition-colors",
-                          save.isFavorite && "text-amber"
+                          "h-8 w-8 rounded-lg text-muted-foreground hover:text-denim",
+                          save.isArchived && "bg-denim/10 text-denim"
                         )}
                       >
-                        <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
+                        <Archive className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setDeleteTarget({
+                            id: save.id,
+                            title: save.title,
+                            url: save.url,
+                          });
+                        }}
+                        className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+
+                    {/* Star button - always visible, part of the sliding group */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleToggleFavorite(save.id);
+                      }}
+                      className={cn(
+                        "h-8 w-8 rounded-lg transition-colors",
+                        save.isFavorite && "text-amber"
+                      )}
+                    >
+                      <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
+                    </Button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-8 text-center">
-                <Bookmark className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <p className="mt-4 text-muted-foreground">No saves yet. Add your first link!</p>
-                <Link href={routes.app.savesNew} className="mt-4 inline-block">
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Save
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <Bookmark className="mx-auto h-12 w-12 text-muted-foreground/50" />
+              <p className="mt-4 text-muted-foreground">No saves yet. Add your first link!</p>
+              <Link href={routes.app.savesNew} className="mt-4 inline-block">
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Save
+                </Button>
+              </Link>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Public space preview */}
       {space === undefined ? (
@@ -425,11 +452,7 @@ export default function DashboardClient() {
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

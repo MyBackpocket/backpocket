@@ -25,10 +25,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { VisitorCounter } from "@/components/visitor-counter";
 import { MARKETING_URL } from "@/lib/constants/links";
 import {
-  useResolveSpaceBySlug,
+  useListPublicCollections,
   useListPublicSaves,
   useListPublicTags,
-  useListPublicCollections,
+  useResolveSpaceBySlug,
 } from "@/lib/convex";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";

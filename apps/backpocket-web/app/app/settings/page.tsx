@@ -79,7 +79,8 @@ export default function SettingsPage() {
   const slugAvailability = useCheckSlugAvailability(
     isEditingSlug && slugInput.length >= 3 && slugInput !== slug ? slugInput : undefined
   );
-  const isCheckingSlug = slugAvailability === undefined && isEditingSlug && slugInput.length >= 3 && slugInput !== slug;
+  const isCheckingSlug =
+    slugAvailability === undefined && isEditingSlug && slugInput.length >= 3 && slugInput !== slug;
 
   // Initialize state from space data
   useEffect(() => {
@@ -485,10 +486,7 @@ export default function SettingsPage() {
                     <Label htmlFor="layout" className="block pb-2">
                       Default Layout
                     </Label>
-                    <Select
-                      value={publicLayout}
-                      onValueChange={handleLayoutChange}
-                    >
+                    <Select value={publicLayout} onValueChange={handleLayoutChange}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -596,9 +594,7 @@ export default function SettingsPage() {
         <div className="fixed bottom-6 right-6 z-50">
           <div
             className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-lg transition-all duration-200 ${
-              saveStatus === "saving"
-                ? "bg-muted text-muted-foreground"
-                : "bg-green-600 text-white"
+              saveStatus === "saving" ? "bg-muted text-muted-foreground" : "bg-green-600 text-white"
             }`}
           >
             {saveStatus === "saving" ? (

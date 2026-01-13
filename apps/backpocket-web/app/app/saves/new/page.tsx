@@ -117,7 +117,9 @@ function NewSaveForm() {
         title: title || undefined,
         visibility: effectiveVisibility,
         collectionIds:
-          selectedCollection && selectedCollection !== "none" ? [selectedCollection as any] : undefined,
+          selectedCollection && selectedCollection !== "none"
+            ? [selectedCollection as any]
+            : undefined,
         tagNames: tags
           ? tags
               .split(",")

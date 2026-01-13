@@ -17,9 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   // For metadata, we use a simple fallback since we can't easily fetch from Convex server-side
   // The actual space info will be loaded client-side
-  const displaySlug = isCustomDomainSlug(spaceSlug)
-    ? extractCustomDomain(spaceSlug)
-    : spaceSlug;
+  const displaySlug = isCustomDomainSlug(spaceSlug) ? extractCustomDomain(spaceSlug) : spaceSlug;
 
   // Determine base URL - use custom domain if present, otherwise subdomain
   let baseUrl: string;

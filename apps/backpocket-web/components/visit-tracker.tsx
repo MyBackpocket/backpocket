@@ -1,9 +1,9 @@
 "use client";
 
+import type { Id } from "@convex/_generated/dataModel";
 import { useEffect, useRef } from "react";
 import { getVisitedSessionKey } from "@/lib/constants/storage";
 import { useRegisterVisit } from "@/lib/convex";
-import type { Id } from "@convex/_generated/dataModel";
 
 interface VisitTrackerProps {
   spaceId: string;

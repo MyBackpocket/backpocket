@@ -1,5 +1,6 @@
 "use client";
 
+import type { SnapshotBlockedReason, SnapshotContent, SnapshotStatus } from "@backpocket/types";
 import {
   Archive,
   ArrowLeft,
@@ -50,7 +51,6 @@ import {
   useToggleFavorite,
   useUpdateSave,
 } from "@/lib/convex";
-import type { SnapshotStatus, SnapshotBlockedReason, SnapshotContent } from "@backpocket/types";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
 // ============================================================================
@@ -699,12 +699,12 @@ function MobileEditTip() {
 export default function SaveDetailPage({ params }: { params: Promise<{ saveId: string }> }) {
   const { saveId } = use(params);
   const router = useRouter();
-  
+
   // Convex queries
   const save = useGetSave(saveId as any);
   const allCollections = useListCollections({});
   const snapshotData = useGetSaveSnapshot(saveId as any, true);
-  
+
   // Convex mutations
   const updateSave = useUpdateSave();
   const toggleFavorite = useToggleFavorite();
@@ -1091,11 +1091,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
               <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
                 Cancel
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleConfirmDelete}
-                disabled={isDeleting}
-              >
+              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
                 {isDeleting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -1,6 +1,6 @@
-import { headers } from "next/headers";
-import { fetchQuery } from "convex/nextjs";
 import { api } from "@convex/_generated/api";
+import { fetchQuery } from "convex/nextjs";
+import { headers } from "next/headers";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import {

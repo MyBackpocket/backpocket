@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useGetMySpace, useEnsureSpace } from "@/lib/convex";
+import { useEnsureSpace, useGetMySpace } from "@/lib/convex";
 import { AppSidebar } from "./app-sidebar";
 import { MobileHeader } from "./mobile-header";
 
