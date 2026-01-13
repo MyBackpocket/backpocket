@@ -5,14 +5,7 @@
 
 import * as Haptics from "expo-haptics";
 import { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  type LayoutChangeEvent,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Animated, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { brandColors, radii } from "@/constants/theme";
 import type { useThemeColors } from "@/hooks/use-theme-color";

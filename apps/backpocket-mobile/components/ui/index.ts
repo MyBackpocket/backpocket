@@ -13,5 +13,5 @@ export { Icon, type IconProps, IconSizes } from "./icon";
 export { Input } from "./input";
 export { Logo, LogoIcon } from "./logo";
 export { ProcessingBadge } from "./processing-badge";
-export { SegmentedControl, type Segment } from "./segmented-control";
+export { type Segment, SegmentedControl } from "./segmented-control";
 export { SwipeableRow } from "./swipeable-row";

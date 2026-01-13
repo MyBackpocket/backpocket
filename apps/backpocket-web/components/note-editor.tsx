@@ -25,7 +25,6 @@ import {
   Type,
   Undo,
 } from "lucide-react";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
 import {
   EditorCommand,
   EditorCommandItem,
@@ -37,6 +36,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import TurndownService from "turndown";
 import { useDebouncedCallback } from "use-debounce";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -45,12 +45,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 // ============================================================================
@@ -337,7 +332,8 @@ function SimpleNoteEditor({
       <div
         className={cn(
           "min-h-[200px]",
-          viewMode === "split" && "grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
+          viewMode === "split" &&
+            "grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x"
         )}
       >
         {/* Editor pane */}
@@ -424,10 +420,7 @@ function ToolbarButton({
           size="sm"
           onClick={onClick}
           disabled={disabled}
-          className={cn(
-            "h-8 w-8 p-0",
-            isActive && "bg-accent text-accent-foreground"
-          )}
+          className={cn("h-8 w-8 p-0", isActive && "bg-accent text-accent-foreground")}
         >
           {children}
         </Button>
@@ -435,9 +428,7 @@ function ToolbarButton({
       <TooltipContent side="bottom" className="flex items-center gap-2">
         <span>{tooltip}</span>
         {shortcut && (
-          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">
-            {shortcut}
-          </kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">{shortcut}</kbd>
         )}
       </TooltipContent>
     </Tooltip>
@@ -518,7 +509,8 @@ function RichNoteEditor({
       <div
         className={cn(
           "relative rounded-lg border bg-background shadow-sm",
-          isFullScreen && "fixed inset-0 z-100 p-6 overflow-auto flex flex-col rounded-none border-0"
+          isFullScreen &&
+            "fixed inset-0 z-100 p-6 overflow-auto flex flex-col rounded-none border-0"
         )}
       >
         {/* Top bar with mode toggle and save status */}
@@ -768,11 +760,13 @@ function RichNoteEditor({
         {/* Footer hint */}
         <div className="flex items-center justify-between border-t bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
           <span>
-            Type <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">/</kbd> for commands
+            Type <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">/</kbd> for
+            commands
           </span>
           {isFullScreen && (
             <span>
-              Press <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">Esc</kbd> to exit
+              Press <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">Esc</kbd> to
+              exit
             </span>
           )}
         </div>

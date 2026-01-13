@@ -17,16 +17,16 @@ Feature parity tracker across Backpocket platforms.
 | Feature | Web | Mobile | Extension | Notes |
 |---------|-----|--------|-----------|-------|
 | **Saves** |
-| Create save | ✅ | ✅ | ✅ | |
-| List saves | ✅ | ✅ | ❌ | Extension is quick-save only |
-| View save detail | ✅ | ✅ | ❌ | |
-| Edit save | ✅ | ✅ | ❌ | |
+| Create save | ✅ | ✅ | ✅ | Extension auto-saves on popup open |
+| List saves | ✅ | ✅ | ❌ | Removed from extension for one-click UX |
+| View save detail | ✅ | ✅ | ❌ | Link to web app provided after save |
+| Edit save (post-save) | ✅ | ✅ | ✅ | Extension: tags, collections, visibility, note |
 | Delete save | ✅ | ✅ | ❌ | |
 | Bulk delete | ✅ | ✅ | ❌ | |
 | Toggle favorite | ✅ | ✅ | ❌ | |
 | Toggle archive | ✅ | ✅ | ❌ | |
-| Save notes (markdown) | ✅ | ✅ | ❌ | Personal notes inherit visibility; Web has WYSIWYG editor |
-| Duplicate detection | ✅ | ✅ | ✅ | |
+| Save notes (markdown) | ✅ | ✅ | ✅ | Extension: collapsible note input, auto-saves on blur |
+| Duplicate detection | ✅ | ✅ | ✅ | Pre-save warning with link to existing |
 | **Search & Filter** |
 | Text search | ✅ | ✅ | ❌ | |
 | Filter by visibility | ✅ | ✅ | ❌ | |
@@ -41,11 +41,11 @@ Feature parity tracker across Backpocket platforms.
 | Delete tag | ✅ | ✅ | ❌ | |
 | Tag autocomplete | ✅ | ✅ | ✅ | |
 | **Collections** |
-| List collections | ✅ | ✅ | 📋 | |
+| List collections | ✅ | ✅ | ✅ | For dropdown selector |
 | Create collection | ✅ | ✅ | ❌ | |
 | Edit collection | ✅ | ✅ | ❌ | |
 | Delete collection | ✅ | ✅ | ❌ | |
-| Add save to collection | ✅ | ✅ | 📋 | |
+| Add save to collection | ✅ | ✅ | ✅ | Multi-select dropdown |
 
 ---
 
@@ -91,8 +91,8 @@ Feature parity tracker across Backpocket platforms.
 | Feature | Web | Mobile | Extension | Notes |
 |---------|-----|--------|-----------|-------|
 | View profile | ✅ | ✅ | ❌ | |
-| Default save visibility | ✅ | ✅ | ❌ | |
-| Theme preference | ✅ | ✅ | ❌ | |
+| Default save visibility | ✅ | ✅ | ✅ | Uses user's default |
+| Theme preference | ✅ | ✅ | ✅ | Follows system preference |
 | Sign out | ✅ | ✅ | ✅ | |
 
 ---
@@ -104,7 +104,7 @@ Feature parity tracker across Backpocket platforms.
 | **Web-Only** |
 | Full dashboard | ✅ | ✅ | ❌ | |
 | Quick add modal | ✅ | N/A | N/A | |
-| Keyboard shortcuts | ✅ | N/A | N/A | |
+| Keyboard shortcuts | ✅ | N/A | ✅ | ⌘+Shift+S to save |
 | **Mobile-Only** |
 | Share sheet integration | N/A | ✅ | N/A | iOS & Android |
 | Haptic feedback | N/A | ✅ | N/A | |
@@ -112,8 +112,11 @@ Feature parity tracker across Backpocket platforms.
 | Swipe actions | N/A | ✅ | N/A | |
 | Deep linking | N/A | ✅ | N/A | `backpocket://` |
 | **Extension-Only** |
-| Quick save current tab | N/A | N/A | ✅ | |
-| Popup interface | N/A | N/A | ✅ | |
+| One-click save | N/A | N/A | ✅ | Auto-saves on popup open |
+| Post-save quick actions | N/A | N/A | ✅ | Tags, collections, visibility, note |
+| Popup interface | N/A | N/A | ✅ | Status-based flow (saving → success) |
+| Context menu | N/A | N/A | ✅ | Right-click to save |
+| Badge notifications | N/A | N/A | ✅ | Success/pending indicators |
 
 ---
 
@@ -135,10 +138,13 @@ Feature parity tracker across Backpocket platforms.
 
 | Endpoint | Status | Notes |
 |----------|--------|-------|
-| `space.createSave` | ✅ | Primary functionality |
-| `space.checkDuplicate` | ✅ | Pre-save check |
-| `space.listTags` | ✅ | For autocomplete |
-| `space.listCollections` | 📋 | Optional |
+| `space.createSave` | ✅ | Auto-save on popup open |
+| `space.updateSave` | ✅ | Post-save quick actions |
+| `space.checkDuplicate` | ✅ | Pre-save duplicate check |
+| `space.listTags` | ✅ | Tag suggestions |
+| `space.listCollections` | ✅ | Collection picker |
+| `space.getMySpace` | ✅ | Default visibility |
+| `space.ensureSpace` | ✅ | Create space if needed |
 
 ### Mobile Priority Endpoints
 

@@ -21,9 +21,7 @@ export function PublicSaveTabs({ sourceContent, noteContent, hasNote }: PublicSa
         <TabsTrigger value="note" className="gap-2">
           <FileText className="h-4 w-4" />
           Note
-          {hasNote && (
-            <span className="ml-1 h-2 w-2 rounded-full bg-primary" />
-          )}
+          {hasNote && <span className="ml-1 h-2 w-2 rounded-full bg-primary" />}
         </TabsTrigger>
       </TabsList>
 

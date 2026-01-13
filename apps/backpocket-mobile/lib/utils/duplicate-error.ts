@@ -35,11 +35,7 @@ export function getDuplicateSaveFromError(error: unknown): DuplicateSaveInfo | n
     const msg = error.message;
 
     // Check for CONFLICT or duplicate indicators in the message
-    if (
-      msg.includes('"code":"CONFLICT"') ||
-      msg.includes("already") ||
-      msg.includes("duplicate")
-    ) {
+    if (msg.includes('"code":"CONFLICT"') || msg.includes("already") || msg.includes("duplicate")) {
       // Try to parse existingSave from the message JSON
       try {
         // Match existingSave object in the message

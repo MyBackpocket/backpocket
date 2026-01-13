@@ -181,7 +181,11 @@ export function createApiRouteEvent(method: string, path: string) {
     /**
      * Log an error response.
      */
-    error<T>(statusCode: number, err: unknown, data?: T): { data: T | undefined; requestId: string } {
+    error<T>(
+      statusCode: number,
+      err: unknown,
+      data?: T
+    ): { data: T | undefined; requestId: string } {
       const errorInfo = parseError(err);
       const event: ApiRouteWideEvent = {
         timestamp: new Date().toISOString(),

@@ -2,7 +2,7 @@
   "name": "backpocket-browser-extension",
   "description": "Save links to your Backpocket (Chrome / Firefox Extension)",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -19,17 +19,20 @@
   },
   "dependencies": {
     "@backpocket/types": "workspace:*",
-    "@clerk/chrome-extension": "^2.8.14",
-    "convex": "^1.31.3",
+    "@clerk/chrome-extension": "^2.8.17",
+    "@fontsource-variable/dm-sans": "^5.2.8",
+    "convex": "^1.31.4",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@backpocket/tsconfig": "workspace:*",
     "@backpocket/utils": "workspace:*",
-    "@types/react": "^19.2.7",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.1.5",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "wxt": "^0.20.13"
   }

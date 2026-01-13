@@ -1,7 +1,11 @@
+import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  vite: () => ({
+    plugins: [tailwindcss()],
+  }),
   dev: {
     server: {
       port: 3001,
@@ -11,7 +15,24 @@ export default defineConfig({
   manifest: {
     name: "Backpocket",
     description: "Save links to your Backpocket",
-    permissions: ["activeTab", "storage", "tabs"],
-    host_permissions: ["https://backpocket.my/*"],
+    permissions: ["activeTab", "storage", "tabs", "contextMenus", "cookies"],
+    host_permissions: [
+      // App API
+      "https://backpocket.my/*",
+      // Clerk sync host (localhost for dev, clerk domain for prod)
+      "http://localhost/*",
+      // Clerk Frontend API (for session sync)
+      "https://*.clerk.accounts.dev/*",
+      "https://*.clerk.com/*",
+    ],
+    commands: {
+      "save-current-page": {
+        suggested_key: {
+          default: "Ctrl+Shift+S",
+          mac: "Command+Shift+S",
+        },
+        description: "Save current page to Backpocket",
+      },
+    },
   },
 });

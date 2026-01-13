@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { type DuplicateSaveInfo, DuplicateSaveModal } from "@/components/duplicate-save-modal";
+import { NoteEditor } from "@/components/note-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { NoteEditor } from "@/components/note-editor";
 import { routes } from "@/lib/constants/routes";
 import { useCreateSave, useGetMySpace, useListCollections } from "@/lib/convex";
 import type { SaveVisibility } from "@/lib/types";
@@ -309,9 +309,7 @@ function NewSaveForm() {
                 placeholder="Add your thoughts, annotations, or commentary..."
                 autoSave={false}
               />
-              <p className="text-xs text-muted-foreground">
-                Inherits visibility from save.
-              </p>
+              <p className="text-xs text-muted-foreground">Inherits visibility from save.</p>
             </div>
 
             {/* Actions */}

@@ -37,10 +37,10 @@ import { Input } from "@/components/ui/input";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 import { useCreateSave, useGetMySpace } from "@/lib/convex/hooks";
-import { getDuplicateSaveFromError } from "@/lib/utils/duplicate-error";
-import { formatRelativeTime } from "@/lib/utils";
-import type { DuplicateSaveInfo, SaveVisibility } from "@/lib/types";
 import { useTheme } from "@/lib/theme/provider";
+import type { DuplicateSaveInfo, SaveVisibility } from "@/lib/types";
+import { formatRelativeTime } from "@/lib/utils";
+import { getDuplicateSaveFromError } from "@/lib/utils/duplicate-error";
 
 // Amber text colors optimized for readability
 const amberTextColors = {
@@ -209,7 +209,17 @@ export default function NewSaveScreen() {
     } finally {
       setIsCreating(false);
     }
-  }, [url, title, note, visibility, tags, createSaveMutation, router, isValidUrl, showDuplicateAlert]);
+  }, [
+    url,
+    title,
+    note,
+    visibility,
+    tags,
+    createSaveMutation,
+    router,
+    isValidUrl,
+    showDuplicateAlert,
+  ]);
 
   return (
     <>
@@ -230,9 +240,7 @@ export default function NewSaveScreen() {
               <Check
                 size={20}
                 color={
-                  isCreating || !url.trim()
-                    ? colors.mutedForeground
-                    : brandColors.rust.DEFAULT
+                  isCreating || !url.trim() ? colors.mutedForeground : brandColors.rust.DEFAULT
                 }
               />
             </TouchableOpacity>

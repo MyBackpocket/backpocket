@@ -1,11 +1,11 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require("expo/metro-config");
 const nativewindMetro = require("nativewind/metro");
-const path = require("path");
+const path = require("node:path");
 
 // Monorepo root and convex folder
 const monorepoRoot = path.resolve(__dirname, "../..");
-const convexPath = path.resolve(monorepoRoot, "convex");
+const _convexPath = path.resolve(monorepoRoot, "convex");
 
 let config = getDefaultConfig(__dirname);
 

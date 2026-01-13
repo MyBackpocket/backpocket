@@ -36,7 +36,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import type { DomainStatus, SaveVisibility, SlugAvailability } from "@/lib/types";
 import { buildPublicSpaceUrl, ROOT_DOMAIN } from "@/lib/constants";
 import {
   type DomainId,
@@ -47,6 +46,7 @@ import {
   useUpdateSettings,
   useUpdateSlug,
 } from "@/lib/convex/hooks";
+import type { DomainStatus, SaveVisibility, SlugAvailability } from "@/lib/types";
 import { useOpenUrl } from "@/lib/utils";
 
 // Slug validation regex (same as API)
@@ -313,8 +313,7 @@ export default function PublicSpaceSettingsScreen() {
     openUrl("https://backpocket.my/app/settings");
   }, [openUrl]);
 
-  const canSaveSlug =
-    slugAvailability?.available && slugInput !== space?.slug && !isUpdatingSlug;
+  const canSaveSlug = slugAvailability?.available && slugInput !== space?.slug && !isUpdatingSlug;
 
   // Loading state
   if (isLoadingSpace) {

@@ -138,9 +138,15 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 
 ### Extension
 
-- [ ] Collection picker in popup
-- [ ] Badge showing duplicate status
-- [ ] Context menu integration
+- [x] **One-click save redesign** ✅ 2026-01-13
+  - Auto-saves on popup open (save first, organize later)
+  - Post-save quick actions: tags, collections, visibility, note
+  - Status-based flow: loading → saving → success/duplicate/error
+- [x] Collection picker in popup ✅ 2026-01-13
+- [x] Badge showing duplicate status ✅ 2026-01-13
+- [x] Context menu integration ✅ 2026-01-13
+- [x] Keyboard shortcuts (⌘+Shift+S) ✅ 2026-01-13
+- [x] Respect user's default visibility ✅ 2026-01-13
 
 ---
 
@@ -148,6 +154,21 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 
 ### 2026-01-13
 
+- ✅ **Extension one-click save redesign** (Browser Extension)
+  - Auto-save on popup open: "Save first, organize later" pattern
+  - Status-based UI: Clean centered states (saving → success → duplicate/error)
+  - Post-save quick actions: Tags, collections, visibility, note
+  - Horizontal tag chips with inline add new tag
+  - Collapsible note input with auto-save on blur
+  - Removed tab navigation for streamlined one-click UX
+- ✅ **Extension feature parity** (Browser Extension)
+  - Collection picker: Multi-select dropdown in popup
+  - Duplicate detection UI: Warning banner with link to existing save
+  - Visibility toggle: Uses user's default save visibility setting
+  - Context menu: Right-click "Save to Backpocket" on pages/links
+  - Keyboard shortcuts: ⌘+Shift+S (Mac) / Ctrl+Shift+S to save
+  - Badge notifications: Visual feedback for success/pending states
+  - Improved types: Now uses shared `@backpocket/types` package
 - ✅ **WYSIWYG note editor** (Web)
   - Added Novel-based rich text editor for note editing on save detail and creation pages
   - Simple/rich mode toggle persisted in localStorage

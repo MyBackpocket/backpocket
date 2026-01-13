@@ -7,9 +7,9 @@
  * Pattern matches the web app for consistency across the monorepo.
  */
 
-import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
 
 /**
  * Hook to check if the user is authenticated.
@@ -196,4 +196,3 @@ export function useRemoveDomain() {
 export function useVerifyDomain() {
   return useAction(api.spaces.verifyDomain);
 }
-

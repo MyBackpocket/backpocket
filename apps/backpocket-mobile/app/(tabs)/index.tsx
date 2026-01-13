@@ -37,19 +37,19 @@ import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { SwipeableRow } from "@/components/ui/swipeable-row";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
+import { buildPublicSpaceHostname, buildPublicSpaceUrl } from "@/lib/constants";
 import {
   useDeleteSave,
-  useToggleArchive,
-  useToggleFavorite,
   useGetMySpace,
   useGetStats,
+  useListDomains,
   useListSaves,
+  useToggleArchive,
+  useToggleFavorite,
 } from "@/lib/convex/hooks";
 import type { Save } from "@/lib/types";
-import { isSaveProcessing } from "@/lib/utils/processing-saves";
-import { buildPublicSpaceHostname, buildPublicSpaceUrl } from "@/lib/constants";
-import { useListDomains } from "@/lib/convex/hooks";
 import { useOpenUrl } from "@/lib/utils";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 
 export default function DashboardScreen() {
   const colors = useThemeColors();
@@ -200,348 +200,358 @@ export default function DashboardScreen() {
           />
         }
       >
-      {/* Header */}
-      <View style={styles.header}>
-        {userImageUrl ? (
-          <Image source={{ uri: userImageUrl }} style={styles.profileImage} />
-        ) : (
-          <View style={[styles.profilePlaceholder, { backgroundColor: colors.muted }]}>
-            <Text style={[styles.profileInitial, { color: colors.text }]}>
-              {userName.charAt(0).toUpperCase()}
+        {/* Header */}
+        <View style={styles.header}>
+          {userImageUrl ? (
+            <Image source={{ uri: userImageUrl }} style={styles.profileImage} />
+          ) : (
+            <View style={[styles.profilePlaceholder, { backgroundColor: colors.muted }]}>
+              <Text style={[styles.profileInitial, { color: colors.text }]}>
+                {userName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.greeting}>
+            <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>
+              Welcome back,
             </Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
           </View>
-        )}
-        <View style={styles.greeting}>
-          <Text style={[styles.welcomeText, { color: colors.mutedForeground }]}>Welcome back,</Text>
-          <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
         </View>
-      </View>
 
-      {/* Stats Grid - 2x2 compact layout */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Saves"
-            value={isLoading ? "—" : String(stats?.totalSaves ?? 0)}
-            icon={Bookmark}
-            iconColor={brandColors.teal}
-            colors={colors}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/(tabs)/saves");
-            }}
-          />
-          <StatCard
-            title="Favorites"
-            value={isLoading ? "—" : String(stats?.favoriteSaves ?? 0)}
-            icon={Star}
-            iconColor={brandColors.amber}
-            colors={colors}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({
-                pathname: "/(tabs)/saves",
-                params: { filter: "favorites" },
-              });
-            }}
-          />
+        {/* Stats Grid - 2x2 compact layout */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statsRow}>
+            <StatCard
+              title="Saves"
+              value={isLoading ? "—" : String(stats?.totalSaves ?? 0)}
+              icon={Bookmark}
+              iconColor={brandColors.teal}
+              colors={colors}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(tabs)/saves");
+              }}
+            />
+            <StatCard
+              title="Favorites"
+              value={isLoading ? "—" : String(stats?.favoriteSaves ?? 0)}
+              icon={Star}
+              iconColor={brandColors.amber}
+              colors={colors}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/saves",
+                  params: { filter: "favorites" },
+                });
+              }}
+            />
+          </View>
+          <View style={styles.statsRow}>
+            <StatCard
+              title="Public"
+              value={isLoading ? "—" : String(stats?.publicSaves ?? 0)}
+              icon={Globe}
+              iconColor={brandColors.mint}
+              colors={colors}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: "/(tabs)/saves",
+                  params: { filter: "public" },
+                });
+              }}
+            />
+            <StatCard
+              title="Collections"
+              value={isLoading ? "—" : String(stats?.totalCollections ?? 0)}
+              icon={FolderOpen}
+              iconColor={brandColors.amber}
+              colors={colors}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/(tabs)/collections");
+              }}
+            />
+          </View>
         </View>
-        <View style={styles.statsRow}>
-          <StatCard
-            title="Public"
-            value={isLoading ? "—" : String(stats?.publicSaves ?? 0)}
-            icon={Globe}
-            iconColor={brandColors.mint}
-            colors={colors}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push({
-                pathname: "/(tabs)/saves",
-                params: { filter: "public" },
-              });
-            }}
-          />
-          <StatCard
-            title="Collections"
-            value={isLoading ? "—" : String(stats?.totalCollections ?? 0)}
-            icon={FolderOpen}
-            iconColor={brandColors.amber}
-            colors={colors}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push("/(tabs)/collections");
-            }}
-          />
-        </View>
-      </View>
 
-      {/* Public Space Card - only show when public */}
-      {isPublicEnabled && space?.slug && (
-        <Animated.View style={{ opacity: fadeAnim }}>
-          <View style={styles.publicSpaceCard}>
-            <LinearGradient
-              colors={[`${brandColors.teal}25`, `${brandColors.mint}15`]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.publicSpaceGradient}
-            >
-              <TouchableOpacity
-                style={styles.publicSpaceHeader}
-                onPress={hasMultipleLinks ? () => setShowLinksModal(true) : undefined}
-                activeOpacity={hasMultipleLinks ? 0.7 : 1}
+        {/* Public Space Card - only show when public */}
+        {isPublicEnabled && space?.slug && (
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <View style={styles.publicSpaceCard}>
+              <LinearGradient
+                colors={[`${brandColors.teal}25`, `${brandColors.mint}15`]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.publicSpaceGradient}
               >
-                <View
-                  style={[
-                    styles.publicSpaceIconContainer,
-                    { backgroundColor: `${brandColors.mint}30` },
-                  ]}
-                >
-                  <Globe size={20} color={brandColors.mint} strokeWidth={2} />
-                </View>
-                <View style={styles.publicSpaceHeaderText}>
-                  <Text style={[styles.publicSpaceTitle, { color: colors.text }]}>
-                    Your Public Space
-                  </Text>
-                  <View style={styles.publicSpaceUrlRow}>
-                    <Text style={[styles.publicSpaceUrl, { color: brandColors.teal }]}>
-                      {publicSpaceHostname}
-                    </Text>
-                    {hasMultipleLinks && (
-                      <View style={styles.multiLinkBadge}>
-                        <Text
-                          style={[styles.multiLinkBadgeText, { color: colors.mutedForeground }]}
-                        >
-                          +{spaceLinks.length - 1}
-                        </Text>
-                        <ChevronDown size={12} color={colors.mutedForeground} />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
-
-              <View style={styles.publicSpaceStats}>
-                <View style={styles.publicSpaceStat}>
-                  <Eye size={14} color={colors.mutedForeground} />
-                  <Text style={[styles.publicSpaceStatText, { color: colors.text }]}>
-                    {stats?.publicSaves ?? 0}
-                  </Text>
-                  <Text style={[styles.publicSpaceStatLabel, { color: colors.mutedForeground }]}>
-                    public saves
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.publicSpaceActions}>
                 <TouchableOpacity
-                  style={[
-                    styles.publicSpaceButton,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                  onPress={handleCopyPublicUrl}
-                  activeOpacity={0.7}
+                  style={styles.publicSpaceHeader}
+                  onPress={hasMultipleLinks ? () => setShowLinksModal(true) : undefined}
+                  activeOpacity={hasMultipleLinks ? 0.7 : 1}
                 >
-                  {copied ? (
-                    <Check size={18} color={brandColors.mint} strokeWidth={2} />
-                  ) : (
-                    <Copy size={18} color={colors.text} strokeWidth={2} />
-                  )}
-                  <Text
+                  <View
                     style={[
-                      styles.publicSpaceButtonText,
-                      { color: copied ? brandColors.mint : colors.text },
+                      styles.publicSpaceIconContainer,
+                      { backgroundColor: `${brandColors.mint}30` },
                     ]}
                   >
-                    {copied ? "Copied!" : "Copy Link"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.publicSpaceButton,
-                    styles.publicSpaceButtonPrimary,
-                    { backgroundColor: brandColors.teal },
-                  ]}
-                  onPress={handlePreviewPublicSpace}
-                  activeOpacity={0.7}
-                >
-                  <ExternalLink size={18} color="#FFFFFF" strokeWidth={2} />
-                  <Text style={styles.publicSpaceButtonTextPrimary}>Preview</Text>
-                  <ChevronRight size={16} color="#FFFFFF" style={{ marginLeft: -4 }} />
-                </TouchableOpacity>
-              </View>
-            </LinearGradient>
-          </View>
-        </Animated.View>
-      )}
-
-      {/* Recent Saves Section */}
-      <View style={styles.sectionContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Saves</Text>
-          {filteredRecentSaves.length > 0 && (
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/saves")}
-              style={styles.viewAllButton}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.viewAllText, { color: colors.primary }]}>View all</Text>
-              <ChevronRight size={16} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View
-          style={[styles.recentCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-        >
-          {isLoading && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading...</Text>
-            </View>
-          )}
-
-          {isError && (
-            <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyText, { color: colors.destructive }]}>
-                Failed to load saves
-              </Text>
-            </View>
-          )}
-
-          {!isLoading && !isError && filteredRecentSaves.length === 0 && (
-            <View style={styles.emptyContainer}>
-              <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
-                <Bookmark size={28} color={colors.mutedForeground} />
-              </View>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No saves yet</Text>
-              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Share a link to Backpocket to get started!
-              </Text>
-            </View>
-          )}
-
-          {!isLoading && filteredRecentSaves.length > 0 && (
-            <GestureHandlerRootView style={styles.savesList}>
-              {filteredRecentSaves.slice(0, 5).map((save, index) => (
-                <SaveListItem
-                  key={save.id as string}
-                  save={save}
-                  colors={colors}
-                  isLast={index === Math.min(filteredRecentSaves.length, 5) - 1}
-                  onPress={() => router.push(`/save/${save.id}`)}
-                  onDelete={() => handleDeleteSave(save.id)}
-                  onArchive={() => handleArchiveSave(save.id)}
-                  onFavorite={() => handleFavoriteSave(save.id, save.isFavorite)}
-                  onOpenUrl={openUrl}
-                />
-              ))}
-            </GestureHandlerRootView>
-          )}
-        </View>
-      </View>
-
-      {/* Space Links Modal */}
-      <Modal
-        visible={showLinksModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowLinksModal(false)}
-      >
-        <View style={[styles.linksModalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.linksModalHeader, { borderBottomColor: colors.border }]}>
-            <View style={styles.linksModalHeaderSpacer} />
-            <Text style={[styles.linksModalTitle, { color: colors.text }]}>Space Links</Text>
-            <TouchableOpacity
-              onPress={() => setShowLinksModal(false)}
-              style={styles.linksModalClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <X size={24} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.linksModalContent}
-            contentContainerStyle={styles.linksModalContentContainer}
-          >
-            <Text style={[styles.linksModalSubtitle, { color: colors.mutedForeground }]}>
-              Your public space is accessible at these URLs
-            </Text>
-
-            {spaceLinks.map((link, _index) => {
-              const isCopied = copiedUrl === link.url;
-              return (
-                <View
-                  key={link.hostname}
-                  style={[
-                    styles.linkItem,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: colors.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.linkItemHeader}>
-                    <Link2 size={16} color={colors.mutedForeground} />
-                    <Text
-                      style={[styles.linkItemHostname, { color: colors.text }]}
-                      numberOfLines={1}
-                    >
-                      {link.hostname}
-                    </Text>
-                    {link.isPrimary && (
-                      <View
-                        style={[styles.primaryBadge, { backgroundColor: `${brandColors.teal}20` }]}
-                      >
-                        <Text style={[styles.primaryBadgeText, { color: brandColors.teal }]}>
-                          Primary
-                        </Text>
-                      </View>
-                    )}
+                    <Globe size={20} color={brandColors.mint} strokeWidth={2} />
                   </View>
-                  <Text
-                    style={[styles.linkItemUrl, { color: colors.mutedForeground }]}
-                    numberOfLines={1}
-                  >
-                    {link.url}
-                  </Text>
-                  <View style={styles.linkItemActions}>
-                    <TouchableOpacity
-                      style={[styles.linkItemButtonFull, { backgroundColor: colors.muted }]}
-                      onPress={() => handleCopyUrl(link.url)}
-                      activeOpacity={0.7}
-                    >
-                      {isCopied ? (
-                        <Check size={18} color={brandColors.mint} strokeWidth={2} />
-                      ) : (
-                        <Copy size={18} color={colors.text} strokeWidth={2} />
-                      )}
-                      <Text
-                        style={[
-                          styles.linkItemButtonText,
-                          { color: isCopied ? brandColors.mint : colors.text },
-                        ]}
-                      >
-                        {isCopied ? "Copied!" : "Copy Link"}
+                  <View style={styles.publicSpaceHeaderText}>
+                    <Text style={[styles.publicSpaceTitle, { color: colors.text }]}>
+                      Your Public Space
+                    </Text>
+                    <View style={styles.publicSpaceUrlRow}>
+                      <Text style={[styles.publicSpaceUrl, { color: brandColors.teal }]}>
+                        {publicSpaceHostname}
                       </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.linkItemButtonFull, { backgroundColor: brandColors.teal }]}
-                      onPress={() => handleOpenSpaceLink(link.url)}
-                      activeOpacity={0.7}
-                    >
-                      <ExternalLink size={18} color="#FFFFFF" strokeWidth={2} />
-                      <Text style={styles.linkItemButtonTextPrimary}>Open</Text>
-                    </TouchableOpacity>
+                      {hasMultipleLinks && (
+                        <View style={styles.multiLinkBadge}>
+                          <Text
+                            style={[styles.multiLinkBadgeText, { color: colors.mutedForeground }]}
+                          >
+                            +{spaceLinks.length - 1}
+                          </Text>
+                          <ChevronDown size={12} color={colors.mutedForeground} />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+
+                <View style={styles.publicSpaceStats}>
+                  <View style={styles.publicSpaceStat}>
+                    <Eye size={14} color={colors.mutedForeground} />
+                    <Text style={[styles.publicSpaceStatText, { color: colors.text }]}>
+                      {stats?.publicSaves ?? 0}
+                    </Text>
+                    <Text style={[styles.publicSpaceStatLabel, { color: colors.mutedForeground }]}>
+                      public saves
+                    </Text>
                   </View>
                 </View>
-              );
-            })}
-          </ScrollView>
+
+                <View style={styles.publicSpaceActions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.publicSpaceButton,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                    onPress={handleCopyPublicUrl}
+                    activeOpacity={0.7}
+                  >
+                    {copied ? (
+                      <Check size={18} color={brandColors.mint} strokeWidth={2} />
+                    ) : (
+                      <Copy size={18} color={colors.text} strokeWidth={2} />
+                    )}
+                    <Text
+                      style={[
+                        styles.publicSpaceButtonText,
+                        { color: copied ? brandColors.mint : colors.text },
+                      ]}
+                    >
+                      {copied ? "Copied!" : "Copy Link"}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.publicSpaceButton,
+                      styles.publicSpaceButtonPrimary,
+                      { backgroundColor: brandColors.teal },
+                    ]}
+                    onPress={handlePreviewPublicSpace}
+                    activeOpacity={0.7}
+                  >
+                    <ExternalLink size={18} color="#FFFFFF" strokeWidth={2} />
+                    <Text style={styles.publicSpaceButtonTextPrimary}>Preview</Text>
+                    <ChevronRight size={16} color="#FFFFFF" style={{ marginLeft: -4 }} />
+                  </TouchableOpacity>
+                </View>
+              </LinearGradient>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Recent Saves Section */}
+        <View style={styles.sectionContainer}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Saves</Text>
+            {filteredRecentSaves.length > 0 && (
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/saves")}
+                style={styles.viewAllButton}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.viewAllText, { color: colors.primary }]}>View all</Text>
+                <ChevronRight size={16} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View
+            style={[
+              styles.recentCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            {isLoading && (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                  Loading...
+                </Text>
+              </View>
+            )}
+
+            {isError && (
+              <View style={styles.emptyContainer}>
+                <Text style={[styles.emptyText, { color: colors.destructive }]}>
+                  Failed to load saves
+                </Text>
+              </View>
+            )}
+
+            {!isLoading && !isError && filteredRecentSaves.length === 0 && (
+              <View style={styles.emptyContainer}>
+                <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
+                  <Bookmark size={28} color={colors.mutedForeground} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>No saves yet</Text>
+                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                  Share a link to Backpocket to get started!
+                </Text>
+              </View>
+            )}
+
+            {!isLoading && filteredRecentSaves.length > 0 && (
+              <GestureHandlerRootView style={styles.savesList}>
+                {filteredRecentSaves.slice(0, 5).map((save, index) => (
+                  <SaveListItem
+                    key={save.id as string}
+                    save={save}
+                    colors={colors}
+                    isLast={index === Math.min(filteredRecentSaves.length, 5) - 1}
+                    onPress={() => router.push(`/save/${save.id}`)}
+                    onDelete={() => handleDeleteSave(save.id)}
+                    onArchive={() => handleArchiveSave(save.id)}
+                    onFavorite={() => handleFavoriteSave(save.id, save.isFavorite)}
+                    onOpenUrl={openUrl}
+                  />
+                ))}
+              </GestureHandlerRootView>
+            )}
+          </View>
         </View>
-      </Modal>
+
+        {/* Space Links Modal */}
+        <Modal
+          visible={showLinksModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowLinksModal(false)}
+        >
+          <View style={[styles.linksModalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.linksModalHeader, { borderBottomColor: colors.border }]}>
+              <View style={styles.linksModalHeaderSpacer} />
+              <Text style={[styles.linksModalTitle, { color: colors.text }]}>Space Links</Text>
+              <TouchableOpacity
+                onPress={() => setShowLinksModal(false)}
+                style={styles.linksModalClose}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.linksModalContent}
+              contentContainerStyle={styles.linksModalContentContainer}
+            >
+              <Text style={[styles.linksModalSubtitle, { color: colors.mutedForeground }]}>
+                Your public space is accessible at these URLs
+              </Text>
+
+              {spaceLinks.map((link, _index) => {
+                const isCopied = copiedUrl === link.url;
+                return (
+                  <View
+                    key={link.hostname}
+                    style={[
+                      styles.linkItem,
+                      {
+                        backgroundColor: colors.card,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <View style={styles.linkItemHeader}>
+                      <Link2 size={16} color={colors.mutedForeground} />
+                      <Text
+                        style={[styles.linkItemHostname, { color: colors.text }]}
+                        numberOfLines={1}
+                      >
+                        {link.hostname}
+                      </Text>
+                      {link.isPrimary && (
+                        <View
+                          style={[
+                            styles.primaryBadge,
+                            { backgroundColor: `${brandColors.teal}20` },
+                          ]}
+                        >
+                          <Text style={[styles.primaryBadgeText, { color: brandColors.teal }]}>
+                            Primary
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text
+                      style={[styles.linkItemUrl, { color: colors.mutedForeground }]}
+                      numberOfLines={1}
+                    >
+                      {link.url}
+                    </Text>
+                    <View style={styles.linkItemActions}>
+                      <TouchableOpacity
+                        style={[styles.linkItemButtonFull, { backgroundColor: colors.muted }]}
+                        onPress={() => handleCopyUrl(link.url)}
+                        activeOpacity={0.7}
+                      >
+                        {isCopied ? (
+                          <Check size={18} color={brandColors.mint} strokeWidth={2} />
+                        ) : (
+                          <Copy size={18} color={colors.text} strokeWidth={2} />
+                        )}
+                        <Text
+                          style={[
+                            styles.linkItemButtonText,
+                            { color: isCopied ? brandColors.mint : colors.text },
+                          ]}
+                        >
+                          {isCopied ? "Copied!" : "Copy Link"}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.linkItemButtonFull, { backgroundColor: brandColors.teal }]}
+                        onPress={() => handleOpenSpaceLink(link.url)}
+                        activeOpacity={0.7}
+                      >
+                        <ExternalLink size={18} color="#FFFFFF" strokeWidth={2} />
+                        <Text style={styles.linkItemButtonTextPrimary}>Open</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </Modal>
       </ScrollView>
 
       {/* Floating Action Button */}

@@ -39,10 +39,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         className
       )}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize]}
-      >
+      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>
         {content}
       </ReactMarkdown>
     </div>

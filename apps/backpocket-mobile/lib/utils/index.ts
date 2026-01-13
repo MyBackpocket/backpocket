@@ -10,7 +10,8 @@ export { useOpenUrl } from "./use-open-url";
  * Matches the web app's formatting pattern.
  */
 export function formatDate(date: Date | string | number): string {
-  const d = typeof date === "number" ? new Date(date) : typeof date === "string" ? new Date(date) : date;
+  const d =
+    typeof date === "number" ? new Date(date) : typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     day: "numeric",
@@ -22,7 +23,8 @@ export function formatDate(date: Date | string | number): string {
  * Format a relative time (e.g., "2 days ago")
  */
 export function formatRelativeTime(date: Date | string | number): string {
-  const d = typeof date === "number" ? new Date(date) : typeof date === "string" ? new Date(date) : date;
+  const d =
+    typeof date === "number" ? new Date(date) : typeof date === "string" ? new Date(date) : date;
   const now = new Date();
   const diffMs = now.getTime() - d.getTime();
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));

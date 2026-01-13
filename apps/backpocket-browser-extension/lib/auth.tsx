@@ -10,6 +10,7 @@ import { createContext, type ReactNode, useContext } from "react";
 
 const MOCK_AUTH_MODE = import.meta.env.VITE_BACKPOCKET_AUTH_MODE === "mock";
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const CLERK_SYNC_HOST = import.meta.env.VITE_CLERK_SYNC_HOST;
 
 /**
  * Mock auth context for development without Clerk
@@ -34,6 +35,7 @@ function MockAuthProvider({ children }: { children: ReactNode }) {
 
 /**
  * Unified auth hook that works with both Clerk and mock mode
+ * Returns getToken that fetches Convex-compatible JWT
  */
 export function useAuth() {
   const mockContext = useContext(MockAuthContext);
@@ -48,7 +50,15 @@ export function useAuth() {
 
   // Otherwise use Clerk's useAuth
   // biome-ignore lint/correctness/useHookAtTopLevel: MOCK_AUTH_MODE is a compile-time constant, so hook order is deterministic
-  return useClerkAuth();
+  const clerkAuth = useClerkAuth();
+
+  // Wrap getToken to always use the "convex" template for Convex-compatible JWTs
+  return {
+    ...clerkAuth,
+    getToken: async () => {
+      return clerkAuth.getToken({ template: "convex" });
+    },
+  };
 }
 
 /**
@@ -71,7 +81,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  return <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>{children}</ClerkProvider>;
+  // syncHost enables session sync with web app (requires Clerk allowed_origins config)
+  // Development: VITE_CLERK_SYNC_HOST=http://localhost
+  // Production: VITE_CLERK_SYNC_HOST=https://clerk.your-domain.com (your Clerk Frontend API)
+  return (
+    <ClerkProvider
+      publishableKey={CLERK_PUBLISHABLE_KEY}
+      syncHost={CLERK_SYNC_HOST}
+      afterSignOutUrl="/"
+    >
+      {children}
+    </ClerkProvider>
+  );
 }
 
 /**

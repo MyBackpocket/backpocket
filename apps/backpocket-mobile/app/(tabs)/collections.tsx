@@ -32,7 +32,7 @@ export default function CollectionsScreen() {
     } finally {
       setIsManualRefreshing(false);
     }
-  }, [refetch]);
+  }, []);
 
   // Navigate to create collection form
   const handleCreateCollection = useCallback(() => {

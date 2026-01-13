@@ -609,13 +609,8 @@ export async function POST(request: NextRequest) {
         imageUrl: null,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
       };
-      const isTimeout =
-        fetchError instanceof Error && fetchError.message.includes("abort");
-      event.fallback(
-        200,
-        { extractor: "fallback" },
-        isTimeout ? "Timeout" : "Fetch error"
-      );
+      const isTimeout = fetchError instanceof Error && fetchError.message.includes("abort");
+      event.fallback(200, { extractor: "fallback" }, isTimeout ? "Timeout" : "Fetch error");
       return NextResponse.json(fallbackResult);
     }
   } catch (err) {

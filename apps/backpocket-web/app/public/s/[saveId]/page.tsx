@@ -19,7 +19,6 @@ import Link from "next/link";
 import { LogoIcon } from "@/components/logo";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ScrollNavigator } from "@/components/scroll-navigator";
-import { PublicSaveTabs } from "./public-save-tabs";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,7 @@ import { VisitTracker } from "@/components/visit-tracker";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import { MARKETING_URL } from "@/lib/constants/links";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
+import { PublicSaveTabs } from "./public-save-tabs";
 
 // Local type definitions for snapshot data
 interface SnapshotContent {

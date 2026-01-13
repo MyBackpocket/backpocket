@@ -130,11 +130,7 @@ export default function NewCollectionScreen() {
             >
               <Check
                 size={20}
-                color={
-                  isCreating || !canCreate
-                    ? colors.mutedForeground
-                    : brandColors.rust.DEFAULT
-                }
+                color={isCreating || !canCreate ? colors.mutedForeground : brandColors.rust.DEFAULT}
               />
             </TouchableOpacity>
           ),
