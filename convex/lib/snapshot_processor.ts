@@ -283,7 +283,7 @@ export const processSnapshotNode = internalAction({
 
       // Build update object - only include non-null optional fields
       // (Convex v.optional(v.string()) doesn't accept null, only undefined/omitted)
-      const updateArgs: Parameters<typeof internal.snapshots.updateSnapshotStatus>[0] = {
+      await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
         saveId: args.saveId,
         status: "ready",
         fetchedAt: Date.now(),
@@ -293,27 +293,21 @@ export const processSnapshotNode = internalAction({
         contentHtml: article.content || "",
         contentText: textContent,
         contentSha256,
-      };
-
-      // Only add optional string fields if they have values
-      if (article.title) updateArgs.title = article.title;
-      if (article.byline) updateArgs.byline = article.byline;
-      if (siteName) updateArgs.siteName = siteName;
-      if (language) updateArgs.language = language;
-
-      await ctx.runMutation(internal.snapshots.updateSnapshotStatus, updateArgs);
+        ...(article.title && { title: article.title }),
+        ...(article.byline && { byline: article.byline }),
+        ...(siteName && { siteName }),
+        ...(language && { language }),
+      });
 
       // Also update the save's metadata (title, description, siteName, imageUrl)
       // This backfills the save with extracted metadata from the page
-      const saveMetadataArgs: Parameters<typeof internal.saves.updateSaveMetadata>[0] = {
+      await ctx.runMutation(internal.saves.updateSaveMetadata, {
         saveId: args.saveId,
-      };
-      if (article.title) saveMetadataArgs.title = article.title;
-      if (metaDescription) saveMetadataArgs.description = metaDescription;
-      if (siteName) saveMetadataArgs.siteName = siteName;
-      if (imageUrl) saveMetadataArgs.imageUrl = imageUrl;
-
-      await ctx.runMutation(internal.saves.updateSaveMetadata, saveMetadataArgs);
+        ...(article.title && { title: article.title }),
+        ...(metaDescription && { description: metaDescription }),
+        ...(siteName && { siteName }),
+        ...(imageUrl && { imageUrl }),
+      });
     } catch (error) {
       console.error("[snapshots] Processing error:", error);
       await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {

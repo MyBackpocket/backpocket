@@ -4,10 +4,8 @@ import {
   AlertCircle,
   ArrowUpRight,
   Check,
-  Copy,
   Eye,
   EyeOff,
-  Globe,
   Link as LinkIcon,
   Loader2,
   Lock,
@@ -18,7 +16,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AccountInfo } from "@/components/auth-components";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +43,8 @@ import {
 } from "@/lib/convex";
 import type { PublicLayout, SaveVisibility, SpaceVisibility } from "@/lib/types";
 
+type SaveStatus = "idle" | "saving" | "saved";
+
 export default function SettingsPage() {
   const space = useGetMySpace();
   const isLoading = space === undefined;
@@ -54,7 +54,11 @@ export default function SettingsPage() {
   const [visibility, setVisibility] = useState<SpaceVisibility>("private");
   const [publicLayout, setPublicLayout] = useState<PublicLayout>("grid");
   const [defaultSaveVisibility, setDefaultSaveVisibility] = useState<SaveVisibility>("private");
-  const [isSaving, setIsSaving] = useState(false);
+
+  // Auto-save status
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const initialLoadDone = useRef(false);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Slug editing state
   const [slug, setSlug] = useState("");
@@ -72,6 +76,7 @@ export default function SettingsPage() {
   );
   const isCheckingSlug = slugAvailability === undefined && isEditingSlug && slugInput.length >= 3 && slugInput !== slug;
 
+  // Initialize state from space data
   useEffect(() => {
     if (space) {
       setName(space.name || "");
@@ -81,25 +86,93 @@ export default function SettingsPage() {
       setDefaultSaveVisibility(space.defaultSaveVisibility as SaveVisibility);
       setSlug(space.slug);
       setSlugInput(space.slug);
+      // Mark initial load as complete after a short delay to avoid triggering auto-save
+      setTimeout(() => {
+        initialLoadDone.current = true;
+      }, 100);
     }
   }, [space]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await updateSettings({
-        name,
-        bio,
-        visibility,
-        publicLayout,
-        defaultSaveVisibility,
-      });
-    } catch (error) {
-      console.error("Failed to save settings:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Auto-save helper function
+  const saveSettings = useCallback(
+    async (settings: {
+      name?: string;
+      bio?: string;
+      visibility?: SpaceVisibility;
+      publicLayout?: PublicLayout;
+      defaultSaveVisibility?: SaveVisibility;
+    }) => {
+      setSaveStatus("saving");
+      try {
+        await updateSettings(settings);
+        setSaveStatus("saved");
+        // Reset to idle after showing "Saved" briefly
+        if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = setTimeout(() => setSaveStatus("idle"), 2000);
+      } catch (error) {
+        console.error("Failed to save settings:", error);
+        setSaveStatus("idle");
+      }
+    },
+    [updateSettings]
+  );
+
+  // Debounced auto-save for text inputs (name, bio)
+  useEffect(() => {
+    if (!initialLoadDone.current || !space) return;
+    if (name === (space.name || "")) return;
+
+    const timeout = setTimeout(() => {
+      saveSettings({ name });
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [name, space, saveSettings]);
+
+  useEffect(() => {
+    if (!initialLoadDone.current || !space) return;
+    if (bio === (space.bio || "")) return;
+
+    const timeout = setTimeout(() => {
+      saveSettings({ bio });
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [bio, space, saveSettings]);
+
+  // Immediate save handlers for toggles and selects
+  const handleVisibilityChange = useCallback(
+    (checked: boolean) => {
+      const newVisibility = checked ? "public" : "private";
+      setVisibility(newVisibility);
+      if (initialLoadDone.current) {
+        saveSettings({ visibility: newVisibility });
+      }
+    },
+    [saveSettings]
+  );
+
+  const handleLayoutChange = useCallback(
+    (value: string) => {
+      const newLayout = value as PublicLayout;
+      setPublicLayout(newLayout);
+      if (initialLoadDone.current) {
+        saveSettings({ publicLayout: newLayout });
+      }
+    },
+    [saveSettings]
+  );
+
+  const handleDefaultSaveVisibilityChange = useCallback(
+    (value: string) => {
+      const newVisibility = value as SaveVisibility;
+      setDefaultSaveVisibility(newVisibility);
+      if (initialLoadDone.current) {
+        saveSettings({ defaultSaveVisibility: newVisibility });
+      }
+    },
+    [saveSettings]
+  );
 
   const handleSlugChange = useCallback((value: string) => {
     // Normalize: lowercase, remove invalid chars
@@ -192,7 +265,21 @@ export default function SettingsPage() {
       <div className="mx-auto max-w-2xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+            {saveStatus === "saving" && (
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Saving...
+              </span>
+            )}
+            {saveStatus === "saved" && (
+              <span className="flex items-center gap-1 text-sm text-green-600 animate-in fade-in duration-200">
+                <Check className="h-3.5 w-3.5" />
+                Saved
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground">Manage your space and public profile</p>
         </div>
 
@@ -355,7 +442,7 @@ export default function SettingsPage() {
                   )}
                   <Switch
                     checked={visibility === "public"}
-                    onCheckedChange={(checked) => setVisibility(checked ? "public" : "private")}
+                    onCheckedChange={handleVisibilityChange}
                   />
                 </div>
               </div>
@@ -370,7 +457,7 @@ export default function SettingsPage() {
                     </Label>
                     <Select
                       value={publicLayout}
-                      onValueChange={(v) => setPublicLayout(v as PublicLayout)}
+                      onValueChange={handleLayoutChange}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -432,7 +519,7 @@ export default function SettingsPage() {
                 </Label>
                 <Select
                   value={defaultSaveVisibility}
-                  onValueChange={(v) => setDefaultSaveVisibility(v as SaveVisibility)}
+                  onValueChange={handleDefaultSaveVisibilityChange}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -471,16 +558,33 @@ export default function SettingsPage() {
               <ThemeSelector />
             </CardContent>
           </Card>
-
-          {/* Save button */}
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
-            </Button>
-          </div>
         </div>
       </div>
+
+      {/* Floating save indicator - visible when scrolled */}
+      {saveStatus !== "idle" && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <div
+            className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-lg transition-all duration-200 ${
+              saveStatus === "saving"
+                ? "bg-muted text-muted-foreground"
+                : "bg-green-600 text-white"
+            }`}
+          >
+            {saveStatus === "saving" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm font-medium">Saving...</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                <span className="text-sm font-medium">Saved</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
