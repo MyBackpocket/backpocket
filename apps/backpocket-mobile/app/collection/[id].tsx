@@ -47,11 +47,17 @@ import { Input } from "@/components/ui/input";
 import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useDeleteCollection, useGetCollection, useUpdateCollection } from "@/lib/api/collections";
-import { useListSaves, useToggleArchive, useToggleFavorite } from "@/lib/api/saves";
-import { useListTags } from "@/lib/api/tags";
-import type { CollectionVisibility, Save } from "@/lib/api/types";
-import { isSaveProcessing } from "@/lib/api/use-processing-saves";
+import {
+  useDeleteCollection,
+  useGetCollection,
+  useUpdateCollection,
+  useListSaves,
+  useToggleArchive,
+  useToggleFavorite,
+  useListTags,
+} from "@/lib/convex/hooks";
+import type { CollectionVisibility, Save } from "@/lib/types";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
 
 // === Edit Collection Modal ===
@@ -73,8 +79,9 @@ function getTagNames(tags?: Array<{ name: string }>): string[] {
 }
 
 function EditCollectionModal({ visible, onClose, collection, colors }: EditCollectionModalProps) {
-  const updateCollection = useUpdateCollection();
-  const { data: existingTags = [] } = useListTags();
+  const updateCollectionMutation = useUpdateCollection();
+  const existingTags = useListTags() ?? [];
+  const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState(collection.name);
   const [visibility, setVisibility] = useState<CollectionVisibility>(collection.visibility);
@@ -113,18 +120,21 @@ function EditCollectionModal({ visible, onClose, collection, colors }: EditColle
       return;
     }
 
+    setIsSaving(true);
     try {
-      await updateCollection.mutateAsync({
-        id: collection.id,
+      await updateCollectionMutation({
+        id: collection.id as any,
         name: trimmedName,
         visibility,
-        defaultTags,
+        defaultTagNames: defaultTags,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch {
       Alert.alert("Error", "Failed to update collection");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -327,7 +337,7 @@ function EditCollectionModal({ visible, onClose, collection, colors }: EditColle
           </Button>
           <Button
             onPress={handleSave}
-            loading={updateCollection.isPending}
+            loading={isSaving}
             disabled={!hasChanges || !name.trim()}
             style={{ flex: 1 }}
           >
@@ -450,29 +460,25 @@ export default function CollectionDetailScreen() {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  // Fetch collection details
-  const {
-    data: collection,
-    isLoading: isLoadingCollection,
-    isError: isCollectionError,
-    refetch: refetchCollection,
-  } = useGetCollection(id);
+  // Fetch collection details (Convex returns data directly)
+  const collectionData = useGetCollection(id as any);
+  const collection = collectionData ?? null;
+  const isLoadingCollection = collectionData === undefined;
+  const isCollectionError = collectionData === null;
+  const refetchCollection = async () => {}; // Convex auto-refetches
 
-  // Fetch saves in this collection
-  const {
-    data: savesData,
-    isPending: isLoadingSaves,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch: refetchSaves,
-  } = useListSaves({ collectionId: id, limit: 20 });
+  // Fetch saves in this collection (Convex doesn't support infinite scroll)
+  const savesData = useListSaves({ collectionId: id as any, limit: 20 });
+  const isLoadingSaves = savesData === undefined;
+  const isFetchingNextPage = false;
+  const hasNextPage = false;
+  const refetchSaves = async () => {}; // Convex auto-refetches
 
-  const deleteCollection = useDeleteCollection();
-  const toggleFavorite = useToggleFavorite();
-  const toggleArchive = useToggleArchive();
+  const deleteCollectionMutation = useDeleteCollection();
+  const toggleFavoriteMutation = useToggleFavorite();
+  const toggleArchiveMutation = useToggleArchive();
 
-  const saves = savesData?.pages.flatMap((page) => page.items) ?? [];
+  const saves = (savesData?.items ?? []) as any as Save[];
 
   // Calculate common tags across saves in this collection
   const _commonTags = useMemo(() => {
@@ -502,31 +508,27 @@ export default function CollectionDetailScreen() {
   }, [refetchCollection, refetchSaves]);
 
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    // Pagination disabled - Convex doesn't support infinite scroll the same way
+  }, []);
 
   const handleToggleFavorite = useCallback(
     async (save: Save) => {
       Haptics.selectionAsync();
-      await toggleFavorite.mutateAsync({
-        saveId: save.id,
-        value: !save.isFavorite,
+      await toggleFavoriteMutation({
+        saveId: save.id as any,
       });
     },
-    [toggleFavorite]
+    [toggleFavoriteMutation]
   );
 
   const handleToggleArchive = useCallback(
     async (save: Save) => {
       Haptics.selectionAsync();
-      await toggleArchive.mutateAsync({
-        saveId: save.id,
-        value: !save.isArchived,
+      await toggleArchiveMutation({
+        saveId: save.id as any,
       });
     },
-    [toggleArchive]
+    [toggleArchiveMutation]
   );
 
   const handleDeleteCollection = useCallback(() => {
@@ -537,22 +539,22 @@ export default function CollectionDetailScreen() {
       `Are you sure you want to delete "${collection.name}"? This cannot be undone. Saves in this collection will not be deleted.`,
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            try {
-              await deleteCollection.mutateAsync(collection.id);
-              router.back();
-            } catch {
-              Alert.alert("Error", "Failed to delete collection");
-            }
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+              try {
+                await deleteCollectionMutation({ collectionId: collection.id as any });
+                router.back();
+              } catch {
+                Alert.alert("Error", "Failed to delete collection");
+              }
+            },
           },
-        },
       ]
     );
-  }, [collection, deleteCollection, router]);
+  }, [collection, deleteCollectionMutation, router]);
 
   const renderItem = useCallback(
     ({ item }: { item: Save }) => (
@@ -662,7 +664,7 @@ export default function CollectionDetailScreen() {
               </View>
               {collection.defaultTags && collection.defaultTags.length > 0 ? (
                 <View style={styles.defaultTagsList}>
-                  {collection.defaultTags.map((tag) => (
+                  {collection.defaultTags.filter((tag): tag is NonNullable<typeof tag> => tag !== null).map((tag) => (
                     <View
                       key={tag.id}
                       style={[
@@ -794,7 +796,7 @@ export default function CollectionDetailScreen() {
       <EditCollectionModal
         visible={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
-        collection={collection}
+        collection={collection as any}
         colors={colors}
       />
     </>

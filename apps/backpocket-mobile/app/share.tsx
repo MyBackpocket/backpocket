@@ -42,10 +42,10 @@ import {
 import { LogoIcon } from "@/components/ui/logo";
 import { brandColors, radii, Shadows } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { getDuplicateSaveFromError, useCreateSave, useUpdateSave } from "@/lib/api/saves";
-import { useMySpace } from "@/lib/api/space";
-import { useListTags } from "@/lib/api/tags";
-import type { DuplicateSaveInfo, Save, SaveVisibility } from "@/lib/api/types";
+import { useCreateSave, useUpdateSave, useGetMySpace, useListTags } from "@/lib/convex/hooks";
+import { getDuplicateSaveFromError } from "@/lib/utils/duplicate-error";
+import { formatRelativeTime } from "@/lib/utils";
+import type { DuplicateSaveInfo, Save, SaveVisibility } from "@/lib/types";
 
 type ShareStatus = "loading" | "saving" | "success" | "error" | "auth_required" | "duplicate";
 
@@ -61,30 +61,7 @@ function extractDomain(url: string): string {
   }
 }
 
-/**
- * Format a relative time string (e.g., "2 days ago", "just now")
- */
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSecs < 60) return "just now";
-  if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
-  if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-  if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-
-  // For older dates, show the date
-  return date.toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-  });
-}
+// formatRelativeTime imported from @/lib/utils
 
 /**
  * Animated checkmark component
@@ -221,24 +198,28 @@ interface VisibilityToggleSectionProps {
 }
 
 function VisibilityToggleSection({ savedItem, colors }: VisibilityToggleSectionProps) {
-  const updateSave = useUpdateSave();
+  const updateSaveMutation = useUpdateSave();
   const [currentVisibility, setCurrentVisibility] = useState<SaveVisibility>(savedItem.visibility);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleToggleVisibility = async () => {
     Haptics.selectionAsync();
 
     const newVisibility: SaveVisibility = currentVisibility === "public" ? "private" : "public";
     setCurrentVisibility(newVisibility);
+    setIsUpdating(true);
 
     try {
-      await updateSave.mutateAsync({
-        id: savedItem.id,
+      await updateSaveMutation({
+        id: savedItem.id as any,
         visibility: newVisibility,
       });
     } catch {
       // Rollback on error
       setCurrentVisibility(currentVisibility);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -248,7 +229,7 @@ function VisibilityToggleSection({ savedItem, colors }: VisibilityToggleSectionP
     <View style={styles.visibilitySection}>
       <Pressable
         onPress={handleToggleVisibility}
-        disabled={updateSave.isPending}
+        disabled={isUpdating}
         style={({ pressed }) => [
           styles.visibilityToggleLarge,
           {
@@ -256,7 +237,7 @@ function VisibilityToggleSection({ savedItem, colors }: VisibilityToggleSectionP
             borderColor: isPublic ? brandColors.mint : colors.border,
           },
           pressed && { opacity: 0.8 },
-          updateSave.isPending && { opacity: 0.5 },
+          isUpdating && { opacity: 0.5 },
         ]}
       >
         {isPublic ? (
@@ -294,8 +275,9 @@ interface QuickTagSectionProps {
 }
 
 function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
-  const { data: allTags = [] } = useListTags();
-  const updateSave = useUpdateSave();
+  const allTags = useListTags() ?? [];
+  const updateSaveMutation = useUpdateSave();
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [selectedTags, setSelectedTags] = useState<string[]>(
     savedItem.tags?.map((t) => t.name) || []
@@ -308,7 +290,7 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
 
   const handleToggleTag = async (tagName: string) => {
     // Prevent multiple simultaneous updates
-    if (updateSave.isPending) return;
+    if (isUpdating) return;
 
     Haptics.selectionAsync();
 
@@ -320,10 +302,11 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
     // Store previous tags for potential rollback
     const previousTags = [...selectedTags];
     setSelectedTags(newTags);
+    setIsUpdating(true);
 
     try {
-      await updateSave.mutateAsync({
-        id: savedItem.id,
+      await updateSaveMutation({
+        id: savedItem.id as any,
         tagNames: newTags,
       });
     } catch (error) {
@@ -340,6 +323,8 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
           [{ text: "OK" }]
         );
       }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -352,7 +337,7 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
     }
 
     // Prevent multiple simultaneous updates
-    if (updateSave.isPending) return;
+    if (isUpdating) return;
 
     Haptics.selectionAsync();
     const previousTags = [...selectedTags];
@@ -360,10 +345,11 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
     setSelectedTags(newTags);
     setNewTagInput("");
     setIsAddingTag(false);
+    setIsUpdating(true);
 
     try {
-      await updateSave.mutateAsync({
-        id: savedItem.id,
+      await updateSaveMutation({
+        id: savedItem.id as any,
         tagNames: newTags,
       });
     } catch (error) {
@@ -379,6 +365,8 @@ function QuickTagSection({ savedItem, colors }: QuickTagSectionProps) {
           [{ text: "OK" }]
         );
       }
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -480,17 +468,17 @@ export default function ShareScreen() {
   const isSignedIn = auth.isSignedIn ?? false;
   const isLoaded = auth.isLoaded;
 
-  // Get user's space settings for default visibility
-  const { data: space } = useMySpace();
+  // Get user's space settings for default visibility (raw Convex hook)
+  const space = useGetMySpace();
 
   // Get share intent data (for Android/iOS share intent flow)
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
 
   // Create save mutation
-  const createSave = useCreateSave();
-  // Extract mutateAsync to stable ref to avoid re-renders
-  const mutateAsyncRef = useRef(createSave.mutateAsync);
-  mutateAsyncRef.current = createSave.mutateAsync;
+  const createSaveMutation = useCreateSave();
+  // Store the mutation in a ref for stable access
+  const mutationRef = useRef(createSaveMutation);
+  mutationRef.current = createSaveMutation;
 
   const [status, setStatus] = useState<ShareStatus>("loading");
   const [savedUrl, setSavedUrl] = useState<string | null>(null);
@@ -637,22 +625,42 @@ export default function ShareScreen() {
     setStatus("saving");
     setSavedUrl(url);
 
-    // Use the ref to get the current mutateAsync
+    // Use the ref to get the current mutation
     const saveInput = { url, visibility };
-    console.log("[share] Calling mutateAsync with:", JSON.stringify(saveInput));
+    console.log("[share] Calling mutation with:", JSON.stringify(saveInput));
     console.log("[share] saveInput.url:", saveInput.url);
     console.log("[share] typeof saveInput.url:", typeof saveInput.url);
 
-    mutateAsyncRef
+    mutationRef
       .current(saveInput)
       .then((save) => {
         console.log("[share] Save successful!", save.id);
-        setSavedItem(save);
+        // Transform Convex response to expected Save shape
+        const savedSave: Save = {
+          id: save.id as string,
+          spaceId: save.spaceId as string,
+          url: save.url,
+          title: save.title,
+          description: save.description,
+          siteName: save.siteName,
+          imageUrl: save.imageUrl,
+          contentType: save.contentType ?? null,
+          visibility: save.visibility,
+          isArchived: save.isArchived,
+          isFavorite: save.isFavorite,
+          createdBy: (save.createdBy ?? "") as string,
+          savedAt: new Date(save.savedAt).toISOString(),
+          createdAt: new Date(save.createdAt).toISOString(),
+          updatedAt: new Date(save.updatedAt).toISOString(),
+        };
+        setSavedItem(savedSave);
         setStatus("success");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         resetShareIntent();
       })
       .catch((error: unknown) => {
+        console.log("[share] Caught error:", JSON.stringify(error, null, 2));
+
         // Check if this is a duplicate save error first
         const existingSave = getDuplicateSaveFromError(error);
         if (existingSave) {
@@ -664,10 +672,25 @@ export default function ShareScreen() {
           return;
         }
 
-        // Only log as error if it's an actual error (not a duplicate)
-        console.error("[share] Save failed:", error);
+        // Extract a clean error message for display
+        let errorMsg = "Failed to save link";
+        if (error instanceof Error) {
+          // Extract just the human-readable part, not the full JSON
+          const msg = error.message;
+          if (msg.includes('"message"')) {
+            // Try to extract the message field from JSON
+            const match = msg.match(/"message"\s*:\s*"([^"]+)"/);
+            if (match) {
+              errorMsg = match[1];
+            }
+          } else {
+            errorMsg = msg;
+          }
+        }
+
+        console.error("[share] Save failed:", errorMsg);
         setStatus("error");
-        setErrorMessage(error instanceof Error ? error.message : "Failed to save link");
+        setErrorMessage(errorMsg);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         // NOTE: We do NOT reset saveInitiatedRef here!
         // User must explicitly click "Try Again" button
@@ -753,13 +776,31 @@ export default function ShareScreen() {
     setErrorMessage(null);
 
     const retryInput = { url, visibility };
-    console.log("[share] Retry calling mutateAsync with:", JSON.stringify(retryInput));
+    console.log("[share] Retry calling mutation with:", JSON.stringify(retryInput));
 
-    mutateAsyncRef
+    mutationRef
       .current(retryInput)
       .then((save) => {
         console.log("[share] Retry save successful!", save.id);
-        setSavedItem(save);
+        // Transform Convex response to expected Save shape
+        const savedSave: Save = {
+          id: save.id as string,
+          spaceId: save.spaceId as string,
+          url: save.url,
+          title: save.title,
+          description: save.description,
+          siteName: save.siteName,
+          imageUrl: save.imageUrl,
+          contentType: save.contentType ?? null,
+          visibility: save.visibility,
+          isArchived: save.isArchived,
+          isFavorite: save.isFavorite,
+          createdBy: (save.createdBy ?? "") as string,
+          savedAt: new Date(save.savedAt).toISOString(),
+          createdAt: new Date(save.createdAt).toISOString(),
+          updatedAt: new Date(save.updatedAt).toISOString(),
+        };
+        setSavedItem(savedSave);
         setStatus("success");
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         if (hasShareIntent) {
@@ -767,6 +808,8 @@ export default function ShareScreen() {
         }
       })
       .catch((error: unknown) => {
+        console.log("[share] Caught error on retry:", JSON.stringify(error, null, 2));
+
         // Check if this is a duplicate save error first
         const existingSave = getDuplicateSaveFromError(error);
         if (existingSave) {
@@ -780,10 +823,23 @@ export default function ShareScreen() {
           return;
         }
 
-        // Only log as error if it's an actual error (not a duplicate)
-        console.error("[share] Retry save failed:", error);
+        // Extract a clean error message for display
+        let errorMsg = "Failed to save link";
+        if (error instanceof Error) {
+          const msg = error.message;
+          if (msg.includes('"message"')) {
+            const match = msg.match(/"message"\s*:\s*"([^"]+)"/);
+            if (match) {
+              errorMsg = match[1];
+            }
+          } else {
+            errorMsg = msg;
+          }
+        }
+
+        console.error("[share] Retry save failed:", errorMsg);
         setStatus("error");
-        setErrorMessage(error instanceof Error ? error.message : "Failed to save link");
+        setErrorMessage(errorMsg);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       });
   };

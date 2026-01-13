@@ -36,17 +36,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useCreateCollection } from "@/lib/api/collections";
-import { useListSaves } from "@/lib/api/saves";
-import { useListTags } from "@/lib/api/tags";
-import type { CollectionVisibility } from "@/lib/api/types";
+import { useCreateCollection, useListSaves, useListTags } from "@/lib/convex/hooks";
+import type { CollectionVisibility } from "@/lib/types";
 
 export default function NewCollectionScreen() {
   const router = useRouter();
   const colors = useThemeColors();
 
   const createCollection = useCreateCollection();
-  const { data: existingTags = [] } = useListTags();
+  const [isCreating, setIsCreating] = useState(false);
+  const existingTags = useListTags() ?? [];
 
   // Form state
   const [name, setName] = useState("");
@@ -57,8 +56,8 @@ export default function NewCollectionScreen() {
   const [showSaveSelector, setShowSaveSelector] = useState(false);
 
   // Fetch user's saves for selection
-  const { data: savesData } = useListSaves({ limit: 50 });
-  const saves = savesData?.pages.flatMap((page) => page.items) ?? [];
+  const savesData = useListSaves({ limit: 50 });
+  const saves = savesData?.items ?? [];
 
   // Tag suggestions (existing tags not already added)
   const tagSuggestions = useMemo(() => {
@@ -91,11 +90,12 @@ export default function NewCollectionScreen() {
       return;
     }
 
+    setIsCreating(true);
     try {
-      const newCollection = await createCollection.mutateAsync({
+      const newCollection = await createCollection({
         name: trimmedName,
         visibility,
-        defaultTags: defaultTags.length > 0 ? defaultTags : undefined,
+        defaultTagNames: defaultTags.length > 0 ? defaultTags : undefined,
       });
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -105,6 +105,8 @@ export default function NewCollectionScreen() {
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to create collection");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsCreating(false);
     }
   }, [name, visibility, createCollection, router, defaultTags]);
 
@@ -123,13 +125,13 @@ export default function NewCollectionScreen() {
           headerRight: () => (
             <TouchableOpacity
               onPress={handleCreate}
-              disabled={createCollection.isPending || !canCreate}
+              disabled={isCreating || !canCreate}
               style={styles.headerButton}
             >
               <Check
                 size={20}
                 color={
-                  createCollection.isPending || !canCreate
+                  isCreating || !canCreate
                     ? colors.mutedForeground
                     : brandColors.rust.DEFAULT
                 }
@@ -415,8 +417,8 @@ export default function NewCollectionScreen() {
           <View style={styles.buttonContainer}>
             <Button
               onPress={handleCreate}
-              loading={createCollection.isPending}
-              disabled={createCollection.isPending || !canCreate}
+              loading={isCreating}
+              disabled={isCreating || !canCreate}
               style={styles.createButton}
             >
               Create Collection

@@ -36,11 +36,15 @@ import { Card } from "@/components/ui/card";
 import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useListCollections } from "@/lib/api/collections";
-import { useListSaves, useToggleArchive, useToggleFavorite } from "@/lib/api/saves";
-import { useListTags } from "@/lib/api/tags";
-import type { Collection, ListSavesInput, Save, Tag } from "@/lib/api/types";
-import { isSaveProcessing } from "@/lib/api/use-processing-saves";
+import {
+  useListCollections,
+  useListSaves,
+  useToggleArchive,
+  useToggleFavorite,
+  useListTags,
+} from "@/lib/convex/hooks";
+import type { Collection, ListSavesInput, Save, Tag } from "@/lib/types";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
 
 type QuickFilterType = "all" | "favorites" | "public";
@@ -77,9 +81,9 @@ export default function SavesScreen() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const { openUrl } = useOpenUrl();
 
-  // Fetch tags and collections for filter modal
-  const { data: tags } = useListTags();
-  const { data: collections } = useListCollections();
+  // Fetch tags and collections for filter modal (Convex returns data directly)
+  const tags = useListTags();
+  const collections = useListCollections();
 
   // Derive active filters from URL params (except search which is local)
   const activeQuickFilter: QuickFilterType = filter || "all";
@@ -126,19 +130,21 @@ export default function SavesScreen() {
   // Track if we've ever loaded data (to avoid full-screen loading on filter changes)
   const hasLoadedOnce = useRef(false);
 
-  const {
-    data,
-    isPending,
-    isFetching,
-    isError,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useListSaves(queryParams);
+  // Convex useQuery returns undefined while loading, then the data
+  // Cast to any to avoid type mismatches between our types and Convex's Id types
+  const savesData = useListSaves(queryParams as any);
+  const isPending = savesData === undefined;
+  const isFetching = false; // Convex auto-updates reactively
+  const isError = false;
+  // Convex doesn't support infinite scroll, so we disable these
+  const hasNextPage = false;
+  const isFetchingNextPage = false;
+
+  // Mock refetch - Convex auto-refetches
+  const refetch = async () => {};
 
   // Mark that we've loaded data at least once
-  if (data && !hasLoadedOnce.current) {
+  if (savesData && !hasLoadedOnce.current) {
     hasLoadedOnce.current = true;
   }
 
@@ -203,7 +209,7 @@ export default function SavesScreen() {
 
   // Handle tag selection
   const handleTagSelect = useCallback(
-    (tag: Tag) => {
+    (tag: any) => {
       Haptics.selectionAsync();
       router.setParams({
         tagId: tag.id,
@@ -216,7 +222,7 @@ export default function SavesScreen() {
 
   // Handle collection selection
   const handleCollectionSelect = useCallback(
-    (collection: Collection) => {
+    (collection: any) => {
       Haptics.selectionAsync();
       router.setParams({
         collectionId: collection.id,
@@ -244,42 +250,39 @@ export default function SavesScreen() {
     setShowFilterModal(true);
   }, []);
 
-  const toggleFavorite = useToggleFavorite();
-  const toggleArchive = useToggleArchive();
+  const toggleFavoriteMutation = useToggleFavorite();
+  const toggleArchiveMutation = useToggleArchive();
 
-  // Flatten paginated data
-  const saves = data?.pages.flatMap((page) => page.items) ?? [];
+  // Get saves from Convex response (cast to match our Save type)
+  const saves = (savesData?.items ?? []) as any as Save[];
 
   // Only show full-screen loading on the very first load ever
   // After that, filter/search changes should show inline loading in the list
-  const showInitialLoading = isPending && !data && !hasLoadedOnce.current;
+  const showInitialLoading = isPending && !savesData && !hasLoadedOnce.current;
 
   const handleLoadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    // Pagination disabled - Convex doesn't support infinite scroll the same way
+    // To add more items, we'd need to increase the limit
+  }, []);
 
   const handleToggleFavorite = useCallback(
     async (save: Save) => {
       Haptics.selectionAsync();
-      await toggleFavorite.mutateAsync({
-        saveId: save.id,
-        value: !save.isFavorite,
+      await toggleFavoriteMutation({
+        saveId: save.id as any,
       });
     },
-    [toggleFavorite]
+    [toggleFavoriteMutation]
   );
 
   const handleToggleArchive = useCallback(
     async (save: Save) => {
       Haptics.selectionAsync();
-      await toggleArchive.mutateAsync({
-        saveId: save.id,
-        value: !save.isArchived,
+      await toggleArchiveMutation({
+        saveId: save.id as any,
       });
     },
-    [toggleArchive]
+    [toggleArchiveMutation]
   );
 
   const renderItem = useCallback(

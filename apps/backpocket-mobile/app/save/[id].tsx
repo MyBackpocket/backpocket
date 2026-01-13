@@ -54,19 +54,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useCreateCollection, useListCollections } from "@/lib/api/collections";
 import {
+  useCreateCollection,
+  useListCollections,
   useDeleteSave,
   useGetSave,
   useGetSaveSnapshot,
   useToggleArchive,
   useToggleFavorite,
   useUpdateSave,
-} from "@/lib/api/saves";
-import { useListTags } from "@/lib/api/tags";
-import type { Save, SaveVisibility } from "@/lib/api/types";
-import { isSaveProcessing } from "@/lib/api/use-processing-saves";
-import { useRequestSaveSnapshot } from "@/lib/convex/hooks";
+  useListTags,
+  useRequestSaveSnapshot,
+} from "@/lib/convex/hooks";
+import type { Save, SaveVisibility } from "@/lib/types";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
 
 // === Visibility Selector Component ===
@@ -262,10 +263,12 @@ interface EditSaveModalProps {
 }
 
 function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
-  const updateSave = useUpdateSave();
-  const createCollection = useCreateCollection();
-  const { data: existingTags = [] } = useListTags();
-  const { data: existingCollections = [] } = useListCollections();
+  const updateSaveMutation = useUpdateSave();
+  const createCollectionMutation = useCreateCollection();
+  const existingTags = useListTags() ?? [];
+  const existingCollections = useListCollections() ?? [];
+  const [isSaving, setIsSaving] = useState(false);
+  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
 
   // Form state
   const [title, setTitle] = useState(save.title || "");
@@ -277,7 +280,6 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   );
   const [newTagInput, setNewTagInput] = useState("");
   const [newCollectionInput, setNewCollectionInput] = useState("");
-  const [isCreatingCollection, setIsCreatingCollection] = useState(false);
 
   // Reset form when save changes
   useEffect(() => {
@@ -321,7 +323,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
 
     setIsCreatingCollection(true);
     try {
-      const newCollection = await createCollection.mutateAsync({ name });
+      const newCollection = await createCollectionMutation({ name });
       setSelectedCollectionIds([...selectedCollectionIds, newCollection.id]);
       setNewCollectionInput("");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -333,20 +335,23 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
-      await updateSave.mutateAsync({
-        id: save.id,
+      await updateSaveMutation({
+        id: save.id as any,
         title: title || undefined,
         description: description || undefined,
         visibility,
         tagNames,
-        collectionIds: selectedCollectionIds,
+        collectionIds: selectedCollectionIds as any,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
     } catch {
       Alert.alert("Error", "Failed to update save");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -580,7 +585,7 @@ function EditSaveModal({ visible, onClose, save, colors }: EditSaveModalProps) {
             </Button>
             <Button
               onPress={handleSave}
-              loading={updateSave.isPending}
+              loading={isSaving}
               disabled={!hasChanges}
               style={{ flex: 1 }}
             >
@@ -716,16 +721,21 @@ export default function SaveDetailScreen() {
   const { openUrl } = useOpenUrl();
   const { width } = useWindowDimensions();
 
-  const { data: save, isLoading, isError, refetch: refetchSave } = useGetSave(id);
-  const {
-    data: snapshotData,
-    isLoading: isLoadingSnapshot,
-    refetch: refetchSnapshot,
-  } = useGetSaveSnapshot(id);
-  const toggleFavorite = useToggleFavorite();
-  const toggleArchive = useToggleArchive();
-  const deleteSave = useDeleteSave();
-  const requestSnapshot = useRequestSaveSnapshot();
+  // Convex hooks return data directly (undefined while loading)
+  const saveData = useGetSave(id as any);
+  const save = saveData as Save | null | undefined;
+  const isLoading = save === undefined;
+  const isError = save === null;
+  const refetchSave = async () => {}; // Convex auto-refetches
+
+  const snapshotRaw = useGetSaveSnapshot(id as any, true);
+  const snapshotData = snapshotRaw;
+  const isLoadingSnapshot = snapshotRaw === undefined;
+  const refetchSnapshot = async () => {}; // Convex auto-refetches
+  const toggleFavoriteMutation = useToggleFavorite();
+  const toggleArchiveMutation = useToggleArchive();
+  const deleteSaveMutation = useDeleteSave();
+  const requestSnapshotMutation = useRequestSaveSnapshot();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -749,11 +759,10 @@ export default function SaveDetailScreen() {
   const handleToggleFavorite = useCallback(async () => {
     if (!save) return;
     Haptics.selectionAsync();
-    await toggleFavorite.mutateAsync({
-      saveId: save.id,
-      value: !save.isFavorite,
+    await toggleFavoriteMutation({
+      saveId: save.id as any,
     });
-  }, [save, toggleFavorite]);
+  }, [save, toggleFavoriteMutation]);
 
   const [isArchiving, setIsArchiving] = useState(false);
 
@@ -767,26 +776,25 @@ export default function SaveDetailScreen() {
 
     Alert.alert(`${action} Save`, message, [
       { text: "Cancel", style: "cancel" },
-      {
-        text: action,
-        onPress: async () => {
-          setIsArchiving(true);
-          try {
-            await toggleArchive.mutateAsync({
-              saveId: save.id,
-              value: !save.isArchived,
-            });
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          } catch {
-            Alert.alert("Error", `Failed to ${action.toLowerCase()} save`);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          } finally {
-            setIsArchiving(false);
-          }
-        },
-      },
+          {
+            text: action,
+            onPress: async () => {
+              setIsArchiving(true);
+              try {
+                await toggleArchiveMutation({
+                  saveId: save.id as any,
+                });
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch {
+                Alert.alert("Error", `Failed to ${action.toLowerCase()} save`);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsArchiving(false);
+              }
+            },
+          },
     ]);
-  }, [save, toggleArchive]);
+  }, [save, toggleArchiveMutation]);
 
   const handleOpenUrl = useCallback(() => {
     if (!save) return;
@@ -813,26 +821,26 @@ export default function SaveDetailScreen() {
       "Are you sure you want to delete this save? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              await deleteSave.mutateAsync(save.id);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.back();
-            } catch {
-              Alert.alert("Error", "Failed to delete save");
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            } finally {
-              setIsDeleting(false);
-            }
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              setIsDeleting(true);
+              try {
+                await deleteSaveMutation({ saveId: save.id as any });
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                router.back();
+              } catch {
+                Alert.alert("Error", "Failed to delete save");
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsDeleting(false);
+              }
+            },
           },
-        },
       ]
     );
-  }, [save, deleteSave, router]);
+  }, [save, deleteSaveMutation, router]);
 
   const handleRefresh = useCallback(() => {
     if (!save) return;
@@ -842,27 +850,26 @@ export default function SaveDetailScreen() {
       "This will re-fetch the title, description, thumbnail, and reader mode content from the source URL.",
       [
         { text: "Cancel", style: "cancel" },
-        {
-          text: "Refresh",
-          onPress: async () => {
-            setIsRefreshing(true);
-            try {
-              // Request a new snapshot which also re-enriches metadata
-              await requestSnapshot({ saveId: save.id as any, force: true });
-              // Refetch the save and snapshot data
-              await Promise.all([refetchSave(), refetchSnapshot()]);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            } catch {
-              Alert.alert("Error", "Failed to refresh save");
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            } finally {
-              setIsRefreshing(false);
-            }
+          {
+            text: "Refresh",
+            onPress: async () => {
+              setIsRefreshing(true);
+              try {
+                // Request a new snapshot which also re-enriches metadata
+                await requestSnapshotMutation({ saveId: save.id as any, force: true });
+                // Convex auto-refetches, but wait a moment for reactivity
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } catch {
+                Alert.alert("Error", "Failed to refresh save");
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              } finally {
+                setIsRefreshing(false);
+              }
+            },
           },
-        },
       ]
     );
-  }, [save, requestSnapshot, refetchSave, refetchSnapshot]);
+  }, [save, requestSnapshotMutation]);
 
   if (isLoading) {
     return (

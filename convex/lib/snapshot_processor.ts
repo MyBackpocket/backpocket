@@ -11,6 +11,7 @@ import { parseHTML } from "linkedom";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
 import { getDomainExtractor } from "./domain_extractors";
+import { createWideEvent, extractDomain, generateTraceId } from "./logger";
 
 // Constants
 const MAX_CONTENT_SIZE = 5 * 1024 * 1024; // 5MB max content
@@ -59,8 +60,19 @@ export const processSnapshotNode = internalAction({
   args: {
     saveId: v.id("saves"),
     url: v.string(),
+    traceId: v.optional(v.string()), // For correlating with saves.create
   },
   handler: async (ctx, args) => {
+    // Use provided traceId or generate one (for manual snapshot requests)
+    const traceId = args.traceId ?? generateTraceId();
+    const urlDomain = extractDomain(args.url);
+
+    // Create wide event for observability
+    const event = createWideEvent("snapshots.processSnapshot", "action", {
+      traceId,
+      // spaceId will be set after we fetch the snapshot record if needed
+    });
+
     // Mark as processing
     await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
       saveId: args.saveId,
@@ -79,6 +91,11 @@ export const processSnapshotNode = internalAction({
           blockedReason: "invalid_url",
           errorMessage: "Invalid URL format",
         });
+        event.error(new Error("Invalid URL format"), {
+          url_domain: urlDomain,
+          blocked_reason: "invalid_url",
+          save_id: args.saveId,
+        });
         return;
       }
 
@@ -89,6 +106,11 @@ export const processSnapshotNode = internalAction({
           status: "blocked",
           blockedReason: "ssrf_blocked",
           errorMessage: "Private IP addresses are not allowed",
+        });
+        event.error(new Error("SSRF blocked"), {
+          url_domain: urlDomain,
+          blocked_reason: "ssrf_blocked",
+          save_id: args.saveId,
         });
         return;
       }
@@ -136,6 +158,13 @@ export const processSnapshotNode = internalAction({
               siteName: domainResult.siteName,
             });
 
+            event.success({
+              url_domain: urlDomain,
+              save_id: args.saveId,
+              extractor: "domain_specific",
+              word_count: wordCount,
+              had_readability_content: true,
+            });
             return;
           }
           // Domain extractor returned null, fall through to standard flow
@@ -167,23 +196,36 @@ export const processSnapshotNode = internalAction({
         clearTimeout(timeoutId);
         const message = error instanceof Error ? error.message : "Fetch failed";
         const isTimeout = message.includes("abort");
+        const blockedReason = isTimeout ? "timeout" : "fetch_error";
         await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
           saveId: args.saveId,
           status: "blocked",
-          blockedReason: isTimeout ? "timeout" : "fetch_error",
+          blockedReason,
           errorMessage: message,
+        });
+        event.error(error instanceof Error ? error : new Error(message), {
+          url_domain: urlDomain,
+          blocked_reason: blockedReason,
+          save_id: args.saveId,
         });
         return;
       }
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        const blockedReason =
+          response.status === 403 || response.status === 401 ? "forbidden" : "fetch_error";
         await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
           saveId: args.saveId,
           status: "blocked",
-          blockedReason:
-            response.status === 403 || response.status === 401 ? "forbidden" : "fetch_error",
+          blockedReason,
           errorMessage: `HTTP ${response.status}: ${response.statusText}`,
+        });
+        event.error(new Error(`HTTP ${response.status}`), {
+          url_domain: urlDomain,
+          blocked_reason: blockedReason,
+          http_status: response.status,
+          save_id: args.saveId,
         });
         return;
       }
@@ -196,6 +238,12 @@ export const processSnapshotNode = internalAction({
           status: "blocked",
           blockedReason: "not_html",
           errorMessage: `Content type is ${contentType}`,
+        });
+        event.error(new Error("Not HTML content"), {
+          url_domain: urlDomain,
+          blocked_reason: "not_html",
+          content_type: contentType,
+          save_id: args.saveId,
         });
         return;
       }
@@ -210,6 +258,12 @@ export const processSnapshotNode = internalAction({
           status: "blocked",
           blockedReason: "too_large",
           errorMessage: `Content size ${html.length} exceeds limit`,
+        });
+        event.error(new Error("Content too large"), {
+          url_domain: urlDomain,
+          blocked_reason: "too_large",
+          content_size: html.length,
+          save_id: args.saveId,
         });
         return;
       }
@@ -234,6 +288,11 @@ export const processSnapshotNode = internalAction({
             blockedReason: "noarchive",
             errorMessage: "Page has noarchive meta tag",
           });
+          event.error(new Error("Page has noarchive meta tag"), {
+            url_domain: urlDomain,
+            blocked_reason: "noarchive",
+            save_id: args.saveId,
+          });
           return;
         }
       }
@@ -252,6 +311,11 @@ export const processSnapshotNode = internalAction({
           status: "blocked",
           blockedReason: "parse_failed",
           errorMessage: "Readability could not extract content",
+        });
+        event.error(new Error("Readability parse failed"), {
+          url_domain: urlDomain,
+          blocked_reason: "parse_failed",
+          save_id: args.saveId,
         });
         return;
       }
@@ -353,12 +417,29 @@ export const processSnapshotNode = internalAction({
         ...(siteName && { siteName }),
         ...(imageUrl && { imageUrl }),
       });
+
+      // Log success with processing metrics
+      event.success({
+        url_domain: urlDomain,
+        save_id: args.saveId,
+        extractor: "readability",
+        content_type: contentType,
+        word_count: wordCount,
+        had_readability_content: true,
+        has_title: !!article.title,
+        has_image: !!imageUrl,
+        language: language ?? undefined,
+      });
     } catch (error) {
       console.error("[snapshots] Processing error:", error);
       await ctx.runMutation(internal.snapshots.updateSnapshotStatus, {
         saveId: args.saveId,
         status: "failed",
         errorMessage: error instanceof Error ? error.message : "Unknown error",
+      });
+      event.error(error instanceof Error ? error : new Error("Unknown error"), {
+        url_domain: urlDomain,
+        save_id: args.saveId,
       });
     }
   },

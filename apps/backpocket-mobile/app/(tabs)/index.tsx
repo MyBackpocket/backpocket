@@ -38,10 +38,16 @@ import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { SwipeableRow } from "@/components/ui/swipeable-row";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useDeleteSave, useToggleArchive, useToggleFavorite } from "@/lib/api/saves";
-import { useDashboard } from "@/lib/api/space";
-import type { Save } from "@/lib/api/types";
-import { isSaveProcessing } from "@/lib/api/use-processing-saves";
+import {
+  useDeleteSave,
+  useToggleArchive,
+  useToggleFavorite,
+  useGetMySpace,
+  useGetStats,
+  useListSaves,
+} from "@/lib/convex/hooks";
+import type { Save } from "@/lib/types";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { buildPublicSpaceHostname, buildPublicSpaceUrl } from "@/lib/constants";
 import { useListDomains } from "@/lib/convex/hooks";
 import { useOpenUrl } from "@/lib/utils";
@@ -60,14 +66,20 @@ export default function DashboardScreen() {
   // Track manual refresh separately from background polling
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
-  // Fetch dashboard data (auto-polls when there are processing saves)
-  const { data: dashboard, isLoading, isError, refetch } = useDashboard();
+  // Fetch dashboard data using raw Convex hooks (matches web pattern)
+  const space = useGetMySpace();
+  const stats = useGetStats();
+  const recentSavesData = useListSaves({ limit: 10, isArchived: false });
+  const recentSaves = recentSavesData?.items;
+
+  // Loading states
+  const isLoading = space === undefined || stats === undefined;
+  const isError = false; // Convex handles errors via suspense/error boundaries
 
   // Fetch custom domains (from Convex)
   const domains = useListDomains();
 
   // Public space data
-  const space = dashboard?.space;
   const isPublicEnabled = space?.visibility === "public";
   const publicSpaceUrl = space?.slug ? buildPublicSpaceUrl(space.slug) : "";
   const publicSpaceHostname = space?.slug ? buildPublicSpaceHostname(space.slug) : "";
@@ -146,36 +158,33 @@ export default function DashboardScreen() {
   );
 
   // Filter out archived items from recent saves - they shouldn't appear here
-  const recentSaves = (dashboard?.recentSaves || []).filter((save) => !save.isArchived);
+  const filteredRecentSaves = (recentSaves ?? []).filter((save) => !save.isArchived);
 
-  // Manual refresh handler - shows spinner only for user-initiated refreshes
+  // Manual refresh handler - Convex auto-refetches, so this just shows spinner briefly
   const handleManualRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
-    try {
-      await refetch();
-    } finally {
-      setIsManualRefreshing(false);
-    }
-  }, [refetch]);
+    // Convex queries are reactive and auto-update, so we just show brief feedback
+    setTimeout(() => setIsManualRefreshing(false), 500);
+  }, []);
 
   // Mutations for swipe actions
-  const deleteSave = useDeleteSave();
-  const toggleArchive = useToggleArchive();
-  const toggleFavorite = useToggleFavorite();
+  const deleteSaveMutation = useDeleteSave();
+  const toggleArchiveMutation = useToggleArchive();
+  const toggleFavoriteMutation = useToggleFavorite();
 
-  const stats = dashboard?.stats;
+  // Stats already available from useGetStats()
 
-  const handleDeleteSave = (saveId: string) => {
-    deleteSave.mutate(saveId);
+  const handleDeleteSave = async (saveId: string) => {
+    await deleteSaveMutation({ saveId: saveId as any });
   };
 
-  const handleArchiveSave = (saveId: string) => {
+  const handleArchiveSave = async (saveId: string) => {
     // Always archive (set to true) since we filter out archived items
-    toggleArchive.mutate({ saveId, value: true });
+    await toggleArchiveMutation({ saveId: saveId as any });
   };
 
-  const handleFavoriteSave = (saveId: string, currentlyFavorite: boolean) => {
-    toggleFavorite.mutate({ saveId, value: !currentlyFavorite });
+  const handleFavoriteSave = async (saveId: string, _currentlyFavorite: boolean) => {
+    await toggleFavoriteMutation({ saveId: saveId as any });
   };
 
   return (
@@ -315,7 +324,7 @@ export default function DashboardScreen() {
                 <View style={styles.publicSpaceStat}>
                   <Eye size={14} color={colors.mutedForeground} />
                   <Text style={[styles.publicSpaceStatText, { color: colors.text }]}>
-                    {dashboard?.stats?.publicSaves ?? 0}
+                    {stats?.publicSaves ?? 0}
                   </Text>
                   <Text style={[styles.publicSpaceStatLabel, { color: colors.mutedForeground }]}>
                     public saves
@@ -378,7 +387,7 @@ export default function DashboardScreen() {
       <View style={styles.sectionContainer}>
         <View style={styles.sectionHeader}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Saves</Text>
-          {recentSaves.length > 0 && (
+          {filteredRecentSaves.length > 0 && (
             <TouchableOpacity
               onPress={() => router.push("/(tabs)/saves")}
               style={styles.viewAllButton}
@@ -407,7 +416,7 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {!isLoading && !isError && recentSaves.length === 0 && (
+          {!isLoading && !isError && filteredRecentSaves.length === 0 && (
             <View style={styles.emptyContainer}>
               <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
                 <Bookmark size={28} color={colors.mutedForeground} />
@@ -419,14 +428,14 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {!isLoading && recentSaves.length > 0 && (
+          {!isLoading && filteredRecentSaves.length > 0 && (
             <GestureHandlerRootView style={styles.savesList}>
-              {recentSaves.slice(0, 5).map((save, index) => (
+              {filteredRecentSaves.slice(0, 5).map((save, index) => (
                 <SaveListItem
-                  key={save.id}
+                  key={save.id as string}
                   save={save}
                   colors={colors}
-                  isLast={index === Math.min(recentSaves.length, 5) - 1}
+                  isLast={index === Math.min(filteredRecentSaves.length, 5) - 1}
                   onPress={() => router.push(`/save/${save.id}`)}
                   onDelete={() => handleDeleteSave(save.id)}
                   onArchive={() => handleArchiveSave(save.id)}

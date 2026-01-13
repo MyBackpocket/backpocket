@@ -9,8 +9,9 @@ import {
   query,
 } from "./_generated/server";
 import { getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
+import { type ClientSource, createWideEvent, extractDomain } from "./lib/logger";
 import { normalizeUrl } from "./lib/validators";
-import { visibilityValidator } from "./schema";
+import { clientSourceValidator, visibilityValidator } from "./schema";
 
 // Helper function to get a formatted save (can be called from queries or mutations)
 async function getSaveById(
@@ -347,6 +348,8 @@ export const create = mutation({
     collectionIds: v.optional(v.array(v.id("collections"))),
     tagNames: v.optional(v.array(v.string())),
     note: v.optional(v.string()),
+    // Observability: track which client app made the request
+    clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
@@ -355,154 +358,186 @@ export const create = mutation({
       throw new ConvexError("Failed to create space");
     }
 
-    // Normalize URL for duplicate detection
-    const normalizedUrl = normalizeUrl(args.url);
-
-    // Check for existing duplicate
-    if (normalizedUrl) {
-      const existing = await ctx.db
-        .query("saves")
-        .withIndex("by_spaceId_normalizedUrl", (q) =>
-          q.eq("spaceId", space._id).eq("normalizedUrl", normalizedUrl)
-        )
-        .first();
-
-      if (existing) {
-        throw new ConvexError({
-          code: "CONFLICT",
-          message: "You already have this link saved",
-          existingSave: {
-            id: existing._id,
-            url: existing.url,
-            title: existing.title,
-            imageUrl: existing.imageUrl,
-            siteName: existing.siteName,
-            savedAt: existing.savedAt,
-          },
-        });
-      }
-    }
-
-    // Create the save
-    const saveId = await ctx.db.insert("saves", {
+    // Initialize wide event for observability (trace_id will be set to saveId after insert)
+    const event = createWideEvent("saves.create", "mutation", {
+      userId: user.userId,
       spaceId: space._id,
-      url: args.url,
-      normalizedUrl: normalizedUrl ?? undefined,
-      title: args.title,
-      description: args.note,
-      visibility: args.visibility ?? space.defaultSaveVisibility,
-      isArchived: false,
-      isFavorite: false,
-      createdBy: user.userId,
-      savedAt: Date.now(),
+      clientSource: args.clientSource as ClientSource | undefined,
     });
 
-    // Handle tags
-    const tagDocs: Array<{ _id: string; name: string }> = [];
-    if (args.tagNames && args.tagNames.length > 0) {
-      const normalizedNames = [...new Set(args.tagNames.map((n) => n.toLowerCase().trim()))];
+    try {
+      // Normalize URL for duplicate detection
+      const normalizedUrl = normalizeUrl(args.url);
+      const urlDomain = extractDomain(args.url);
 
-      for (const name of normalizedNames) {
-        // Find or create tag
-        let tag = await ctx.db
-          .query("tags")
-          .withIndex("by_spaceId_name", (q) => q.eq("spaceId", space._id).eq("name", name))
+      // Check for existing duplicate
+      if (normalizedUrl) {
+        const existing = await ctx.db
+          .query("saves")
+          .withIndex("by_spaceId_normalizedUrl", (q) =>
+            q.eq("spaceId", space._id).eq("normalizedUrl", normalizedUrl)
+          )
           .first();
 
-        if (!tag) {
-          const tagId = await ctx.db.insert("tags", {
-            spaceId: space._id,
-            name,
+        if (existing) {
+          event.error(new ConvexError({ code: "CONFLICT", message: "Duplicate URL" }), {
+            url_domain: urlDomain,
+            existing_save_id: existing._id,
           });
-          tag = await ctx.db.get(tagId);
-        }
-
-        if (tag) {
-          await ctx.db.insert("saveTags", { saveId, tagId: tag._id });
-          tagDocs.push({ _id: tag._id, name: tag.name });
+          throw new ConvexError({
+            code: "CONFLICT",
+            message: "You already have this link saved",
+            existingSave: {
+              id: existing._id,
+              url: existing.url,
+              title: existing.title,
+              imageUrl: existing.imageUrl,
+              siteName: existing.siteName,
+              savedAt: existing.savedAt,
+            },
+          });
         }
       }
-    }
 
-    // Handle collections
-    const collectionDocs: Array<{ _id: string; name: string; visibility: string }> = [];
-    if (args.collectionIds && args.collectionIds.length > 0) {
-      for (const collectionId of args.collectionIds) {
-        const collection = await ctx.db.get(collectionId);
-        if (collection && collection.spaceId === space._id) {
-          await ctx.db.insert("saveCollections", { saveId, collectionId });
-          collectionDocs.push({
-            _id: collection._id,
-            name: collection.name,
-            visibility: collection.visibility,
-          });
+      // Create the save
+      const saveId = await ctx.db.insert("saves", {
+        spaceId: space._id,
+        url: args.url,
+        normalizedUrl: normalizedUrl ?? undefined,
+        title: args.title,
+        description: args.note,
+        visibility: args.visibility ?? space.defaultSaveVisibility,
+        isArchived: false,
+        isFavorite: false,
+        createdBy: user.userId,
+        savedAt: Date.now(),
+      });
 
-          // Apply default tags from collection
-          const defaultTags = await ctx.db
-            .query("collectionDefaultTags")
-            .withIndex("by_collectionId", (q) => q.eq("collectionId", collectionId))
-            .collect();
+      // Handle tags
+      const tagDocs: Array<{ _id: string; name: string }> = [];
+      if (args.tagNames && args.tagNames.length > 0) {
+        const normalizedNames = [...new Set(args.tagNames.map((n) => n.toLowerCase().trim()))];
 
-          for (const dt of defaultTags) {
-            // Check if tag already linked
-            const existing = await ctx.db
-              .query("saveTags")
-              .withIndex("by_saveId_tagId", (q) => q.eq("saveId", saveId).eq("tagId", dt.tagId))
-              .first();
+        for (const name of normalizedNames) {
+          // Find or create tag
+          let tag = await ctx.db
+            .query("tags")
+            .withIndex("by_spaceId_name", (q) => q.eq("spaceId", space._id).eq("name", name))
+            .first();
 
-            if (!existing) {
-              await ctx.db.insert("saveTags", { saveId, tagId: dt.tagId });
-              const tag = await ctx.db.get(dt.tagId);
-              if (tag && !tagDocs.find((t) => t._id === tag._id)) {
-                tagDocs.push({ _id: tag._id, name: tag.name });
+          if (!tag) {
+            const tagId = await ctx.db.insert("tags", {
+              spaceId: space._id,
+              name,
+            });
+            tag = await ctx.db.get(tagId);
+          }
+
+          if (tag) {
+            await ctx.db.insert("saveTags", { saveId, tagId: tag._id });
+            tagDocs.push({ _id: tag._id, name: tag.name });
+          }
+        }
+      }
+
+      // Handle collections
+      const collectionDocs: Array<{ _id: string; name: string; visibility: string }> = [];
+      if (args.collectionIds && args.collectionIds.length > 0) {
+        for (const collectionId of args.collectionIds) {
+          const collection = await ctx.db.get(collectionId);
+          if (collection && collection.spaceId === space._id) {
+            await ctx.db.insert("saveCollections", { saveId, collectionId });
+            collectionDocs.push({
+              _id: collection._id,
+              name: collection.name,
+              visibility: collection.visibility,
+            });
+
+            // Apply default tags from collection
+            const defaultTags = await ctx.db
+              .query("collectionDefaultTags")
+              .withIndex("by_collectionId", (q) => q.eq("collectionId", collectionId))
+              .collect();
+
+            for (const dt of defaultTags) {
+              // Check if tag already linked
+              const existing = await ctx.db
+                .query("saveTags")
+                .withIndex("by_saveId_tagId", (q) => q.eq("saveId", saveId).eq("tagId", dt.tagId))
+                .first();
+
+              if (!existing) {
+                await ctx.db.insert("saveTags", { saveId, tagId: dt.tagId });
+                const tag = await ctx.db.get(dt.tagId);
+                if (tag && !tagDocs.find((t) => t._id === tag._id)) {
+                  tagDocs.push({ _id: tag._id, name: tag.name });
+                }
               }
             }
           }
         }
       }
+
+      const save = await ctx.db.get(saveId);
+
+      // Trigger snapshot processing for the new save
+      // Pass saveId as traceId for correlation
+      await ctx.scheduler.runAfter(0, internal.snapshots.createSnapshotRecord, {
+        saveId,
+        spaceId: space._id,
+        url: args.url,
+        traceId: saveId, // Use saveId as trace_id for correlation
+      });
+
+      // Log success with business context
+      event.success({
+        url_domain: urlDomain,
+        visibility: args.visibility ?? space.defaultSaveVisibility,
+        collection_count: collectionDocs.length,
+        tag_count: tagDocs.length,
+        triggered_snapshot: true,
+        save_id: saveId,
+      });
+
+      return {
+        id: saveId,
+        spaceId: space._id,
+        url: args.url,
+        title: args.title ?? null,
+        description: args.note ?? null,
+        siteName: null,
+        imageUrl: null,
+        contentType: null,
+        visibility: args.visibility ?? space.defaultSaveVisibility,
+        isArchived: false,
+        isFavorite: false,
+        createdBy: user.userId,
+        savedAt: save!.savedAt,
+        createdAt: save!._creationTime,
+        updatedAt: save!._creationTime,
+        tags: tagDocs.map((t) => ({
+          id: t._id,
+          spaceId: space._id,
+          name: t.name,
+          createdAt: save!._creationTime,
+          updatedAt: save!._creationTime,
+        })),
+        collections: collectionDocs.map((c) => ({
+          id: c._id,
+          spaceId: space._id,
+          name: c.name,
+          visibility: c.visibility,
+          createdAt: save!._creationTime,
+          updatedAt: save!._creationTime,
+        })),
+      };
+    } catch (err) {
+      // Only log if not already logged (duplicate check logs its own error)
+      if (!(err instanceof ConvexError && (err.data as { code?: string })?.code === "CONFLICT")) {
+        event.error(err, { url_domain: extractDomain(args.url) });
+      }
+      throw err;
     }
-
-    const save = await ctx.db.get(saveId);
-
-    // Trigger snapshot processing for the new save
-    await ctx.scheduler.runAfter(0, internal.snapshots.createSnapshotRecord, {
-      saveId,
-      spaceId: space._id,
-      url: args.url,
-    });
-
-    return {
-      id: saveId,
-      spaceId: space._id,
-      url: args.url,
-      title: args.title ?? null,
-      description: args.note ?? null,
-      siteName: null,
-      imageUrl: null,
-      contentType: null,
-      visibility: args.visibility ?? space.defaultSaveVisibility,
-      isArchived: false,
-      isFavorite: false,
-      createdBy: user.userId,
-      savedAt: save!.savedAt,
-      createdAt: save!._creationTime,
-      updatedAt: save!._creationTime,
-      tags: tagDocs.map((t) => ({
-        id: t._id,
-        spaceId: space._id,
-        name: t.name,
-        createdAt: save!._creationTime,
-        updatedAt: save!._creationTime,
-      })),
-      collections: collectionDocs.map((c) => ({
-        id: c._id,
-        spaceId: space._id,
-        name: c.name,
-        visibility: c.visibility,
-        createdAt: save!._creationTime,
-        updatedAt: save!._creationTime,
-      })),
-    };
   },
 });
 
@@ -517,6 +552,7 @@ export const update = mutation({
     visibility: v.optional(visibilityValidator),
     collectionIds: v.optional(v.array(v.id("collections"))),
     tagNames: v.optional(v.array(v.string())),
+    clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
@@ -525,78 +561,119 @@ export const update = mutation({
       throw new ConvexError("Space not found");
     }
 
-    const save = await ctx.db.get(args.id);
-    if (!save || save.spaceId !== space._id) {
-      throw new ConvexError("Save not found");
-    }
+    const event = createWideEvent("saves.update", "mutation", {
+      userId: user.userId,
+      spaceId: space._id,
+      clientSource: args.clientSource as ClientSource | undefined,
+    });
 
-    // Update basic fields
-    const updates: Partial<typeof save> = {};
-    if (args.title !== undefined) updates.title = args.title;
-    if (args.description !== undefined) updates.description = args.description;
-    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
-    if (args.siteName !== undefined) updates.siteName = args.siteName;
-    if (args.visibility !== undefined) updates.visibility = args.visibility;
-
-    if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(args.id, updates);
-    }
-
-    // Update tags if provided
-    if (args.tagNames !== undefined) {
-      // Remove existing tags
-      const existingTags = await ctx.db
-        .query("saveTags")
-        .withIndex("by_saveId", (q) => q.eq("saveId", args.id))
-        .collect();
-      for (const st of existingTags) {
-        await ctx.db.delete(st._id);
+    try {
+      const save = await ctx.db.get(args.id);
+      if (!save || save.spaceId !== space._id) {
+        event.error(new ConvexError("Save not found"), { save_id: args.id });
+        throw new ConvexError("Save not found");
       }
 
-      // Add new tags
-      if (args.tagNames.length > 0) {
-        const normalizedNames = [...new Set(args.tagNames.map((n) => n.toLowerCase().trim()))];
+      // Track which fields are being updated
+      const fieldsUpdated: string[] = [];
 
-        for (const name of normalizedNames) {
-          let tag = await ctx.db
-            .query("tags")
-            .withIndex("by_spaceId_name", (q) => q.eq("spaceId", space._id).eq("name", name))
-            .first();
+      // Update basic fields
+      const updates: Partial<typeof save> = {};
+      if (args.title !== undefined) {
+        updates.title = args.title;
+        fieldsUpdated.push("title");
+      }
+      if (args.description !== undefined) {
+        updates.description = args.description;
+        fieldsUpdated.push("description");
+      }
+      if (args.imageUrl !== undefined) {
+        updates.imageUrl = args.imageUrl;
+        fieldsUpdated.push("imageUrl");
+      }
+      if (args.siteName !== undefined) {
+        updates.siteName = args.siteName;
+        fieldsUpdated.push("siteName");
+      }
+      if (args.visibility !== undefined) {
+        updates.visibility = args.visibility;
+        fieldsUpdated.push("visibility");
+      }
 
-          if (!tag) {
-            const tagId = await ctx.db.insert("tags", { spaceId: space._id, name });
-            tag = await ctx.db.get(tagId);
-          }
+      if (Object.keys(updates).length > 0) {
+        await ctx.db.patch(args.id, updates);
+      }
 
-          if (tag) {
-            await ctx.db.insert("saveTags", { saveId: args.id, tagId: tag._id });
+      // Update tags if provided
+      if (args.tagNames !== undefined) {
+        fieldsUpdated.push("tags");
+        // Remove existing tags
+        const existingTags = await ctx.db
+          .query("saveTags")
+          .withIndex("by_saveId", (q) => q.eq("saveId", args.id))
+          .collect();
+        for (const st of existingTags) {
+          await ctx.db.delete(st._id);
+        }
+
+        // Add new tags
+        if (args.tagNames.length > 0) {
+          const normalizedNames = [...new Set(args.tagNames.map((n) => n.toLowerCase().trim()))];
+
+          for (const name of normalizedNames) {
+            let tag = await ctx.db
+              .query("tags")
+              .withIndex("by_spaceId_name", (q) => q.eq("spaceId", space._id).eq("name", name))
+              .first();
+
+            if (!tag) {
+              const tagId = await ctx.db.insert("tags", { spaceId: space._id, name });
+              tag = await ctx.db.get(tagId);
+            }
+
+            if (tag) {
+              await ctx.db.insert("saveTags", { saveId: args.id, tagId: tag._id });
+            }
           }
         }
       }
-    }
 
-    // Update collections if provided
-    if (args.collectionIds !== undefined) {
-      // Remove existing collections
-      const existingCollections = await ctx.db
-        .query("saveCollections")
-        .withIndex("by_saveId", (q) => q.eq("saveId", args.id))
-        .collect();
-      for (const sc of existingCollections) {
-        await ctx.db.delete(sc._id);
-      }
+      // Update collections if provided
+      if (args.collectionIds !== undefined) {
+        fieldsUpdated.push("collections");
+        // Remove existing collections
+        const existingCollections = await ctx.db
+          .query("saveCollections")
+          .withIndex("by_saveId", (q) => q.eq("saveId", args.id))
+          .collect();
+        for (const sc of existingCollections) {
+          await ctx.db.delete(sc._id);
+        }
 
-      // Add new collections
-      for (const collectionId of args.collectionIds) {
-        const collection = await ctx.db.get(collectionId);
-        if (collection && collection.spaceId === space._id) {
-          await ctx.db.insert("saveCollections", { saveId: args.id, collectionId });
+        // Add new collections
+        for (const collectionId of args.collectionIds) {
+          const collection = await ctx.db.get(collectionId);
+          if (collection && collection.spaceId === space._id) {
+            await ctx.db.insert("saveCollections", { saveId: args.id, collectionId });
+          }
         }
       }
-    }
 
-    // Return updated save
-    return await getSaveById(ctx, space._id, args.id);
+      event.success({
+        save_id: args.id,
+        url_domain: extractDomain(save.url),
+        fields_updated: fieldsUpdated,
+        field_count: fieldsUpdated.length,
+      });
+
+      // Return updated save
+      return await getSaveById(ctx, space._id, args.id);
+    } catch (err) {
+      if (!(err instanceof ConvexError && err.message === "Save not found")) {
+        event.error(err, { save_id: args.id });
+      }
+      throw err;
+    }
   },
 });
 
@@ -652,7 +729,10 @@ export const toggleArchive = mutation({
 
 // Delete a save
 export const remove = mutation({
-  args: { saveId: v.id("saves") },
+  args: {
+    saveId: v.id("saves"),
+    clientSource: v.optional(clientSourceValidator),
+  },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
     const space = await getUserSpace(ctx, user.userId);
@@ -660,49 +740,76 @@ export const remove = mutation({
       throw new ConvexError("Space not found");
     }
 
-    const save = await ctx.db.get(args.saveId);
-    if (!save || save.spaceId !== space._id) {
-      throw new ConvexError("Save not found");
-    }
+    const event = createWideEvent("saves.remove", "mutation", {
+      userId: user.userId,
+      spaceId: space._id,
+      clientSource: args.clientSource as ClientSource | undefined,
+    });
 
-    // Delete related junction entries
-    const [saveTags, saveCollections] = await Promise.all([
-      ctx.db
-        .query("saveTags")
+    try {
+      const save = await ctx.db.get(args.saveId);
+      if (!save || save.spaceId !== space._id) {
+        event.error(new ConvexError("Save not found"), { save_id: args.saveId });
+        throw new ConvexError("Save not found");
+      }
+
+      const urlDomain = extractDomain(save.url);
+
+      // Delete related junction entries
+      const [saveTags, saveCollections] = await Promise.all([
+        ctx.db
+          .query("saveTags")
+          .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
+          .collect(),
+        ctx.db
+          .query("saveCollections")
+          .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
+          .collect(),
+      ]);
+
+      for (const st of saveTags) {
+        await ctx.db.delete(st._id);
+      }
+      for (const sc of saveCollections) {
+        await ctx.db.delete(sc._id);
+      }
+
+      // Delete snapshot if exists
+      const snapshot = await ctx.db
+        .query("saveSnapshots")
         .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
-        .collect(),
-      ctx.db
-        .query("saveCollections")
-        .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
-        .collect(),
-    ]);
+        .first();
+      if (snapshot) {
+        await ctx.db.delete(snapshot._id);
+      }
 
-    for (const st of saveTags) {
-      await ctx.db.delete(st._id);
+      // Delete the save
+      await ctx.db.delete(args.saveId);
+
+      event.success({
+        save_id: args.saveId,
+        url_domain: urlDomain,
+        had_snapshot: !!snapshot,
+        tag_count: saveTags.length,
+        collection_count: saveCollections.length,
+      });
+
+      return { success: true, id: args.saveId };
+    } catch (err) {
+      if (!(err instanceof ConvexError && err.message === "Save not found")) {
+        event.error(err, { save_id: args.saveId });
+      }
+      throw err;
     }
-    for (const sc of saveCollections) {
-      await ctx.db.delete(sc._id);
-    }
-
-    // Delete snapshot if exists
-    const snapshot = await ctx.db
-      .query("saveSnapshots")
-      .withIndex("by_saveId", (q) => q.eq("saveId", args.saveId))
-      .first();
-    if (snapshot) {
-      await ctx.db.delete(snapshot._id);
-    }
-
-    // Delete the save
-    await ctx.db.delete(args.saveId);
-
-    return { success: true, id: args.saveId };
   },
 });
 
 // Bulk delete saves
 export const bulkDelete = mutation({
-  args: { saveIds: v.array(v.id("saves")) },
+  args: {
+    saveIds: v.array(v.id("saves")),
+    clientSource: v.optional(clientSourceValidator),
+  },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
     const space = await getUserSpace(ctx, user.userId);
@@ -710,44 +817,64 @@ export const bulkDelete = mutation({
       throw new ConvexError("Space not found");
     }
 
-    let deletedCount = 0;
-    for (const saveId of args.saveIds) {
-      const save = await ctx.db.get(saveId);
-      if (save && save.spaceId === space._id) {
-        // Delete related junction entries
-        const [saveTags, saveCollections] = await Promise.all([
-          ctx.db
-            .query("saveTags")
+    const event = createWideEvent("saves.bulkDelete", "mutation", {
+      userId: user.userId,
+      spaceId: space._id,
+      clientSource: args.clientSource as ClientSource | undefined,
+    });
+
+    try {
+      let deletedCount = 0;
+      let snapshotsDeleted = 0;
+
+      for (const saveId of args.saveIds) {
+        const save = await ctx.db.get(saveId);
+        if (save && save.spaceId === space._id) {
+          // Delete related junction entries
+          const [saveTags, saveCollections] = await Promise.all([
+            ctx.db
+              .query("saveTags")
+              .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+              .collect(),
+            ctx.db
+              .query("saveCollections")
+              .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
+              .collect(),
+          ]);
+
+          for (const st of saveTags) {
+            await ctx.db.delete(st._id);
+          }
+          for (const sc of saveCollections) {
+            await ctx.db.delete(sc._id);
+          }
+
+          // Delete snapshot if exists
+          const snapshot = await ctx.db
+            .query("saveSnapshots")
             .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
-            .collect(),
-          ctx.db
-            .query("saveCollections")
-            .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
-            .collect(),
-        ]);
+            .first();
+          if (snapshot) {
+            await ctx.db.delete(snapshot._id);
+            snapshotsDeleted++;
+          }
 
-        for (const st of saveTags) {
-          await ctx.db.delete(st._id);
+          await ctx.db.delete(saveId);
+          deletedCount++;
         }
-        for (const sc of saveCollections) {
-          await ctx.db.delete(sc._id);
-        }
-
-        // Delete snapshot if exists
-        const snapshot = await ctx.db
-          .query("saveSnapshots")
-          .withIndex("by_saveId", (q) => q.eq("saveId", saveId))
-          .first();
-        if (snapshot) {
-          await ctx.db.delete(snapshot._id);
-        }
-
-        await ctx.db.delete(saveId);
-        deletedCount++;
       }
-    }
 
-    return { success: true, deletedCount };
+      event.success({
+        requested_count: args.saveIds.length,
+        deleted_count: deletedCount,
+        snapshots_deleted: snapshotsDeleted,
+      });
+
+      return { success: true, deletedCount };
+    } catch (err) {
+      event.error(err, { requested_count: args.saveIds.length });
+      throw err;
+    }
   },
 });
 

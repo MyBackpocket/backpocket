@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { api } from "./_generated/api";
 import { action, mutation, query } from "./_generated/server";
 import { getCurrentUser, getOrCreateUserSpace, getUserSpace, requireAuth } from "./lib/auth";
+import { type ClientSource, createWideEvent } from "./lib/logger";
 import { isValidSlug, RESERVED_SLUGS } from "./lib/validators";
 import {
   addDomainToVercel,
@@ -9,7 +10,12 @@ import {
   removeDomainFromVercel,
   verifyDomainOnVercel,
 } from "./lib/vercel";
-import { domainStatusValidator, publicLayoutValidator, visibilityValidator } from "./schema";
+import {
+  clientSourceValidator,
+  domainStatusValidator,
+  publicLayoutValidator,
+  visibilityValidator,
+} from "./schema";
 
 // Get the user's space
 export const getMySpace = query({
@@ -80,6 +86,7 @@ export const updateSettings = mutation({
     visibility: v.optional(visibilityValidator),
     publicLayout: v.optional(publicLayoutValidator),
     defaultSaveVisibility: v.optional(visibilityValidator),
+    clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
@@ -88,40 +95,75 @@ export const updateSettings = mutation({
       throw new ConvexError("Space not found");
     }
 
-    const updates: Partial<{
-      name: string;
-      bio: string;
-      avatarUrl: string;
-      visibility: "public" | "private";
-      publicLayout: "list" | "grid";
-      defaultSaveVisibility: "public" | "private";
-    }> = {};
+    const event = createWideEvent("spaces.updateSettings", "mutation", {
+      userId: user.userId,
+      spaceId: space._id,
+      clientSource: args.clientSource as ClientSource | undefined,
+    });
 
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.bio !== undefined) updates.bio = args.bio;
-    if (args.avatarUrl !== undefined) updates.avatarUrl = args.avatarUrl;
-    if (args.visibility !== undefined) updates.visibility = args.visibility;
-    if (args.publicLayout !== undefined) updates.publicLayout = args.publicLayout;
-    if (args.defaultSaveVisibility !== undefined)
-      updates.defaultSaveVisibility = args.defaultSaveVisibility;
+    try {
+      const fieldsUpdated: string[] = [];
 
-    await ctx.db.patch(space._id, updates);
+      const updates: Partial<{
+        name: string;
+        bio: string;
+        avatarUrl: string;
+        visibility: "public" | "private";
+        publicLayout: "list" | "grid";
+        defaultSaveVisibility: "public" | "private";
+      }> = {};
 
-    const updated = await ctx.db.get(space._id);
+      if (args.name !== undefined) {
+        updates.name = args.name;
+        fieldsUpdated.push("name");
+      }
+      if (args.bio !== undefined) {
+        updates.bio = args.bio;
+        fieldsUpdated.push("bio");
+      }
+      if (args.avatarUrl !== undefined) {
+        updates.avatarUrl = args.avatarUrl;
+        fieldsUpdated.push("avatarUrl");
+      }
+      if (args.visibility !== undefined) {
+        updates.visibility = args.visibility;
+        fieldsUpdated.push("visibility");
+      }
+      if (args.publicLayout !== undefined) {
+        updates.publicLayout = args.publicLayout;
+        fieldsUpdated.push("publicLayout");
+      }
+      if (args.defaultSaveVisibility !== undefined) {
+        updates.defaultSaveVisibility = args.defaultSaveVisibility;
+        fieldsUpdated.push("defaultSaveVisibility");
+      }
 
-    return {
-      id: updated!._id,
-      type: updated!.type,
-      slug: updated!.slug,
-      name: updated!.name,
-      bio: updated!.bio ?? null,
-      avatarUrl: updated!.avatarUrl ?? null,
-      visibility: updated!.visibility,
-      publicLayout: updated!.publicLayout,
-      defaultSaveVisibility: updated!.defaultSaveVisibility,
-      createdAt: updated!._creationTime,
-      updatedAt: Date.now(),
-    };
+      await ctx.db.patch(space._id, updates);
+
+      const updated = await ctx.db.get(space._id);
+
+      event.success({
+        fields_updated: fieldsUpdated,
+        field_count: fieldsUpdated.length,
+      });
+
+      return {
+        id: updated!._id,
+        type: updated!.type,
+        slug: updated!.slug,
+        name: updated!.name,
+        bio: updated!.bio ?? null,
+        avatarUrl: updated!.avatarUrl ?? null,
+        visibility: updated!.visibility,
+        publicLayout: updated!.publicLayout,
+        defaultSaveVisibility: updated!.defaultSaveVisibility,
+        createdAt: updated!._creationTime,
+        updatedAt: Date.now(),
+      };
+    } catch (err) {
+      event.error(err);
+      throw err;
+    }
   },
 });
 
@@ -129,6 +171,7 @@ export const updateSettings = mutation({
 export const updateSlug = mutation({
   args: {
     slug: v.string(),
+    clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
     const user = await requireAuth(ctx);
@@ -137,47 +180,79 @@ export const updateSlug = mutation({
       throw new ConvexError("Space not found");
     }
 
+    const event = createWideEvent("spaces.updateSlug", "mutation", {
+      userId: user.userId,
+      spaceId: space._id,
+      clientSource: args.clientSource as ClientSource | undefined,
+    });
+
     const slug = args.slug.toLowerCase();
+    const oldSlug = space.slug;
 
-    // Validate format
-    if (!isValidSlug(slug)) {
-      throw new ConvexError(
-        "Slug must be 3-32 characters, lowercase letters, numbers, and hyphens only. Cannot start or end with a hyphen."
-      );
+    try {
+      // Validate format
+      if (!isValidSlug(slug)) {
+        event.error(new ConvexError("Invalid slug format"), {
+          old_slug: oldSlug,
+          new_slug: slug,
+          reason: "invalid_format",
+        });
+        throw new ConvexError(
+          "Slug must be 3-32 characters, lowercase letters, numbers, and hyphens only. Cannot start or end with a hyphen."
+        );
+      }
+
+      // Check reserved slugs
+      if (RESERVED_SLUGS.includes(slug)) {
+        event.error(new ConvexError("Reserved slug"), {
+          old_slug: oldSlug,
+          new_slug: slug,
+          reason: "reserved",
+        });
+        throw new ConvexError("This subdomain is reserved and cannot be used");
+      }
+
+      // Check for existing slug
+      const existing = await ctx.db
+        .query("spaces")
+        .withIndex("by_slug", (q) => q.eq("slug", slug))
+        .first();
+
+      if (existing && existing._id !== space._id) {
+        event.error(new ConvexError("Slug taken"), {
+          old_slug: oldSlug,
+          new_slug: slug,
+          reason: "taken",
+        });
+        throw new ConvexError("This subdomain is already taken");
+      }
+
+      await ctx.db.patch(space._id, { slug });
+
+      const updated = await ctx.db.get(space._id);
+
+      event.success({
+        old_slug: oldSlug,
+        new_slug: slug,
+      });
+
+      return {
+        id: updated!._id,
+        type: updated!.type,
+        slug: updated!.slug,
+        name: updated!.name,
+        bio: updated!.bio ?? null,
+        avatarUrl: updated!.avatarUrl ?? null,
+        visibility: updated!.visibility,
+        publicLayout: updated!.publicLayout,
+        defaultSaveVisibility: updated!.defaultSaveVisibility,
+        createdAt: updated!._creationTime,
+        updatedAt: Date.now(),
+      };
+    } catch (err) {
+      // Don't double-log errors we've already logged
+      throw err;
     }
-
-    // Check reserved slugs
-    if (RESERVED_SLUGS.includes(slug)) {
-      throw new ConvexError("This subdomain is reserved and cannot be used");
-    }
-
-    // Check for existing slug
-    const existing = await ctx.db
-      .query("spaces")
-      .withIndex("by_slug", (q) => q.eq("slug", slug))
-      .first();
-
-    if (existing && existing._id !== space._id) {
-      throw new ConvexError("This subdomain is already taken");
-    }
-
-    await ctx.db.patch(space._id, { slug });
-
-    const updated = await ctx.db.get(space._id);
-
-    return {
-      id: updated!._id,
-      type: updated!.type,
-      slug: updated!.slug,
-      name: updated!.name,
-      bio: updated!.bio ?? null,
-      avatarUrl: updated!.avatarUrl ?? null,
-      visibility: updated!.visibility,
-      publicLayout: updated!.publicLayout,
-      defaultSaveVisibility: updated!.defaultSaveVisibility,
-      createdAt: updated!._creationTime,
-      updatedAt: Date.now(),
-    };
   },
 });
 

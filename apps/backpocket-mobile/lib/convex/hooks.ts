@@ -1,10 +1,15 @@
 /**
  * Convex hooks for React Native
+ *
+ * These are thin wrappers around Convex hooks that handle auth state.
+ * They return raw Convex data - components handle formatting at render time.
+ *
+ * Pattern matches the web app for consistency across the monorepo.
  */
 
 import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import type { Id } from "../../../../convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
 
 /**
  * Hook to check if the user is authenticated.
@@ -191,3 +196,4 @@ export function useRemoveDomain() {
 export function useVerifyDomain() {
   return useAction(api.spaces.verifyDomain);
 }
+

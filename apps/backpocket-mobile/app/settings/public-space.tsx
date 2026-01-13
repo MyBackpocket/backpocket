@@ -36,7 +36,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Card, CardContent } from "@/components/ui/card";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import type { DomainStatus, SaveVisibility, SlugAvailability } from "@/lib/api/types";
+import type { DomainStatus, SaveVisibility, SlugAvailability } from "@/lib/types";
 import { buildPublicSpaceUrl, ROOT_DOMAIN } from "@/lib/constants";
 import {
   type DomainId,
@@ -115,9 +115,13 @@ export default function PublicSpaceSettingsScreen() {
   // Convex hooks
   const space = useGetMySpace();
   const domains = useListDomains();
-  const updateSettings = useUpdateSettings();
-  const updateSlug = useUpdateSlug();
+  const updateSettingsMutation = useUpdateSettings();
+  const updateSlugMutation = useUpdateSlug();
   const removeDomainAction = useRemoveDomain();
+
+  // Local state for mutation pending status (Convex mutations don't expose isPending)
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [isUpdatingSlug, setIsUpdatingSlug] = useState(false);
 
   // Derive loading states from Convex (undefined = loading)
   const isLoadingSpace = space === undefined;
@@ -195,29 +199,35 @@ export default function PublicSpaceSettingsScreen() {
   const handleTogglePublic = useCallback(
     async (value: boolean) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setIsUpdatingSettings(true);
       try {
-        await updateSettings({
+        await updateSettingsMutation({
           visibility: value ? "public" : "private",
         });
       } catch (error) {
         console.error("Failed to update visibility:", error);
+      } finally {
+        setIsUpdatingSettings(false);
       }
     },
-    [updateSettings]
+    [updateSettingsMutation]
   );
 
   const handleSetDefaultSaveVisibility = useCallback(
     async (value: SaveVisibility) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setIsUpdatingSettings(true);
       try {
-        await updateSettings({
+        await updateSettingsMutation({
           defaultSaveVisibility: value,
         });
       } catch (error) {
         console.error("Failed to update default save visibility:", error);
+      } finally {
+        setIsUpdatingSettings(false);
       }
     },
-    [updateSettings]
+    [updateSettingsMutation]
   );
 
   const handleCopyUrl = useCallback(async () => {
@@ -258,14 +268,17 @@ export default function PublicSpaceSettingsScreen() {
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsUpdatingSlug(true);
     try {
-      await updateSlug({ slug: slugInput });
+      await updateSlugMutation({ slug: slugInput });
       setIsEditingSlug(false);
       setSlugAvailability(null);
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to update subdomain");
+    } finally {
+      setIsUpdatingSlug(false);
     }
-  }, [slugInput, slugAvailability, space?.slug, updateSlug]);
+  }, [slugInput, slugAvailability, space?.slug, updateSlugMutation]);
 
   const handleRemoveDomain = useCallback(
     (domain: { id: string; domain: string }) => {
@@ -301,7 +314,7 @@ export default function PublicSpaceSettingsScreen() {
   }, [openUrl]);
 
   const canSaveSlug =
-    slugAvailability?.available && slugInput !== space?.slug && !updateSlug.isPending;
+    slugAvailability?.available && slugInput !== space?.slug && !isUpdatingSlug;
 
   // Loading state
   if (isLoadingSpace) {
@@ -360,7 +373,7 @@ export default function PublicSpaceSettingsScreen() {
                   true: brandColors.mint,
                 }}
                 thumbColor="#FFFFFF"
-                disabled={updateSettings.isPending}
+                disabled={isUpdatingSettings}
               />
             </View>
           </CardContent>
@@ -409,7 +422,7 @@ export default function PublicSpaceSettingsScreen() {
                     ]}
                     onPress={() => handleSetDefaultSaveVisibility(v)}
                     activeOpacity={0.7}
-                    disabled={updateSettings.isPending}
+                    disabled={isUpdatingSettings}
                   >
                     {isPublicOption ? (
                       <Unlock
@@ -642,7 +655,7 @@ export default function PublicSpaceSettingsScreen() {
                         activeOpacity={0.7}
                         disabled={!canSaveSlug}
                       >
-                        {updateSlug.isPending ? (
+                        {isUpdatingSlug ? (
                           <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
                           <Text

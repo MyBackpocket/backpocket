@@ -1,5 +1,6 @@
 import { getDateFromSnowflakeId, parseTwitterUrl } from "@backpocket/utils";
 import { type NextRequest, NextResponse } from "next/server";
+import { createApiRouteEvent } from "@/lib/logger";
 
 const FETCH_TIMEOUT_MS = 8000; // 8 second timeout for preview
 
@@ -466,12 +467,18 @@ function extractSiteName(html: string): string | null {
 }
 
 export async function POST(request: NextRequest) {
+  const event = createApiRouteEvent("POST", "/api/unfurl");
+
   try {
     const { url } = await request.json();
 
     if (!url || typeof url !== "string") {
+      event.error(400, new Error("URL is required"));
       return NextResponse.json({ error: "URL is required" }, { status: 400 });
     }
+
+    // Set URL context for logging
+    event.setUrlContext(url);
 
     // Validate URL
     let parsedUrl: URL;
@@ -481,11 +488,13 @@ export async function POST(request: NextRequest) {
         throw new Error("Invalid protocol");
       }
     } catch {
+      event.error(400, new Error("Invalid URL format"));
       return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
     }
 
     // SSRF protection
     if (isBlockedHostname(parsedUrl.hostname)) {
+      event.error(400, new Error("Blocked hostname (SSRF protection)"));
       return NextResponse.json({ error: "Blocked URL" }, { status: 400 });
     }
 
@@ -493,6 +502,7 @@ export async function POST(request: NextRequest) {
     if (isTwitterUrl(url)) {
       const twitterResult = await unfurlTwitterUrl(url);
       if (twitterResult) {
+        event.success(200, { extractor: "twitter_oembed" });
         return NextResponse.json(twitterResult);
       }
       // Fall through to generic handling if Twitter-specific fails
@@ -502,6 +512,7 @@ export async function POST(request: NextRequest) {
     if (isRedditUrl(url)) {
       const redditResult = await unfurlRedditUrl(url);
       if (redditResult) {
+        event.success(200, { extractor: "reddit_json_api" });
         return NextResponse.json(redditResult);
       }
       // Fall through to generic handling if Reddit-specific fails
@@ -525,25 +536,29 @@ export async function POST(request: NextRequest) {
 
       if (!response.ok) {
         // Return basic info even on error
-        return NextResponse.json({
+        const fallbackResult = {
           title: null,
           description: null,
           siteName: parsedUrl.hostname.replace(/^www\./, ""),
           imageUrl: null,
           favicon: `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=64`,
-        });
+        };
+        event.fallback(200, { extractor: "fallback" }, `HTTP ${response.status}`);
+        return NextResponse.json(fallbackResult);
       }
 
       // Only read first 100KB for metadata extraction
       const reader = response.body?.getReader();
       if (!reader) {
-        return NextResponse.json({
+        const fallbackResult = {
           title: null,
           description: null,
           siteName: parsedUrl.hostname.replace(/^www\./, ""),
           imageUrl: null,
           favicon: `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=64`,
-        });
+        };
+        event.fallback(200, { extractor: "fallback" }, "No response body");
+        return NextResponse.json(fallbackResult);
       }
 
       let html = "";
@@ -568,6 +583,13 @@ export async function POST(request: NextRequest) {
       const siteName = extractSiteName(html) || domain;
       const imageUrl = extractImage(html, finalUrl);
 
+      event.success(200, {
+        extractor: "html_meta",
+        has_title: !!title,
+        has_description: !!description,
+        has_image: !!imageUrl,
+      });
+
       return NextResponse.json({
         title,
         description,
@@ -575,20 +597,29 @@ export async function POST(request: NextRequest) {
         imageUrl,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
       });
-    } catch (_error) {
+    } catch (fetchError) {
       clearTimeout(timeout);
 
       // On any fetch error, return basic info
       const domain = parsedUrl.hostname.replace(/^www\./, "");
-      return NextResponse.json({
+      const fallbackResult = {
         title: null,
         description: null,
         siteName: domain,
         imageUrl: null,
         favicon: `https://www.google.com/s2/favicons?domain=${domain}&sz=64`,
-      });
+      };
+      const isTimeout =
+        fetchError instanceof Error && fetchError.message.includes("abort");
+      event.fallback(
+        200,
+        { extractor: "fallback" },
+        isTimeout ? "Timeout" : "Fetch error"
+      );
+      return NextResponse.json(fallbackResult);
     }
-  } catch {
+  } catch (err) {
+    event.error(500, err);
     return NextResponse.json({ error: "Failed to unfurl URL" }, { status: 500 });
   }
 }

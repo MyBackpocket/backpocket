@@ -11,6 +11,7 @@
 import type * as collections from "../collections.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_domain_extractors from "../lib/domain_extractors.js";
+import type * as lib_logger from "../lib/logger.js";
 import type * as lib_snapshot_processor from "../lib/snapshot_processor.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lib_vercel from "../lib/vercel.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   collections: typeof collections;
   "lib/auth": typeof lib_auth;
   "lib/domain_extractors": typeof lib_domain_extractors;
+  "lib/logger": typeof lib_logger;
   "lib/snapshot_processor": typeof lib_snapshot_processor;
   "lib/validators": typeof lib_validators;
   "lib/vercel": typeof lib_vercel;

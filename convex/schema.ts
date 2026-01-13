@@ -42,6 +42,13 @@ export const domainStatusValidator = v.union(
   v.literal("disabled")
 );
 
+// Client source for observability (tracks which app made the request)
+export const clientSourceValidator = v.union(
+  v.literal("web"),
+  v.literal("mobile"),
+  v.literal("extension")
+);
+
 export default defineSchema({
   // Spaces table
   spaces: defineTable({

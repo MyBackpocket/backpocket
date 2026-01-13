@@ -370,12 +370,14 @@ export const processSnapshot = internalAction({
   args: {
     saveId: v.id("saves"),
     url: v.string(),
+    traceId: v.optional(v.string()), // For correlating with saves.create
   },
   handler: async (ctx, args) => {
     // Delegate to the Node.js action which has access to Readability + linkedom
     await ctx.runAction(internal.lib.snapshot_processor.processSnapshotNode, {
       saveId: args.saveId,
       url: args.url,
+      traceId: args.traceId,
     });
   },
 });
@@ -386,6 +388,7 @@ export const createSnapshotRecord = internalMutation({
     saveId: v.id("saves"),
     spaceId: v.id("spaces"),
     url: v.string(),
+    traceId: v.optional(v.string()), // For correlating with saves.create
   },
   handler: async (ctx, args) => {
     // Create the snapshot record
@@ -396,10 +399,11 @@ export const createSnapshotRecord = internalMutation({
       attempts: 0,
     });
 
-    // Schedule processing
+    // Schedule processing with traceId for correlation
     await ctx.scheduler.runAfter(0, internal.snapshots.processSnapshot, {
       saveId: args.saveId,
       url: args.url,
+      traceId: args.traceId,
     });
   },
 });

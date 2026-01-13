@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 
@@ -79,5 +79,204 @@ describe("saves", () => {
         url: "https://example.com/duplicate",
       })
     ).rejects.toThrow();
+  });
+});
+
+describe("saves observability", () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
+
+  test("creating a save emits wide event with clientSource", async () => {
+    vi.useFakeTimers();
+
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_observability1" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    await asUser.mutation(api.saves.create, {
+      url: "https://github.com/test/repo",
+      clientSource: "extension",
+    });
+
+    vi.useRealTimers();
+
+    // Find the wide event log
+    const wideEventLogs = consoleSpy.mock.calls.filter(
+      (call) => typeof call[0] === "string" && call[0].includes("[wide_event]")
+    );
+
+    expect(wideEventLogs.length).toBeGreaterThan(0);
+
+    // Parse and verify the saves.create event
+    const savesCreateLog = wideEventLogs.find((call) =>
+      (call[0] as string).includes('"function_name":"saves.create"')
+    );
+
+    expect(savesCreateLog).toBeDefined();
+
+    const jsonPart = (savesCreateLog![0] as string).replace("[wide_event] ", "");
+    const event = JSON.parse(jsonPart);
+
+    expect(event).toMatchObject({
+      function_name: "saves.create",
+      function_type: "mutation",
+      client_source: "extension",
+      outcome: "success",
+    });
+
+    expect(event.context).toMatchObject({
+      url_domain: "github.com",
+      triggered_snapshot: true,
+    });
+
+    expect(event.user_id).toBe("user_observability1");
+    expect(event.trace_id).toBeDefined();
+    expect(event.duration_ms).toBeGreaterThanOrEqual(0);
+  });
+
+  test("updating a save emits wide event with fields updated", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_observability2" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    const save = await asUser.mutation(api.saves.create, {
+      url: "https://example.com/update-test",
+    });
+
+    // Clear logs from create
+    consoleSpy.mockClear();
+
+    await asUser.mutation(api.saves.update, {
+      id: save.id,
+      title: "Updated Title",
+      visibility: "public",
+      clientSource: "web",
+    });
+
+    // Find the wide event log
+    const wideEventLogs = consoleSpy.mock.calls.filter(
+      (call) => typeof call[0] === "string" && call[0].includes("[wide_event]")
+    );
+
+    const updateLog = wideEventLogs.find((call) =>
+      (call[0] as string).includes('"function_name":"saves.update"')
+    );
+
+    expect(updateLog).toBeDefined();
+
+    const jsonPart = (updateLog![0] as string).replace("[wide_event] ", "");
+    const event = JSON.parse(jsonPart);
+
+    expect(event).toMatchObject({
+      function_name: "saves.update",
+      client_source: "web",
+      outcome: "success",
+    });
+
+    expect(event.context.fields_updated).toContain("title");
+    expect(event.context.fields_updated).toContain("visibility");
+    expect(event.context.field_count).toBe(2);
+  });
+
+  test("deleting a save emits wide event", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_observability3" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    const save = await asUser.mutation(api.saves.create, {
+      url: "https://example.com/delete-test",
+      tagNames: ["test-tag"],
+    });
+
+    // Clear logs from create
+    consoleSpy.mockClear();
+
+    await asUser.mutation(api.saves.remove, {
+      saveId: save.id,
+      clientSource: "mobile",
+    });
+
+    // Find the wide event log
+    const wideEventLogs = consoleSpy.mock.calls.filter(
+      (call) => typeof call[0] === "string" && call[0].includes("[wide_event]")
+    );
+
+    const removeLog = wideEventLogs.find((call) =>
+      (call[0] as string).includes('"function_name":"saves.remove"')
+    );
+
+    expect(removeLog).toBeDefined();
+
+    const jsonPart = (removeLog![0] as string).replace("[wide_event] ", "");
+    const event = JSON.parse(jsonPart);
+
+    expect(event).toMatchObject({
+      function_name: "saves.remove",
+      client_source: "mobile",
+      outcome: "success",
+    });
+
+    expect(event.context.save_id).toBe(save.id);
+    expect(event.context.tag_count).toBe(1);
+  });
+
+  test("duplicate save error emits wide event with error details", async () => {
+    const t = convexTest(schema, modules);
+    const asUser = t.withIdentity({ subject: "user_observability4" });
+
+    await asUser.mutation(api.spaces.ensureSpace, {});
+
+    await asUser.mutation(api.saves.create, {
+      url: "https://example.com/dup-observability",
+    });
+
+    // Clear logs from first create
+    consoleSpy.mockClear();
+
+    // Try to create duplicate
+    await expect(
+      asUser.mutation(api.saves.create, {
+        url: "https://example.com/dup-observability",
+        clientSource: "extension",
+      })
+    ).rejects.toThrow();
+
+    // Find the error wide event
+    const wideEventLogs = consoleSpy.mock.calls.filter(
+      (call) => typeof call[0] === "string" && call[0].includes("[wide_event]")
+    );
+
+    const errorLog = wideEventLogs.find(
+      (call) =>
+        (call[0] as string).includes('"function_name":"saves.create"') &&
+        (call[0] as string).includes('"outcome":"error"')
+    );
+
+    expect(errorLog).toBeDefined();
+
+    const jsonPart = (errorLog![0] as string).replace("[wide_event] ", "");
+    const event = JSON.parse(jsonPart);
+
+    expect(event).toMatchObject({
+      function_name: "saves.create",
+      outcome: "error",
+      error: {
+        code: "CONFLICT",
+        retriable: false,
+      },
+    });
+
+    expect(event.context.url_domain).toBe("example.com");
+    expect(event.context.existing_save_id).toBeDefined();
   });
 });

@@ -1,6 +1,6 @@
 /**
  * API Types for Backpocket Mobile
- * Mirrors the types from the web app for type safety
+ * Type definitions for the app
  */
 
 // === Enums ===
@@ -13,6 +13,15 @@ export type SnapshotStatus = "pending" | "processing" | "ready" | "blocked" | "f
 
 // === Core Models ===
 
+/**
+ * Note: These types accept both string and number for timestamps/IDs
+ * to be compatible with Convex's native return types (numbers for timestamps,
+ * Id<T> for IDs which are branded strings).
+ *
+ * This matches the web app's APISave/APITag/APICollection pattern.
+ * Format at render time using formatDate() from @/lib/utils.
+ */
+
 export interface Space {
   id: string;
   type: "personal" | "org";
@@ -23,8 +32,8 @@ export interface Space {
   visibility: SpaceVisibility;
   publicLayout: PublicLayout;
   defaultSaveVisibility: SaveVisibility;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
 }
 
 export interface Save {
@@ -40,9 +49,9 @@ export interface Save {
   isArchived: boolean;
   isFavorite: boolean;
   createdBy: string;
-  savedAt: string;
-  createdAt: string;
-  updatedAt: string;
+  savedAt: string | number;
+  createdAt: string | number;
+  updatedAt: string | number;
   tags?: Tag[];
   collections?: Collection[];
 }
@@ -51,8 +60,8 @@ export interface Tag {
   id: string;
   spaceId: string;
   name: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
   _count?: {
     saves: number;
   };
@@ -64,8 +73,8 @@ export interface Collection {
   name: string;
   visibility: CollectionVisibility;
   defaultTags?: Tag[];
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
   _count?: {
     saves: number;
   };
@@ -187,8 +196,8 @@ export interface DomainMapping {
   spaceId: string;
   status: DomainStatus;
   verificationToken: string | null;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | number;
+  updatedAt: string | number;
 }
 
 export interface DomainStatusResponse {
@@ -202,7 +211,7 @@ export interface DomainStatusResponse {
     domain: string;
     value: string;
   }>;
-  createdAt: string;
+  createdAt: string | number;
 }
 
 export type SlugUnavailableReason =
@@ -228,7 +237,7 @@ export interface DuplicateSaveInfo {
   title: string | null;
   imageUrl: string | null;
   siteName: string | null;
-  savedAt: string;
+  savedAt: string | number;
 }
 
 /**

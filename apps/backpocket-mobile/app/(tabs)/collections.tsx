@@ -7,15 +7,18 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } fr
 import { Button } from "@/components/ui/button";
 import { brandColors } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useDeleteCollection, useListCollections } from "@/lib/api/collections";
-import type { Collection } from "@/lib/api/types";
+import { useDeleteCollection, useListCollections } from "@/lib/convex/hooks";
+import type { Collection } from "@/lib/types";
 
 export default function CollectionsScreen() {
   const colors = useThemeColors();
   const router = useRouter();
 
-  // Data fetching
-  const { data: collections, isPending, refetch } = useListCollections();
+  // Data fetching (Convex returns data directly, cast to our Collection type)
+  const collectionsData = useListCollections();
+  const collections = (collectionsData ?? []) as any as Collection[];
+  const isPending = collectionsData === undefined;
+  const refetch = async () => {}; // Convex auto-refetches
 
   // Mutations
   const deleteCollection = useDeleteCollection();
@@ -47,13 +50,13 @@ export default function CollectionsScreen() {
           {
             text: "Delete",
             style: "destructive",
-            onPress: () => {
+            onPress: async () => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-              deleteCollection.mutate(collection.id, {
-                onError: () => {
-                  Alert.alert("Error", "Failed to delete collection");
-                },
-              });
+              try {
+                await deleteCollection({ collectionId: collection.id as any });
+              } catch {
+                Alert.alert("Error", "Failed to delete collection");
+              }
             },
           },
         ]

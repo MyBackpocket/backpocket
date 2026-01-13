@@ -35,9 +35,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { getDuplicateSaveFromError, useCreateSave } from "@/lib/api/saves";
-import { useMySpace } from "@/lib/api/space";
-import type { DuplicateSaveInfo, SaveVisibility } from "@/lib/api/types";
+import { useCreateSave, useGetMySpace } from "@/lib/convex/hooks";
+import { getDuplicateSaveFromError } from "@/lib/utils/duplicate-error";
+import { formatRelativeTime } from "@/lib/utils";
+import type { DuplicateSaveInfo, SaveVisibility } from "@/lib/types";
 import { useTheme } from "@/lib/theme/provider";
 
 // Amber text colors optimized for readability
@@ -52,10 +53,11 @@ export default function NewSaveScreen() {
   const colors = useThemeColors();
   const { colorScheme } = useTheme();
 
-  // Get user's space settings for default visibility
-  const { data: space } = useMySpace();
+  // Get user's space settings for default visibility (raw Convex hook)
+  const space = useGetMySpace();
 
-  const createSave = useCreateSave();
+  const createSaveMutation = useCreateSave();
+  const [isCreating, setIsCreating] = useState(false);
 
   const [url, setUrl] = useState(params.url || "");
   const [title, setTitle] = useState("");
@@ -127,29 +129,7 @@ export default function NewSaveScreen() {
     [tags]
   );
 
-  /**
-   * Format relative time for duplicate alert
-   */
-  const formatRelativeTime = useCallback((dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffSecs < 60) return "just now";
-    if (diffMins < 60) return `${diffMins} minute${diffMins === 1 ? "" : "s"} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
-    if (diffDays < 30) return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
-
-    return date.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
-    });
-  }, []);
+  // formatRelativeTime imported from @/lib/utils
 
   /**
    * Show duplicate save alert
@@ -173,7 +153,7 @@ export default function NewSaveScreen() {
         ]
       );
     },
-    [formatRelativeTime, router]
+    [router]
   );
 
   const handleSave = useCallback(async () => {
@@ -187,8 +167,9 @@ export default function NewSaveScreen() {
       return;
     }
 
+    setIsCreating(true);
     try {
-      await createSave.mutateAsync({
+      await createSaveMutation({
         url: url.trim(),
         title: title.trim() || undefined,
         visibility,
@@ -206,10 +187,26 @@ export default function NewSaveScreen() {
         return;
       }
 
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to save link");
+      // Extract a clean error message
+      let errorMsg = "Failed to save link";
+      if (error instanceof Error) {
+        const msg = error.message;
+        if (msg.includes('"message"')) {
+          const match = msg.match(/"message"\s*:\s*"([^"]+)"/);
+          if (match) {
+            errorMsg = match[1];
+          }
+        } else {
+          errorMsg = msg;
+        }
+      }
+
+      Alert.alert("Error", errorMsg);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsCreating(false);
     }
-  }, [url, title, visibility, tags, createSave, router, isValidUrl, showDuplicateAlert]);
+  }, [url, title, visibility, tags, createSaveMutation, router, isValidUrl, showDuplicateAlert]);
 
   return (
     <>
@@ -224,13 +221,13 @@ export default function NewSaveScreen() {
           headerRight: () => (
             <TouchableOpacity
               onPress={handleSave}
-              disabled={createSave.isPending || !url.trim()}
+              disabled={isCreating || !url.trim()}
               style={styles.headerButton}
             >
               <Check
                 size={20}
                 color={
-                  createSave.isPending || !url.trim()
+                  isCreating || !url.trim()
                     ? colors.mutedForeground
                     : brandColors.rust.DEFAULT
                 }
@@ -414,8 +411,8 @@ export default function NewSaveScreen() {
           <View style={styles.buttonContainer}>
             <Button
               onPress={handleSave}
-              loading={createSave.isPending}
-              disabled={createSave.isPending || !url.trim()}
+              loading={isCreating}
+              disabled={isCreating || !url.trim()}
               style={styles.saveButton}
             >
               Save Link

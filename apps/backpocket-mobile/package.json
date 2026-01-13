@@ -62,6 +62,7 @@
   "devDependencies": {
     "@backpocket/tsconfig": "workspace:*",
     "@types/react": "~19.1.17",
+    "babel-plugin-module-resolver": "^5.0.2",
     "babel-preset-expo": "^54.0.9",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.9.3"
