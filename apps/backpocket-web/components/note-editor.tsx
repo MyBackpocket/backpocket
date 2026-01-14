@@ -428,7 +428,7 @@ function ToolbarButton({
       <TooltipContent side="bottom" className="flex items-center gap-2">
         <span>{tooltip}</span>
         {shortcut && (
-          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">{shortcut}</kbd>
+          <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] font-mono">{shortcut}</kbd>
         )}
       </TooltipContent>
     </Tooltip>
@@ -760,12 +760,12 @@ function RichNoteEditor({
         {/* Footer hint */}
         <div className="flex items-center justify-between border-t bg-muted/20 px-3 py-1.5 text-xs text-muted-foreground">
           <span>
-            Type <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">/</kbd> for
+            Type <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">/</kbd> for
             commands
           </span>
           {isFullScreen && (
             <span>
-              Press <kbd className="px-1 py-0.5 rounded bg-muted font-mono text-[10px]">Esc</kbd> to
+              Press <kbd className="px-1 py-0.5 rounded bg-muted text-muted-foreground font-mono text-[10px]">Esc</kbd> to
               exit
             </span>
           )}
