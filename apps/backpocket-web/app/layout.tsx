@@ -1,10 +1,13 @@
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { ClerkProvider } from "@/components/clerk-provider";
 import { Providers } from "@/components/providers";
 import { WebVitals } from "@/components/web-vitals";
+import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
+import { isCustomDomainSlug } from "@/lib/constants/public-space";
 import "./globals.css";
 
 const dmSans = DM_Sans({
@@ -41,19 +44,26 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Check if this is a custom domain request
+  // Custom domains don't need Clerk (read-only public content)
+  // and Clerk would fail domain validation anyway
+  const headersList = await headers();
+  const spaceSlug = headersList.get(SPACE_SLUG_HEADER);
+  const isCustomDomain = spaceSlug ? isCustomDomainSlug(spaceSlug) : false;
+
   return (
-    <ClerkProvider>
+    <ClerkProvider skipClerk={isCustomDomain}>
       <html lang="en" suppressHydrationWarning>
         <body className={`${dmSans.variable} ${fraunces.variable} font-sans antialiased`}>
           <WebVitals />
           <Analytics />
           <SpeedInsights />
-          <Providers>{children}</Providers>
+          <Providers skipClerk={isCustomDomain}>{children}</Providers>
         </body>
       </html>
     </ClerkProvider>

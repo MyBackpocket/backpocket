@@ -65,11 +65,20 @@ function ThemeCookieSync() {
   return null;
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+  /**
+   * If true, skip Clerk auth integration.
+   * Used for custom domain requests where Clerk is not available.
+   */
+  skipClerk?: boolean;
+}
+
+export function Providers({ children, skipClerk = false }: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <ThemeCookieSync />
-      <ConvexClientProvider>
+      <ConvexClientProvider skipClerk={skipClerk}>
         <TooltipProvider>{children}</TooltipProvider>
       </ConvexClientProvider>
     </ThemeProvider>

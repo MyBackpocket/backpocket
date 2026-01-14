@@ -12,7 +12,8 @@
       },
       "env": {
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d2FybS1oaXBwby05LmNsZXJrLmFjY291bnRzLmRldiQ",
-        "EXPO_PUBLIC_API_URL": "https://backpocket.my"
+        "EXPO_PUBLIC_API_URL": "https://backpocket.my",
+        "EXPO_PUBLIC_CONVEX_URL": "https://deafening-gecko-95.convex.cloud"
       }
     },
     "development-device": {
@@ -20,21 +21,24 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d2FybS1oaXBwby05LmNsZXJrLmFjY291bnRzLmRldiQ",
-        "EXPO_PUBLIC_API_URL": "https://backpocket.my"
+        "EXPO_PUBLIC_API_URL": "https://backpocket.my",
+        "EXPO_PUBLIC_CONVEX_URL": "https://deafening-gecko-95.convex.cloud"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d2FybS1oaXBwby05LmNsZXJrLmFjY291bnRzLmRldiQ",
-        "EXPO_PUBLIC_API_URL": "https://backpocket.my"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYmFja3BvY2tldC5teSQ",
+        "EXPO_PUBLIC_API_URL": "https://backpocket.my",
+        "EXPO_PUBLIC_CONVEX_URL": "https://pastel-armadillo-850.convex.cloud"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_d2FybS1oaXBwby05LmNsZXJrLmFjY291bnRzLmRldiQ",
-        "EXPO_PUBLIC_API_URL": "https://backpocket.my"
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsuYmFja3BvY2tldC5teSQ",
+        "EXPO_PUBLIC_API_URL": "https://backpocket.my",
+        "EXPO_PUBLIC_CONVEX_URL": "https://pastel-armadillo-850.convex.cloud"
       }
     }
   },
