@@ -19,8 +19,11 @@ export async function GET() {
   }
 
   try {
-    // Resolve space by slug (handles both regular slugs and custom:domain format)
-    const space = await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
+    // Resolve space - use different query depending on whether it's a custom domain
+    const isCustomDomain = isCustomDomainSlug(spaceSlug);
+    const space = isCustomDomain
+      ? await fetchQuery(api.public.resolveSpaceByDomain, { domain: extractCustomDomain(spaceSlug) })
+      : await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
 
     if (!space) {
       return new Response("Space not found", { status: 404 });
