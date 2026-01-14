@@ -17,9 +17,10 @@ export default defineConfig({
     description: "Save links to your Backpocket",
     permissions: ["activeTab", "storage", "tabs", "contextMenus", "cookies"],
     host_permissions: [
-      // App API
+      // App API (both http and https for cookie access)
       "https://backpocket.my/*",
-      // Clerk sync host (localhost for dev, clerk domain for prod)
+      "http://backpocket.my/*",
+      // Clerk sync host (localhost for dev, production domain for prod)
       "http://localhost/*",
       // Clerk Frontend API (for session sync)
       "https://*.clerk.accounts.dev/*",
