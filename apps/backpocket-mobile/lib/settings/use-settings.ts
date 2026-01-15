@@ -6,18 +6,22 @@
 import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+import { type OfflineSettings, DEFAULT_OFFLINE_SETTINGS } from "@/lib/offline";
+
 export type ThemePreference = "system" | "light" | "dark";
 
 export interface Settings {
   theme: ThemePreference;
   notificationsEnabled: boolean;
   openLinksInApp: boolean;
+  offline: OfflineSettings;
 }
 
 const DEFAULT_SETTINGS: Settings = {
   theme: "system",
   notificationsEnabled: true,
   openLinksInApp: true,
+  offline: DEFAULT_OFFLINE_SETTINGS,
 };
 
 const SETTINGS_KEY = "backpocket_settings";
@@ -27,6 +31,7 @@ interface SettingsContextValue {
   isLoading: boolean;
   updateSettings: (updates: Partial<Settings>) => Promise<void>;
   setTheme: (theme: ThemePreference) => Promise<void>;
+  updateOfflineSettings: (updates: Partial<OfflineSettings>) => Promise<void>;
 }
 
 export const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -73,11 +78,21 @@ export function useSettingsStore() {
     [updateSettings]
   );
 
+  const updateOfflineSettings = useCallback(
+    async (updates: Partial<OfflineSettings>) => {
+      await updateSettings({
+        offline: { ...settings.offline, ...updates },
+      });
+    },
+    [updateSettings, settings.offline]
+  );
+
   return {
     settings,
     isLoading,
     updateSettings,
     setTheme,
+    updateOfflineSettings,
   };
 }
 

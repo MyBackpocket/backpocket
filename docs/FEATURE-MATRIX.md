@@ -111,6 +111,10 @@ Feature parity tracker across Backpocket platforms.
 | Pull-to-refresh | N/A | ✅ | N/A | |
 | Swipe actions | N/A | ✅ | N/A | |
 | Deep linking | N/A | ✅ | N/A | `backpocket://` |
+| Offline-first boot | N/A | ✅ | N/A | App loads without network |
+| Offline storage | N/A | ✅ | N/A | SQLite + file cache |
+| Auto-sync | N/A | ✅ | N/A | WiFi-only option |
+| Cached auth | N/A | ✅ | N/A | Uses cached user when offline |
 | **Extension-Only** |
 | One-click save | N/A | N/A | ✅ | Auto-saves on popup open |
 | Post-save quick actions | N/A | N/A | ✅ | Tags, collections, visibility, note |

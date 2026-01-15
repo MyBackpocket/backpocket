@@ -1,4 +1,3 @@
-import { useUser } from "@clerk/clerk-expo";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
@@ -50,6 +49,7 @@ import {
 import type { Save } from "@/lib/types";
 import { useOpenUrl } from "@/lib/utils";
 import { isSaveProcessing } from "@/lib/utils/processing-saves";
+import { useSafeUser } from "@/lib/auth/safe-hooks";
 
 export default function DashboardScreen() {
   const colors = useThemeColors();
@@ -57,8 +57,8 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { openUrl } = useOpenUrl();
 
-  // Always call useUser hook (React rules of hooks)
-  const { user } = useUser();
+  // Safe user hook - works both online and offline
+  const { user } = useSafeUser();
   const userName = user?.firstName || "there";
   const userImageUrl = user?.imageUrl;
 

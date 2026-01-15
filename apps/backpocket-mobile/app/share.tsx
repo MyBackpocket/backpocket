@@ -5,7 +5,7 @@
  * It auto-saves the shared URL immediately and shows a confirmation.
  */
 
-import { useAuth } from "@clerk/clerk-expo";
+import { useSafeAuth } from "@/lib/auth/safe-hooks";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -601,9 +601,9 @@ export default function ShareScreen() {
   const colors = useThemeColors();
   const params = useLocalSearchParams<{ url?: string }>();
 
-  // Always call useAuth hook (React rules of hooks)
-  const auth = useAuth();
-  const isSignedIn = auth.isSignedIn ?? false;
+  // Safe auth hook - works both online and offline
+  const auth = useSafeAuth();
+  const isSignedIn = auth.isSignedIn;
   const isLoaded = auth.isLoaded;
 
   // Get user's space settings for default visibility (raw Convex hook)

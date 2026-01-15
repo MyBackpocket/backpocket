@@ -132,8 +132,10 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 
 ### Mobile
 
+- [x] Offline storage for saves ✅ 2026-01-15
+- [x] Background sync ✅ 2026-01-15
+- [x] Offline-first boot (no splash screen blocking) ✅ 2026-01-15
 - [ ] Offline queue for mutations
-- [ ] Background sync
 - [ ] Push notification setup
 
 ### Extension
@@ -151,6 +153,29 @@ These platforms don't work well with Mozilla Readability and need custom parsing
 ---
 
 ## Completed
+
+### 2026-01-15
+
+- ✅ **Mobile offline storage** (Mobile)
+  - SQLite database for caching saves, snapshots, and metadata
+  - Image caching with expo-file-system for offline thumbnail viewing
+  - Configurable sync modes: all saves, favorites only, recent N days, or specific collections
+  - WiFi-only sync option to save mobile data
+  - Auto-sync on app open with configurable settings
+  - Storage management with usage display and clear cache option
+  - Offline indicators showing cached status on saves
+  - Automatic fallback to cached data when device is offline
+  - Settings screen for full control over offline behavior
+
+- ✅ **Offline-first architecture** (Mobile)
+  - App no longer gets stuck on splash screen when offline
+  - Network status checked before Clerk auth initialization
+  - User profile cached in SecureStore for offline sessions
+  - Offline mode: bypasses Clerk/Convex, shows cached data
+  - "Sign in required" screen when offline without cached auth
+  - Unified data hooks that automatically switch between online/offline sources
+  - OfflineBanner component for consistent offline UI feedback
+  - OfflineProvider context for app-wide offline state management
 
 ### 2026-01-13
 

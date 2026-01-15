@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronUp,
   Clock,
+  Download,
   ExternalLink,
   Eye,
   EyeOff,
@@ -50,6 +51,7 @@ import RenderHtml from "react-native-render-html";
 
 const HEADER_BUTTON_SIZE = 36;
 
+import { OfflineBanner } from "@/components/offline-banner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,17 +59,21 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 import {
-  useCreateCollection,
-  useListCollections,
-  useDeleteSave,
   useGetSave,
   useGetSaveSnapshot,
+  useListCollections,
+  useListTags,
   useToggleArchive,
   useToggleFavorite,
+  useDeleteSave,
   useUpdateSave,
-  useListTags,
+} from "@/lib/data/hooks";
+import {
+  useCreateCollection,
   useRequestSaveSnapshot,
 } from "@/lib/convex/hooks";
+import { useIsSaveAvailableOffline } from "@/lib/offline";
+import { useSettings } from "@/lib/settings";
 import type { Save, SaveVisibility } from "@/lib/types";
 import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
@@ -831,18 +837,20 @@ export default function SaveDetailScreen() {
   const colors = useThemeColors();
   const { openUrl } = useOpenUrl();
   const { width } = useWindowDimensions();
+  const { settings } = useSettings();
+  
+  // Offline support
+  const offlineEnabled = settings.offline.enabled;
+  
+  // Check if save is available offline
+  const { isAvailable: isAvailableOffline } = useIsSaveAvailableOffline(id);
+  
+  // Unified hooks that handle online/offline automatically
+  const { save, isLoading, isOffline } = useGetSave(id);
+  const isError = !isOffline && save === null && !isLoading;
 
-  // Convex hooks return data directly (undefined while loading)
-  const saveData = useGetSave(id as any);
-  const save = saveData as Save | null | undefined;
-  const isLoading = save === undefined;
-  const isError = save === null;
-  const refetchSave = async () => {}; // Convex auto-refetches
-
-  const snapshotRaw = useGetSaveSnapshot(id as any, true);
-  const snapshotData = snapshotRaw;
-  const isLoadingSnapshot = snapshotRaw === undefined;
-  const refetchSnapshot = async () => {}; // Convex auto-refetches
+  const { snapshot, content, isLoading: isLoadingSnapshot } = useGetSaveSnapshot(id, true);
+  const snapshotData = snapshot ? { snapshot, content } : null;
   const toggleFavoriteMutation = useToggleFavorite();
   const toggleArchiveMutation = useToggleArchive();
   const deleteSaveMutation = useDeleteSave();
@@ -1102,6 +1110,12 @@ export default function SaveDetailScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       >
+        {/* Offline Banner */}
+        <OfflineBanner 
+          message={isAvailableOffline ? "You're offline. Viewing cached version." : "You're offline. This save may not be fully available."}
+          showReconnect={false}
+        />
+        
         {/* Image */}
         {save.imageUrl && (
           <Image source={{ uri: save.imageUrl }} style={styles.image} resizeMode="cover" />
@@ -1408,8 +1422,30 @@ export default function SaveDetailScreen() {
         {/* Metadata */}
         <Card style={styles.metadataCard}>
           <CardContent style={styles.metadataContent}>
+            {/* Offline Status */}
+            {offlineEnabled && (
+              <View style={styles.metadataRow}>
+                <Download size={18} color={colors.mutedForeground} />
+                <Text style={[styles.metadataLabel, { color: colors.mutedForeground }]}>
+                  Offline
+                </Text>
+                {isAvailableOffline ? (
+                  <View style={[styles.offlineBadge, { backgroundColor: `${brandColors.teal}20` }]}>
+                    <Download size={12} color={brandColors.teal} />
+                    <Text style={[styles.offlineBadgeText, { color: brandColors.teal }]}>
+                      Available
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={[styles.metadataValue, { color: colors.mutedForeground }]}>
+                    Not cached
+                  </Text>
+                )}
+              </View>
+            )}
+            
             {/* Visibility */}
-            <View style={styles.metadataRow}>
+            <View style={[styles.metadataRow, offlineEnabled && { borderTopColor: colors.border }]}>
               {save.visibility === "public" ? (
                 <Eye size={18} color={colors.mutedForeground} />
               ) : (
@@ -1566,6 +1602,31 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    fontWeight: "500",
+  },
+  offlineBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+    gap: 4,
+  },
+  offlineBadgeText: {
+    fontSize: 11,
+    fontFamily: "DMSans-Medium",
   },
   headerButton: {
     width: HEADER_BUTTON_SIZE,

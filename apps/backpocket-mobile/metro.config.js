@@ -9,8 +9,8 @@ const _convexPath = path.resolve(monorepoRoot, "convex");
 
 let config = getDefaultConfig(__dirname);
 
-// Watch the convex folder for changes
-config.watchFolders = [monorepoRoot];
+// Watch the monorepo root for changes (extend defaults, don't replace)
+config.watchFolders = [...(config.watchFolders || []), monorepoRoot];
 
 // Resolve modules from both the app and the monorepo root
 config.resolver.nodeModulesPaths = [

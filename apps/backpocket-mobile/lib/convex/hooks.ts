@@ -9,15 +9,23 @@
 
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { useAction, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
+import { useConvexAuthState } from "./provider";
 
 /**
  * Hook to check if the user is authenticated.
  * Returns true only when auth is loaded AND user is authenticated.
+ * Returns false if auth is not available (offline-only mode).
  * This prevents queries from running before auth is restored.
  */
 function useIsAuthenticated() {
-  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { isAuthenticated, isLoading, isAuthAvailable } = useConvexAuthState();
+  
+  // When auth isn't available (offline mode), we're never authenticated
+  if (!isAuthAvailable) {
+    return false;
+  }
+  
   return !isLoading && isAuthenticated;
 }
 

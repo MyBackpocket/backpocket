@@ -1,4 +1,3 @@
-import { useAuth } from "@clerk/clerk-expo";
 import { Redirect, Tabs } from "expo-router";
 import { Bookmark, FolderOpen, LayoutGrid, Settings } from "lucide-react-native";
 import { useEffect, useRef } from "react";
@@ -10,44 +9,48 @@ import { Colors, type ColorsTheme } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/constants";
 import { useEnsureSpace, useGetMySpace } from "@/lib/convex/hooks";
+import { useSafeAuth, useIsClerkAvailable } from "@/lib/auth/safe-hooks";
+import { useOfflineContext } from "@/lib/offline/context";
 
 /**
- * Tab layout with Clerk auth protection
- * Redirects to sign-in if user is not authenticated
+ * Tab layout with auth protection
+ * Redirects to sign-in if user is not authenticated (when online)
+ * Uses cached auth when offline
  * Automatically creates user's space on first app access
  */
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
-  // Use Clerk auth hook - must be called unconditionally
-  // When Clerk is not configured, these will be undefined
-  // biome-ignore lint/correctness/useHookAtTopLevel: Conditional hook based on Clerk config is intentional
-  const auth = CLERK_PUBLISHABLE_KEY ? useAuth() : null;
-  const isSignedIn = auth?.isSignedIn;
-  const isLoaded = auth?.isLoaded ?? true;
+  // Safe auth hook - works both online and offline
+  const auth = useSafeAuth();
+  const isClerkAvailable = useIsClerkAvailable();
+  const { isOffline, cachedUser } = useOfflineContext();
+  
+  // Determine auth state
+  const isSignedIn = auth.isSignedIn;
+  const isLoaded = auth.isLoaded;
 
-  // Space auto-creation for new users
+  // Space auto-creation for new users (only when online)
   const space = useGetMySpace();
   const ensureSpace = useEnsureSpace();
   const hasCalledEnsureSpace = useRef(false);
 
-  // Auto-create space when user is signed in but has no space
-  // space === undefined means loading, null means no space exists
+  // Auto-create space when user is signed in but has no space (online only)
   useEffect(() => {
-    if (isSignedIn && space === null && !hasCalledEnsureSpace.current) {
+    if (isClerkAvailable && isSignedIn && space === null && !hasCalledEnsureSpace.current) {
       hasCalledEnsureSpace.current = true;
       ensureSpace();
     }
-  }, [isSignedIn, space, ensureSpace]);
+  }, [isClerkAvailable, isSignedIn, space, ensureSpace]);
 
   // If Clerk is not configured, show tabs without auth (development mode)
   if (!CLERK_PUBLISHABLE_KEY) {
     return <TabsNavigator colors={colors} />;
   }
 
-  // Show loading spinner while checking auth
-  if (!isLoaded) {
+  // Show loading spinner while checking auth (only when online)
+  if (isClerkAvailable && !isLoaded) {
     return (
       <View style={[styles.loading, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.tint} />
@@ -55,8 +58,13 @@ export default function TabLayout() {
     );
   }
 
-  // Redirect to sign-in if not authenticated
-  if (!isSignedIn) {
+  // When offline with cached user, allow access
+  if (isOffline && cachedUser) {
+    return <TabsNavigator colors={colors} />;
+  }
+
+  // Redirect to sign-in if not authenticated (when online)
+  if (isClerkAvailable && !isSignedIn) {
     return <Redirect href="/(auth)/sign-in" />;
   }
 

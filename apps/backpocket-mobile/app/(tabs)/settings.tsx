@@ -1,8 +1,9 @@
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth as useClerkAuth } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import {
   Bell,
   ChevronRight,
+  CloudOff,
   ExternalLink,
   Globe,
   HelpCircle,
@@ -18,25 +19,30 @@ import { brandColors } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/constants";
 import { useSettings } from "@/lib/settings";
+import { useSafeUser, useIsClerkAvailable } from "@/lib/auth/safe-hooks";
 
 export default function SettingsScreen() {
   const colors = useThemeColors();
   const router = useRouter();
   const { settings } = useSettings();
+  const isClerkAvailable = useIsClerkAvailable();
 
-  // Clerk hooks (only if configured)
-  // biome-ignore lint/correctness/useHookAtTopLevel: Conditional hook based on Clerk config is intentional
-  const auth = CLERK_PUBLISHABLE_KEY ? useAuth() : null;
-  // biome-ignore lint/correctness/useHookAtTopLevel: Conditional hook based on Clerk config is intentional
-  const userHook = CLERK_PUBLISHABLE_KEY ? useUser() : null;
-  const user = userHook?.user;
+  // Safe user hook - works both online and offline
+  const { user } = useSafeUser();
+  
+  // Only get real Clerk auth when available (for sign out)
+  // biome-ignore lint/correctness/useHookAtTopLevel: Conditional hook based on Clerk availability
+  const clerkAuth = isClerkAvailable && CLERK_PUBLISHABLE_KEY ? useClerkAuth() : null;
 
   // Get display label for current theme
   const themeLabel =
     settings.theme === "system" ? "System" : settings.theme === "light" ? "Light" : "Dark";
 
   const handleSignOut = async () => {
-    if (!auth?.signOut) return;
+    if (!clerkAuth?.signOut) {
+      Alert.alert("Cannot Sign Out", "Sign out is not available while offline.");
+      return;
+    }
 
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
       { text: "Cancel", style: "cancel" },
@@ -44,7 +50,7 @@ export default function SettingsScreen() {
         text: "Sign Out",
         style: "destructive",
         onPress: async () => {
-          await auth.signOut();
+          await clerkAuth.signOut();
           router.replace("/(auth)/sign-in");
         },
       },
@@ -114,6 +120,13 @@ export default function SettingsScreen() {
           icon={Bell}
           label="Notifications"
           onPress={() => router.push("/settings/notifications")}
+          colors={colors}
+        />
+        <SettingsRow
+          icon={CloudOff}
+          label="Offline Storage"
+          subtitle={settings.offline.enabled ? "Enabled" : "Disabled"}
+          onPress={() => router.push("/settings/offline")}
           colors={colors}
         />
       </Card>

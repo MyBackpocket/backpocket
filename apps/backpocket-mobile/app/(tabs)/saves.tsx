@@ -31,19 +31,20 @@ import {
   View,
 } from "react-native";
 
+import { OfflineBanner } from "@/components/offline-banner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ProcessingBadge } from "@/components/ui/processing-badge";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
 import {
-  useListCollections,
   useListSaves,
+  useListCollections,
+  useListTags,
   useToggleArchive,
   useToggleFavorite,
-  useListTags,
-} from "@/lib/convex/hooks";
-import type { Collection, ListSavesInput, Save, Tag } from "@/lib/types";
+} from "@/lib/data/hooks";
+import type { ListSavesInput, Save } from "@/lib/types";
 import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
 
@@ -81,7 +82,7 @@ export default function SavesScreen() {
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const { openUrl } = useOpenUrl();
 
-  // Fetch tags and collections for filter modal (Convex returns data directly)
+  // Fetch tags and collections for filter modal (returns empty when offline)
   const tags = useListTags();
   const collections = useListCollections();
 
@@ -130,21 +131,18 @@ export default function SavesScreen() {
   // Track if we've ever loaded data (to avoid full-screen loading on filter changes)
   const hasLoadedOnce = useRef(false);
 
-  // Convex useQuery returns undefined while loading, then the data
-  // Cast to any to avoid type mismatches between our types and Convex's Id types
-  const savesData = useListSaves(queryParams as any);
-  const isPending = savesData === undefined;
+  // Unified hook that automatically handles online/offline switching
+  const { items: saves, isLoading: isPending } = useListSaves(queryParams as any);
+  
   const isFetching = false; // Convex auto-updates reactively
   const isError = false;
-  // Convex doesn't support infinite scroll, so we disable these
-  const hasNextPage = false;
   const isFetchingNextPage = false;
 
   // Mock refetch - Convex auto-refetches
   const refetch = async () => {};
 
   // Mark that we've loaded data at least once
-  if (savesData && !hasLoadedOnce.current) {
+  if (saves.length > 0 && !hasLoadedOnce.current) {
     hasLoadedOnce.current = true;
   }
 
@@ -253,12 +251,9 @@ export default function SavesScreen() {
   const toggleFavoriteMutation = useToggleFavorite();
   const toggleArchiveMutation = useToggleArchive();
 
-  // Get saves from Convex response (cast to match our Save type)
-  const saves = (savesData?.items ?? []) as any as Save[];
-
   // Only show full-screen loading on the very first load ever
   // After that, filter/search changes should show inline loading in the list
-  const showInitialLoading = isPending && !savesData && !hasLoadedOnce.current;
+  const showInitialLoading = isPending && saves.length === 0 && !hasLoadedOnce.current;
 
   const handleLoadMore = useCallback(() => {
     // Pagination disabled - Convex doesn't support infinite scroll the same way
@@ -412,6 +407,9 @@ export default function SavesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* Offline Banner */}
+      <OfflineBanner showReconnect={false} />
+      
       {/* Filter Bar - Always visible */}
       <View
         style={[
@@ -969,6 +967,29 @@ const styles = StyleSheet.create({
   centered: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    gap: 8,
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    fontFamily: "DMSans-Medium",
+    fontWeight: "500",
+  },
+  offlineBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: radii.sm,
+  },
+  offlineBadgeText: {
+    fontSize: 10,
+    fontFamily: "DMSans-Medium",
+    fontWeight: "500",
   },
   filterBar: {
     flexDirection: "row",

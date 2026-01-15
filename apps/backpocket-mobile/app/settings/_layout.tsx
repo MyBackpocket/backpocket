@@ -55,6 +55,12 @@ export default function SettingsLayout() {
           title: "Public Space",
         }}
       />
+      <Stack.Screen
+        name="offline"
+        options={{
+          title: "Offline Storage",
+        }}
+      />
     </Stack>
   );
 }
