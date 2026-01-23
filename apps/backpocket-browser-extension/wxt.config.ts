@@ -25,6 +25,8 @@ export default defineConfig({
       // Clerk Frontend API (for session sync)
       "https://*.clerk.accounts.dev/*",
       "https://*.clerk.com/*",
+      // Custom Clerk domain for production
+      "https://clerk.backpocket.my/*",
     ],
     commands: {
       "save-current-page": {
