@@ -562,17 +562,25 @@ export default function HomePage() {
               <Logo size="md" />
             </Link>
 
-            <p className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()}{" "}
-              <a
-                href="https://mariolopez.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-muted-foreground/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground/50"
+            <div className="flex items-center gap-6">
+              <Link
+                href={routes.privacy}
+                className="text-sm text-muted-foreground underline decoration-muted-foreground/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground/50"
               >
-                Mario Lopez Martinez
-              </a>
-            </p>
+                Privacy Policy
+              </Link>
+              <p className="text-sm text-muted-foreground">
+                © {new Date().getFullYear()}{" "}
+                <a
+                  href="https://mariolopez.org"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-muted-foreground/30 underline-offset-4 transition-colors hover:text-foreground hover:decoration-foreground/50"
+                >
+                  Mario Lopez Martinez
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       </footer>

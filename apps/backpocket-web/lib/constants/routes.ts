@@ -11,6 +11,9 @@ export const routes = {
   /** Landing/marketing page */
   home: "/",
 
+  /** Legal pages */
+  privacy: "/privacy",
+
   /** Authentication routes */
   signIn: "/sign-in",
   signUp: "/sign-up",
