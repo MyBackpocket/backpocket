@@ -20,9 +20,11 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
+  Loader2,
   Pencil,
   Plus,
   RefreshCw,
+  Sparkles,
   Star,
   Tag,
   Trash2,
@@ -33,6 +35,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -828,6 +832,211 @@ function getReadingTime(wordCount: number | null | undefined): string {
   return `${minutes} min read`;
 }
 
+// === Refresh Indicator Component ===
+type RefreshState = "idle" | "refreshing" | "success";
+
+interface RefreshIndicatorProps {
+  state: RefreshState;
+  colors: ReturnType<typeof useThemeColors>;
+}
+
+function RefreshIndicator({ state, colors }: RefreshIndicatorProps) {
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const spinAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const successScaleAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (state === "refreshing") {
+      // Slide in from bottom with spring
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 50,
+          friction: 6,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      // Start spinning animation
+      const spin = Animated.loop(
+        Animated.timing(spinAnim, {
+          toValue: 1,
+          duration: 1200,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        })
+      );
+      spin.start();
+    } else if (state === "success") {
+      // Stop spinning by resetting and animate success
+      spinAnim.stopAnimation();
+      spinAnim.setValue(0);
+
+      // Pop in the checkmark
+      Animated.spring(successScaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 6,
+        useNativeDriver: true,
+      }).start();
+
+      // Slide out after delay
+      const timeout = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(slideAnim, {
+            toValue: 100,
+            duration: 300,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 0,
+            duration: 250,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      }, 1500);
+
+      return () => clearTimeout(timeout);
+    } else if (state === "idle") {
+      // Reset all animations
+      slideAnim.setValue(100);
+      opacityAnim.setValue(0);
+      scaleAnim.setValue(0.8);
+      successScaleAnim.setValue(0);
+      spinAnim.stopAnimation();
+      spinAnim.setValue(0);
+    }
+  }, [state, slideAnim, opacityAnim, spinAnim, scaleAnim, successScaleAnim]);
+
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  if (state === "idle") return null;
+
+  const isSuccess = state === "success";
+
+  return (
+    <Animated.View
+      style={[
+        refreshIndicatorStyles.container,
+        {
+          backgroundColor: isSuccess ? `${brandColors.teal}15` : colors.card,
+          borderColor: isSuccess ? `${brandColors.teal}40` : colors.border,
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+          opacity: opacityAnim,
+        },
+      ]}
+    >
+      <View style={refreshIndicatorStyles.content}>
+        {isSuccess ? (
+          <Animated.View
+            style={[
+              refreshIndicatorStyles.iconContainer,
+              { backgroundColor: `${brandColors.teal}25` },
+              { transform: [{ scale: successScaleAnim }] },
+            ]}
+          >
+            <Check size={18} color={brandColors.teal} strokeWidth={3} />
+          </Animated.View>
+        ) : (
+          <Animated.View
+            style={[
+              refreshIndicatorStyles.iconContainer,
+              { backgroundColor: `${brandColors.amber}20` },
+              { transform: [{ rotate: spin }] },
+            ]}
+          >
+            <Loader2 size={18} color={brandColors.amber} strokeWidth={2.5} />
+          </Animated.View>
+        )}
+        <View style={refreshIndicatorStyles.textContainer}>
+          <Text
+            style={[
+              refreshIndicatorStyles.title,
+              { color: isSuccess ? brandColors.teal : colors.text },
+            ]}
+          >
+            {isSuccess ? "Content refreshed!" : "Refreshing content..."}
+          </Text>
+          <Text style={[refreshIndicatorStyles.subtitle, { color: colors.mutedForeground }]}>
+            {isSuccess ? "Latest version loaded" : "Fetching latest from source"}
+          </Text>
+        </View>
+        {isSuccess && (
+          <Animated.View style={{ transform: [{ scale: successScaleAnim }] }}>
+            <Sparkles size={16} color={brandColors.teal} />
+          </Animated.View>
+        )}
+      </View>
+    </Animated.View>
+  );
+}
+
+const refreshIndicatorStyles = StyleSheet.create({
+  container: {
+    position: "absolute",
+    bottom: 32,
+    left: 20,
+    right: 20,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  content: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 14,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textContainer: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 15,
+    fontFamily: "DMSans-Bold",
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontFamily: "DMSans",
+  },
+});
+
 export default function SaveDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -855,6 +1064,7 @@ export default function SaveDetailScreen() {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshState, setRefreshState] = useState<RefreshState>("idle");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isReaderModeExpanded, setIsReaderModeExpanded] = useState(true);
   const [showScrollToTop, setShowScrollToTop] = useState(false);
@@ -970,12 +1180,20 @@ export default function SaveDetailScreen() {
           text: "Refresh",
           onPress: async () => {
             setIsRefreshing(true);
+            setRefreshState("refreshing");
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             try {
               // Request a new snapshot which also re-enriches metadata
               await requestSnapshotMutation({ saveId: save.id as any, force: true });
-              // Convex auto-refetches, but wait a moment for reactivity
+              // Show success state
+              setRefreshState("success");
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // Reset to idle after animation completes
+              setTimeout(() => {
+                setRefreshState("idle");
+              }, 2000);
             } catch {
+              setRefreshState("idle");
               Alert.alert("Error", "Failed to refresh save");
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             } finally {
@@ -1159,16 +1377,30 @@ export default function SaveDetailScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.quickAction, { backgroundColor: colors.card }]}
+            style={[
+              styles.quickAction,
+              {
+                backgroundColor: isRefreshing
+                  ? `${brandColors.amber}10`
+                  : colors.card,
+                borderWidth: isRefreshing ? 1 : 0,
+                borderColor: isRefreshing ? `${brandColors.amber}30` : "transparent",
+              },
+            ]}
             onPress={handleRefresh}
             disabled={isRefreshing}
           >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color={colors.mutedForeground} />
-            ) : (
-              <RefreshCw size={24} color={colors.mutedForeground} />
-            )}
-            <Text style={[styles.quickActionText, { color: colors.text }]}>
+            <RefreshCw
+              size={24}
+              color={isRefreshing ? brandColors.amber : colors.mutedForeground}
+              style={isRefreshing ? { opacity: 0.7 } : undefined}
+            />
+            <Text
+              style={[
+                styles.quickActionText,
+                { color: isRefreshing ? brandColors.amber : colors.text },
+              ]}
+            >
               {isRefreshing ? "Refreshing..." : "Refresh"}
             </Text>
           </TouchableOpacity>
@@ -1584,6 +1816,9 @@ export default function SaveDetailScreen() {
           <ArrowUp size={20} color={colors.text} />
         </TouchableOpacity>
       )}
+
+      {/* Refresh Indicator */}
+      <RefreshIndicator state={refreshState} colors={colors} />
 
       {/* Edit Modal */}
       <EditSaveModal
