@@ -162,60 +162,20 @@ export default function HomePage() {
       {/* Interactive Demo Section */}
       <DemoSection />
 
-      {/* CTA Section - Editorial / Literary aesthetic */}
-      <section className="relative py-24 md:py-40 overflow-hidden">
-        {/* Warm gradient background - adapts to dark mode */}
-        <div className="absolute inset-0 bg-gradient-to-br from-parchment via-cream to-amber/5 dark:from-[hsl(203,28%,14%)] dark:via-[hsl(203,25%,12%)] dark:to-amber/5" />
+      {/* CTA Section - Clean, focused */}
+      <section className="relative py-24 md:py-40 overflow-hidden bg-background">
+        {/* Simple gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-transparent to-muted/20" />
 
-        {/* Subtle paper texture grain */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')]" />
-
-        {/* === ANIMATED BACKGROUND ELEMENTS === */}
-        
-        {/* Large floating gradient orbs - visible on all screens, subtle opacity */}
-        <div className="absolute -top-20 -right-20 w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-rust/10 to-amber/5 dark:from-rust/5 dark:to-amber/[0.02] blur-3xl animate-float-slow pointer-events-none opacity-70" />
-        <div className="absolute -bottom-32 -left-20 w-80 h-80 md:w-[28rem] md:h-[28rem] rounded-full bg-gradient-to-tr from-denim/10 to-teal/5 dark:from-denim/5 dark:to-teal/[0.02] blur-3xl animate-float-medium pointer-events-none opacity-60" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-b from-mint/5 to-transparent dark:from-mint/[0.02] blur-2xl animate-float-fast pointer-events-none opacity-50" />
-
-        {/* Geometric rings - decorative arcs, faded */}
-        <div className="absolute top-10 right-10 md:top-20 md:right-32 pointer-events-none opacity-40">
-          <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-dashed border-rust/15 dark:border-rust/8 animate-[spin_25s_linear_infinite]" />
-        </div>
-        <div className="absolute bottom-20 left-4 md:bottom-32 md:left-20 pointer-events-none opacity-30">
-          <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border border-denim/15 dark:border-denim/8 animate-[spin_30s_linear_infinite_reverse]" />
+        {/* Subtle accent orbs - desktop only */}
+        <div className="hidden md:block">
+          <div className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-rust/8 to-amber/5 blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-32 -left-20 w-[28rem] h-[28rem] rounded-full bg-gradient-to-tr from-denim/8 to-teal/5 blur-3xl pointer-events-none" />
         </div>
 
-        {/* Scattered floating icons - faded for subtlety */}
-        <div className="absolute top-16 left-8 md:top-24 md:left-16 animate-float-slow pointer-events-none opacity-40">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-card/40 dark:bg-card/20 backdrop-blur-sm border border-border/30 flex items-center justify-center shadow-lg rotate-12">
-            <Bookmark className="w-5 h-5 md:w-6 md:h-6 text-rust/50" />
-          </div>
-        </div>
-        <div className="absolute bottom-28 right-8 md:bottom-40 md:right-24 animate-float-medium pointer-events-none opacity-35">
-          <div className="w-9 h-9 md:w-11 md:h-11 rounded-lg bg-card/30 dark:bg-card/15 backdrop-blur-sm border border-border/30 flex items-center justify-center shadow-md -rotate-6">
-            <FolderOpen className="w-4 h-4 md:w-5 md:h-5 text-mint/50" />
-          </div>
-        </div>
-        <div className="absolute top-1/3 right-4 md:right-12 animate-float-fast pointer-events-none opacity-30">
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-card/25 dark:bg-card/10 backdrop-blur-sm border border-border/25 flex items-center justify-center shadow rotate-3">
-            <Globe className="w-4 h-4 md:w-5 md:h-5 text-teal/40" />
-          </div>
-        </div>
-
-        {/* Animated dots constellation - faded */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-50">
-          <div className="absolute top-[15%] left-[20%] w-2 h-2 rounded-full bg-rust/20 dark:bg-rust/10 animate-pulse" />
-          <div className="absolute top-[25%] right-[15%] w-1.5 h-1.5 rounded-full bg-amber/25 dark:bg-amber/12 animate-pulse" style={{ animationDelay: '500ms' }} />
-          <div className="absolute top-[60%] left-[10%] w-2.5 h-2.5 rounded-full bg-denim/15 dark:bg-denim/8 animate-pulse" style={{ animationDelay: '1000ms' }} />
-          <div className="absolute top-[45%] right-[8%] w-1.5 h-1.5 rounded-full bg-mint/20 dark:bg-mint/10 animate-pulse" style={{ animationDelay: '750ms' }} />
-          <div className="absolute bottom-[20%] left-[25%] w-2 h-2 rounded-full bg-teal/20 dark:bg-teal/10 animate-pulse" style={{ animationDelay: '1250ms' }} />
-          <div className="absolute bottom-[35%] right-[22%] w-1 h-1 rounded-full bg-rust/25 dark:bg-rust/12 animate-pulse" style={{ animationDelay: '250ms' }} />
-        </div>
-
-        {/* Diagonal accent lines - very subtle */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-[0.04] dark:opacity-[0.02]">
-          <div className="absolute top-0 -left-1/4 w-[150%] h-px bg-gradient-to-r from-transparent via-rust to-transparent rotate-[25deg] origin-left" />
-          <div className="absolute bottom-1/4 -left-1/4 w-[150%] h-px bg-gradient-to-r from-transparent via-denim to-transparent rotate-[-15deg] origin-left" />
+        {/* Decorative ring - desktop only */}
+        <div className="absolute top-20 right-32 pointer-events-none opacity-30 hidden lg:block">
+          <div className="w-32 h-32 rounded-full border-2 border-dashed border-rust/20" />
         </div>
 
         {/* Decorative book spines on the left - editorial feel (desktop only) */}
@@ -268,10 +228,9 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             {/* Left - Typography heavy */}
             <div className="text-center lg:text-left">
-              {/* Eyebrow - with shimmer effect */}
-              <div className="relative inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-gradient-to-r from-rust/10 via-amber/10 to-rust/10 border border-rust/20 overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-                <Sparkles className="w-4 h-4 text-rust animate-pulse" />
+              {/* Eyebrow badge */}
+              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-rust/10 border border-rust/20">
+                <Sparkles className="w-4 h-4 text-rust" />
                 <span className="text-sm font-medium text-rust">Free to start</span>
               </div>
 
@@ -299,7 +258,7 @@ export default function HomePage() {
                   </svg>
                 </span>
                 <br />
-                <span className="italic text-denim-deep/80 dark:text-denim-faded">awaits.</span>
+                <span className="italic text-denim">awaits.</span>
               </h2>
 
               {/* Subtext */}

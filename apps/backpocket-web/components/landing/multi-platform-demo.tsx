@@ -99,7 +99,7 @@ export function MultiPlatformDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app">
-      <div className="space-y-4">
+      <div className="space-y-4 min-h-[280px]">
         {/* Quick Add input */}
         <div className="space-y-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
