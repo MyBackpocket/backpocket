@@ -26,11 +26,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-denim">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md overflow-hidden">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <AnimatedLogo />
+          <AnimatedLogo className="min-w-0 shrink" />
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 shrink-0">
             <ThemeSwitcher />
             {/* Skeleton while Clerk loads */}
             <AuthLoading>

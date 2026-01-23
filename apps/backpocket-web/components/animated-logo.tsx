@@ -63,7 +63,7 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
     <LinkComponent
       {...linkProps}
       className={cn(
-        "inline-flex items-center gap-2 group select-none transition-opacity hover:opacity-80",
+        "inline-flex items-center gap-2 group select-none transition-opacity hover:opacity-80 overflow-hidden",
         className
       )}
       onMouseEnter={() => setIsPaused(true)}
@@ -91,7 +91,7 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
       </span>
 
       {/* Animated text container */}
-      <span className="relative overflow-hidden">
+      <span className="relative overflow-hidden min-w-0 truncate">
         {/* Main text with morphing animation */}
         <span
           className={cn(
@@ -136,10 +136,10 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
         />
       </span>
 
-      {/* "Your domain" badge that fades in for custom domains */}
+      {/* "Your domain" badge that fades in for custom domains - hidden on mobile */}
       <span
         className={cn(
-          "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full transition-all duration-300 whitespace-nowrap",
+          "hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full transition-all duration-300 whitespace-nowrap shrink-0",
           current.isCustom && phase === "visible"
             ? "opacity-100 translate-x-0 bg-mint/15 text-mint border border-mint/30"
             : "opacity-0 -translate-x-2 pointer-events-none"
