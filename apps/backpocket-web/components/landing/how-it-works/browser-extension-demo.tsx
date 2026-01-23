@@ -62,16 +62,16 @@ export function BrowserExtensionDemo() {
             <div className="w-3 h-3 rounded-full bg-amber/70 shadow-inner" />
             <div className="w-3 h-3 rounded-full bg-mint/70 shadow-inner" />
           </div>
-          <div className="flex-1 mx-3">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background/80 border border-border/50">
-              <Globe className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground truncate flex-1">
+          <div className="flex-1 mx-3 min-w-0">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-background/80 border border-border/50 overflow-hidden">
+              <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              <span className="text-sm text-muted-foreground truncate flex-1 min-w-0">
                 {BROWSER_ARTICLE.url}
               </span>
               {/* Extension Icon */}
               <motion.button
                 type="button"
-                className={`relative ml-2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                className={`relative ml-2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 shrink-0 ${
                   phase === "clicking"
                     ? "bg-rust scale-110 shadow-lg shadow-rust/40"
                     : phase === "saving" || phase === "saved"

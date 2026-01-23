@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatedLogo } from "@/components/animated-logo";
 import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
 import { HeroPocket } from "@/components/landing";
+import { MobileDomainBanner } from "@/components/mobile-domain-banner";
 
 // Dynamic imports for heavy below-the-fold components (framer-motion heavy)
 const HowItWorksSection = dynamic(
@@ -58,6 +59,9 @@ export default function HomePage() {
           </div>
         </div>
       </nav>
+
+      {/* Mobile Domain Banner - shows subdomain/custom domain feature on mobile */}
+      <MobileDomainBanner />
 
       {/* Hero Section */}
       <HeroPocket />
