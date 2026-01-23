@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 /**
  * Returns the appropriate icon component based on the resolved theme.
@@ -28,11 +29,16 @@ export function getNextTheme(currentTheme: string | undefined): "light" | "dark"
   return "system";
 }
 
+interface ThemeSwitcherProps {
+  /** Additional class names */
+  className?: string;
+}
+
 /**
  * Theme switcher with dropdown menu.
  * Uses resolvedTheme for the icon which updates dynamically when theme changes.
  */
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ className }: ThemeSwitcherProps) {
   const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
 
@@ -42,7 +48,7 @@ export function ThemeSwitcher() {
 
   // During SSR/hydration, render a skeleton to prevent mismatch and flash
   if (!mounted) {
-    return <div className="h-9 w-9 shrink-0" />;
+    return <div className={cn("h-9 w-9 shrink-0", className)} />;
   }
 
   const ThemeIcon = getThemeIcon(resolvedTheme);
@@ -50,7 +56,7 @@ export function ThemeSwitcher() {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
+        <Button variant="ghost" size="icon" className={cn("h-9 w-9 shrink-0", className)}>
           <ThemeIcon className="h-4 w-4" />
           <span className="sr-only">Toggle theme</span>
         </Button>
@@ -70,6 +76,43 @@ export function ThemeSwitcher() {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * Floating theme switcher for mobile.
+ * Fixed position in bottom-right corner with a pill-shaped button.
+ */
+export function ThemeSwitcherFloating() {
+  const [mounted, setMounted] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const cycleTheme = () => {
+    setTheme(getNextTheme(theme));
+  };
+
+  // During SSR/hydration, don't render anything to prevent layout shift
+  if (!mounted) {
+    return null;
+  }
+
+  const ThemeIcon = getThemeIcon(resolvedTheme);
+
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={cycleTheme}
+      className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg border-2 bg-background/95 backdrop-blur-sm hover:scale-105 transition-transform sm:hidden"
+      title={`Theme: ${theme}`}
+    >
+      <ThemeIcon className="h-5 w-5" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
   );
 }
 

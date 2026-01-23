@@ -17,7 +17,7 @@ const DemoSection = dynamic(
 );
 
 import { Logo } from "@/components/logo";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { ThemeSwitcher, ThemeSwitcherFloating } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
@@ -31,7 +31,7 @@ export default function HomePage() {
           <AnimatedLogo className="min-w-0 shrink" />
 
           <div className="flex items-center gap-4 shrink-0">
-            <ThemeSwitcher />
+            <ThemeSwitcher className="hidden sm:flex" />
             {/* Skeleton while Clerk loads */}
             <AuthLoading>
               <Skeleton className="h-8 w-[60px] rounded-md" />
@@ -58,6 +58,9 @@ export default function HomePage() {
           </div>
         </div>
       </nav>
+
+      {/* Floating theme switcher for mobile */}
+      <ThemeSwitcherFloating />
 
       {/* Mobile Domain Banner - shows subdomain/custom domain feature on mobile */}
       <MobileDomainBanner />

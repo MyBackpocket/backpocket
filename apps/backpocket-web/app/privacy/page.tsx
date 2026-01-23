@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Logo } from "@/components/logo";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { ThemeSwitcher, ThemeSwitcherFloating } from "@/components/theme-switcher";
 import { routes } from "@/lib/constants/routes";
 
 export const metadata: Metadata = {
@@ -19,9 +19,12 @@ export default function PrivacyPolicyPage() {
           <Link href={routes.home} className="flex items-center gap-2">
             <Logo size="md" />
           </Link>
-          <ThemeSwitcher />
+          <ThemeSwitcher className="hidden sm:flex" />
         </div>
       </nav>
+
+      {/* Floating theme switcher for mobile */}
+      <ThemeSwitcherFloating />
 
       {/* Content */}
       <main className="mx-auto max-w-4xl px-6 pt-32 pb-20">
