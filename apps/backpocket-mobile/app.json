@@ -64,7 +64,14 @@
       "expo-font",
       "expo-sqlite",
       "expo-web-browser",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-build-properties",
+        {
+          "buildReactNativeFromSource": true,
+          "useHermesV1": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

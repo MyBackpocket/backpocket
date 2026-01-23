@@ -27,6 +27,7 @@
     "convex": "^1.31.3",
     "expo": "^55.0.0-canary-20260121-a63c0dd",
     "expo-auth-session": "7.1.0-canary-20260121-a63c0dd",
+    "expo-build-properties": "2.0.0-canary-20260121-a63c0dd",
     "expo-clipboard": "9.0.0-canary-20260121-a63c0dd",
     "expo-constants": "18.1.0-canary-20260121-a63c0dd",
     "expo-dev-client": "6.1.0-canary-20260121-a63c0dd",
