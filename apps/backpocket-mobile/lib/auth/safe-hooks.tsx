@@ -9,7 +9,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
-import { useOfflineContext, type CachedUser } from "@/lib/offline/context";
+import { useOfflineContext } from "@/lib/offline/context";
 
 // ============================================================================
 // CLERK AVAILABILITY CONTEXT
@@ -124,11 +124,11 @@ export function useSafeUser(): SafeUserState {
     isSignedIn: true,
     user: {
       id: cachedUser.id,
-      firstName: cachedUser.name?.split(" ")[0] ?? null,
-      lastName: cachedUser.name?.split(" ").slice(1).join(" ") ?? null,
-      fullName: cachedUser.name ?? null,
+      firstName: cachedUser.firstName,
+      lastName: cachedUser.lastName,
+      fullName: cachedUser.fullName,
       username: null,
-      imageUrl: cachedUser.avatarUrl ?? "",
+      imageUrl: cachedUser.imageUrl ?? "",
       primaryEmailAddress: cachedUser.email ? {
         emailAddress: cachedUser.email,
       } : null,
