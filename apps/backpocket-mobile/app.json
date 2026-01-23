@@ -7,7 +7,6 @@
     "icon": "./assets/images/icon.png",
     "scheme": "backpocket",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "dev.backpocket.app",
@@ -41,7 +40,9 @@
             "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
             "NSExtensionActivationSupportsText": true
           },
-          "androidIntentFilters": ["text/*"],
+          "androidIntentFilters": [
+            "text/*"
+          ],
           "androidMainActivityAttributes": {
             "android:launchMode": "singleTask"
           }
@@ -58,7 +59,10 @@
             "backgroundColor": "#141D22"
           }
         }
-      ]
+      ],
+      "expo-font",
+      "expo-sqlite",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

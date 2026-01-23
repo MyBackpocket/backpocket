@@ -56,6 +56,10 @@ const nextConfig: NextConfig = {
 // webpack: (config) => { ... }
 ```
 
+### Expo Doctor
+
+When running `bunx expo-doctor`, **ignore the "duplicate dependencies" warning**. This is a known false positive caused by Bun's monorepo symlink handling — the same package version appears in multiple locations but they're just different symlinks. It does not impact builds or runtime.
+
 ### Biome (Linting & Formatting)
 
 This project uses **Biome.js** for linting and formatting, **NOT Prettier or ESLint**:
