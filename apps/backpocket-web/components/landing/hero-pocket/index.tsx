@@ -6,7 +6,7 @@ import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
-import { IPhoneShareVisual } from "./iphone-share-visual";
+import { HeroMobileVisual } from "./hero-mobile-visual";
 import { PocketLink } from "./pocket-link";
 import { PocketVisual } from "./pocket-visual";
 
@@ -85,9 +85,9 @@ export function HeroPocket() {
 
           {/* Right: Visual - iPhone on mobile, Browser on desktop */}
           <div className="relative w-full max-w-sm lg:w-[380px] xl:w-[420px] lg:shrink-0 mx-auto lg:mx-0">
-            {/* iPhone share animation for mobile */}
+            {/* Mobile share animation with live site preview for mobile */}
             <div className="lg:hidden">
-              <IPhoneShareVisual />
+              <HeroMobileVisual />
             </div>
             {/* Browser extension animation for desktop */}
             <div className="hidden lg:block">
