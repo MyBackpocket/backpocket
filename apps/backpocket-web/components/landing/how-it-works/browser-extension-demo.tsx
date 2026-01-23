@@ -84,8 +84,8 @@ export function BrowserExtensionDemo() {
                   {phase === "saved" ? (
                     <motion.div
                       key="check"
-                      initial={{ scale: 0, rotate: -90 }}
-                      animate={{ scale: 1, rotate: 0 }}
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
                       exit={{ scale: 0 }}
                       transition={{ type: "spring", stiffness: 400, damping: 15 }}
                     >
