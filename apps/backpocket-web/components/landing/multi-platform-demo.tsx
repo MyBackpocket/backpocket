@@ -107,8 +107,8 @@ export function MultiPlatformDemo() {
           </span>
           <div className="relative">
             <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <div className="flex h-11 w-full items-center rounded-lg border border-denim/20 bg-background pl-10 pr-4">
-              <span className="text-sm text-foreground">
+            <div className="flex h-11 w-full items-center rounded-lg border border-denim/20 bg-background pl-10 pr-4 overflow-hidden">
+              <span className="text-sm text-foreground whitespace-nowrap overflow-hidden">
                 {typedUrl}
                 {isTyping && <span className="animate-pulse text-rust">|</span>}
               </span>
