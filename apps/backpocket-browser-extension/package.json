@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@backpocket/types": "workspace:*",
+    "@backpocket/utils": "workspace:*",
     "@clerk/chrome-extension": "^2.8.17",
     "@fontsource-variable/dm-sans": "^5.2.8",
     "convex": "^1.31.4",
@@ -27,7 +28,6 @@
   },
   "devDependencies": {
     "@backpocket/tsconfig": "workspace:*",
-    "@backpocket/utils": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",

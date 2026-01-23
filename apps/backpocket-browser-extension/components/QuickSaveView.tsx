@@ -181,8 +181,8 @@ export const QuickSaveView = memo(function QuickSaveView() {
         setSavedItem(saved);
         setStatus("success");
 
-        // Notify background script
-        browser.runtime.sendMessage({ type: "SAVE_SUCCESS" }).catch(() => {});
+        // Notify background script with URL for icon update
+        browser.runtime.sendMessage({ type: "SAVE_SUCCESS", url: currentUrl }).catch(() => {});
       } catch (err) {
         console.error("Save failed:", err);
         setStatus("error");
@@ -229,11 +229,16 @@ export const QuickSaveView = memo(function QuickSaveView() {
       await deleteSave(savedItem.id, token);
       setStatus("deleted");
       setSavedItem(null);
+
+      // Notify background script with URL for icon update
+      if (currentUrl) {
+        browser.runtime.sendMessage({ type: "DELETE_SUCCESS", url: currentUrl }).catch(() => {});
+      }
     } catch (err) {
       console.error("Failed to delete:", err);
       setIsDeleting(false);
     }
-  }, [savedItem, isDeleting, getToken]);
+  }, [savedItem, isDeleting, getToken, currentUrl]);
 
   // Retry save after error or deletion
   const handleRetry = useCallback(() => {

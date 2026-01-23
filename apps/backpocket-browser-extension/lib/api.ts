@@ -423,3 +423,30 @@ export async function deleteSave(saveId: string, token: string): Promise<void> {
     throw new ApiError("Failed to delete save");
   }
 }
+
+// =============================================================================
+// BACKGROUND SCRIPT HELPERS
+// =============================================================================
+
+/**
+ * Check if a URL is already saved - for use in background script.
+ * Gets auth token from session storage instead of Clerk context.
+ * Returns true if URL is saved, false otherwise.
+ */
+export async function checkDuplicateFromBackground(url: string): Promise<boolean> {
+  try {
+    const tokenData = await browser.storage.session.get("auth_token") as { auth_token?: string };
+    const token = tokenData?.auth_token;
+    if (!token) {
+      console.log("[Backpocket] No auth token in session storage");
+      return false;
+    }
+
+    console.log("[Backpocket] Found auth token, checking duplicate...");
+    const result = await checkDuplicate(url, token);
+    return result !== null;
+  } catch (err) {
+    console.error("[Backpocket] checkDuplicateFromBackground error:", err);
+    return false;
+  }
+}

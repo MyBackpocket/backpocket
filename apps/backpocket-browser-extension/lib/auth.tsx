@@ -129,6 +129,29 @@ export function AuthLoadingView({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+// =============================================================================
+// TOKEN SYNC FOR BACKGROUND SCRIPT
+// =============================================================================
+
+/**
+ * Sync auth token to session storage for background script access.
+ * Uses session storage (cleared on browser close) for better security.
+ * Also notifies background script to re-check icon state.
+ */
+export async function syncTokenToStorage(token: string | null): Promise<void> {
+  try {
+    if (token) {
+      await browser.storage.session.set({ auth_token: token });
+      // Notify background script that token is available
+      browser.runtime.sendMessage({ type: "TOKEN_SYNCED" }).catch(() => {});
+    } else {
+      await browser.storage.session.remove("auth_token");
+    }
+  } catch (error) {
+    console.error("[Backpocket] Failed to sync token to storage:", error);
+  }
+}
+
 /**
  * Re-export Clerk components
  */

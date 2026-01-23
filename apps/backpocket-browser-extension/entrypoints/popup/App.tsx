@@ -1,4 +1,5 @@
 import logoImg from "@/assets/img/Backpocket-Logo-128.png";
+import { useEffect } from "react";
 import { QuickSaveView } from "../../components/QuickSaveView";
 import { ThemePicker } from "../../components/ThemePicker";
 import {
@@ -7,12 +8,39 @@ import {
   AuthProvider,
   UnauthenticatedView,
   UserButton,
+  syncTokenToStorage,
+  useAuth,
   useSessionRefresh,
 } from "../../lib/auth";
 import { ThemeProvider } from "../../lib/theme";
 
 // Web app URL for sign-in (OAuth doesn't work directly in extension popups)
 const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL || "http://localhost:3000";
+
+/**
+ * Component that syncs auth token to session storage for background script access.
+ * Must be placed inside AuthProvider to access Clerk context.
+ */
+function TokenSyncer() {
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    async function syncToken() {
+      if (isSignedIn) {
+        const token = await getToken();
+        await syncTokenToStorage(token);
+      } else {
+        await syncTokenToStorage(null);
+      }
+    }
+
+    syncToken();
+  }, [isSignedIn, isLoaded, getToken]);
+
+  return null;
+}
 
 function LoadingView() {
   return (
@@ -117,6 +145,8 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        {/* Sync auth token to session storage for background script */}
+        <TokenSyncer />
         <div className="w-[380px] p-4 bg-[var(--bg-primary)]">
           <AuthLoadingView>
             <LoadingView />
