@@ -15,7 +15,7 @@ import { HeroPocket } from "@/components/landing";
 
 // Dynamic imports for heavy below-the-fold components (framer-motion heavy)
 const HowItWorksSection = dynamic(
-  () => import("@/components/landing/how-it-works-section").then((m) => m.HowItWorksSection),
+  () => import("@/components/landing/how-it-works/index").then((m) => m.HowItWorksSection),
   { ssr: true }
 );
 const DemoSection = dynamic(
