@@ -55,14 +55,14 @@ export function QuickNoteSection({ savedItem, getToken }: QuickNoteSectionProps)
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className={`flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm transition-all ${
+        className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border bg-[var(--bg-tertiary)] px-3 py-2.5 text-xs transition-all ${
           isExpanded
             ? "rounded-b-none border-[var(--border-focus)] shadow-[0_0_0_2px_var(--accent-subtle)]"
-            : "hover:border-[var(--text-muted)]"
+            : "border-[var(--border)] hover:border-[var(--text-muted)]"
         } ${hasNote ? "text-[var(--text-secondary)]" : "text-[var(--text-muted)]"}`}
       >
         <FileTextIcon className="size-4 shrink-0" />
-        <span className="flex-1 text-left">{hasNote ? "Edit note" : "Add a note"}</span>
+        <span className="flex-1 text-left font-medium">{hasNote ? "Edit note" : "Add a note"}</span>
         {isUpdating ? (
           <Loader2Icon className="size-4 shrink-0 animate-spin" />
         ) : isExpanded ? (
@@ -73,28 +73,28 @@ export function QuickNoteSection({ savedItem, getToken }: QuickNoteSectionProps)
       </button>
 
       {isExpanded && (
-        <div className="rounded-b-xl border border-t-0 border-[var(--border-focus)] bg-[var(--bg-input)] p-3.5 shadow-[0_0_0_2px_var(--accent-subtle)] animate-[slideDown_0.15s_ease]">
+        <div className="rounded-b-[var(--radius-md)] border border-t-0 border-[var(--border-focus)] bg-[var(--bg-input)] p-3 shadow-[0_0_0_2px_var(--accent-subtle)] animate-[slideDown_0.15s_ease]">
           <textarea
             value={noteText}
             onChange={(e) => handleNoteChange(e.target.value)}
             onBlur={handleBlur}
             placeholder="Add a quick note..."
-            rows={3}
-            className="w-full resize-y rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] p-3 text-sm leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)]"
+            rows={2}
+            className="w-full resize-y rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-tertiary)] p-2.5 text-xs leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)]"
           />
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-[10px] text-[var(--text-muted)]">Supports Markdown</span>
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-[10px] text-[var(--text-muted)]">Markdown supported</span>
             {hasUnsavedChanges && (
               <button
                 type="button"
                 onClick={handleSaveNote}
                 disabled={isUpdating}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] bg-[var(--accent)] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isUpdating ? (
-                  <Loader2Icon className="size-3.5 animate-spin" />
+                  <Loader2Icon className="size-3 animate-spin" />
                 ) : (
-                  <CheckIcon className="size-3.5" />
+                  <CheckIcon className="size-3" />
                 )}
                 Save
               </button>

@@ -57,24 +57,27 @@ You can find your extension ID after loading it in the browser (see Development 
 
 ## Development
 
-### Mock Auth Mode
+### Session Sync
 
-For local development without Clerk configured, you can enable **mock auth mode**:
+The extension uses Clerk's `syncHost` feature to share authentication sessions with the web app. This means:
+
+1. Users sign in via the web app (backpocket.my)
+2. The extension automatically syncs the session
+3. No separate sign-in needed in the extension
+
+**Required environment variables:**
 
 ```env
-# Add to .env.development.local
-VITE_BACKPOCKET_AUTH_MODE=mock
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_your_key_here
+VITE_CLERK_SYNC_HOST=https://YOUR_CLERK_FRONTEND_API.clerk.accounts.dev
+VITE_WEB_APP_URL=https://backpocket.my
 ```
 
-This bypasses Clerk authentication entirely and uses a mock token. Your backend must also be in mock mode (`BACKPOCKET_AUTH_MODE=mock`) for this to work.
+**Clerk Dashboard setup:**
 
-**What it does:**
-
-- Skips Clerk sign-in, shows the save form immediately
-- Uses `mock-token` as the auth token (backend recognizes this in mock mode)
-- Shows a 🧪 badge instead of the user avatar
-
-**Security:** Only use this for local development. The backend will reject `mock-token` unless it's also running in mock mode.
+1. Go to Clerk Dashboard > Configure > Paths
+2. Add extension origin to "Allowed origins": `chrome-extension://<your-extension-id>`
+3. Enable cross-origin session sync
 
 ### Start dev server (Chrome)
 
@@ -133,7 +136,7 @@ backpocket-browser-extension/
 │   └── TagInput.tsx    # Tag autocomplete input
 ├── lib/
 │   ├── api.ts          # Backpocket API client
-│   ├── auth.tsx        # Auth provider (Clerk or mock mode)
+│   ├── auth.tsx        # Auth provider (Clerk with session sync)
 │   └── types.ts        # TypeScript types
 ├── public/
 │   └── icon/           # Extension icons

@@ -5,51 +5,17 @@ import {
   SignInButton,
   UserButton,
   useAuth as useClerkAuth,
+  useClerk,
 } from "@clerk/chrome-extension";
-import { createContext, type ReactNode, useContext } from "react";
+import { type ReactNode, useCallback, useState } from "react";
 
-const MOCK_AUTH_MODE = import.meta.env.VITE_BACKPOCKET_AUTH_MODE === "mock";
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const CLERK_SYNC_HOST = import.meta.env.VITE_CLERK_SYNC_HOST;
 
 /**
- * Mock auth context for development without Clerk
- */
-interface MockAuthContextValue {
-  getToken: () => Promise<string>;
-  isSignedIn: boolean;
-  userId: string;
-}
-
-const MockAuthContext = createContext<MockAuthContextValue | null>(null);
-
-function MockAuthProvider({ children }: { children: ReactNode }) {
-  const value: MockAuthContextValue = {
-    getToken: async () => "mock-token",
-    isSignedIn: true,
-    userId: "mock-user-dev",
-  };
-
-  return <MockAuthContext.Provider value={value}>{children}</MockAuthContext.Provider>;
-}
-
-/**
- * Unified auth hook that works with both Clerk and mock mode
- * Returns getToken that fetches Convex-compatible JWT
+ * Auth hook that returns getToken for Convex-compatible JWT
  */
 export function useAuth() {
-  const mockContext = useContext(MockAuthContext);
-
-  // In mock mode, use the mock context
-  if (MOCK_AUTH_MODE) {
-    if (!mockContext) {
-      throw new Error("useAuth must be used within AuthProvider");
-    }
-    return mockContext;
-  }
-
-  // Otherwise use Clerk's useAuth
-  // biome-ignore lint/correctness/useHookAtTopLevel: MOCK_AUTH_MODE is a compile-time constant, so hook order is deterministic
   const clerkAuth = useClerkAuth();
 
   // Wrap getToken to always use the "convex" template for Convex-compatible JWTs
@@ -62,28 +28,69 @@ export function useAuth() {
 }
 
 /**
- * Unified auth provider that uses Clerk or mock mode based on env
+ * Hook to manually refresh the session (useful when sync fails)
+ */
+export function useSessionRefresh() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const clerk = useClerk();
+
+  const refreshSession = useCallback(async () => {
+    setIsRefreshing(true);
+    setError(null);
+
+    try {
+      // Attempt to reload the client which re-syncs with the session
+      await clerk.client?.destroy();
+      // Small delay for the client to reinitialize
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      window.location.reload();
+    } catch (err) {
+      console.error("[Backpocket] Session refresh failed:", err);
+      setError("Failed to refresh session. Try signing in again.");
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [clerk]);
+
+  return { refreshSession, isRefreshing, error };
+}
+
+/**
+ * Auth provider using Clerk
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  if (MOCK_AUTH_MODE) {
-    console.log("[Backpocket] Running in mock auth mode");
-    return <MockAuthProvider>{children}</MockAuthProvider>;
-  }
-
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
-      <div className="error-view">
-        <p>Missing Clerk publishable key.</p>
-        <p>
-          <small>Check your .env file or use VITE_BACKPOCKET_AUTH_MODE=mock</small>
+      <div className="flex flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+        <div className="flex size-14 items-center justify-center rounded-full bg-[var(--error-bg)] text-[var(--error)]">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="size-7"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <p className="text-base font-semibold text-[var(--text-primary)]">Configuration Error</p>
+        <p className="text-sm text-[var(--text-secondary)]">Missing Clerk publishable key.</p>
+        <p className="text-xs text-[var(--text-muted)]">
+          Add VITE_CLERK_PUBLISHABLE_KEY to your .env file
         </p>
       </div>
     );
   }
 
   // syncHost enables session sync with web app (requires Clerk allowed_origins config)
-  // Development: VITE_CLERK_SYNC_HOST=http://localhost
-  // Production: VITE_CLERK_SYNC_HOST=https://clerk.your-domain.com (your Clerk Frontend API)
+  // Development: VITE_CLERK_SYNC_HOST=http://localhost:3000
+  // Production: VITE_CLERK_SYNC_HOST=https://YOUR_CLERK_FRONTEND_API.clerk.accounts.dev
   return (
     <ClerkProvider
       publishableKey={CLERK_PUBLISHABLE_KEY}
@@ -96,33 +103,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Show children only when signed in (or always in mock mode)
+ * Show children only when signed in
  */
 export function AuthenticatedView({ children }: { children: ReactNode }) {
-  if (MOCK_AUTH_MODE) {
-    return <>{children}</>;
-  }
-
   return <SignedIn>{children}</SignedIn>;
 }
 
 /**
- * Show children only when signed out (never in mock mode)
+ * Show children only when signed out
  */
 export function UnauthenticatedView({ children }: { children: ReactNode }) {
-  if (MOCK_AUTH_MODE) {
-    return null;
-  }
-
   return <SignedOut>{children}</SignedOut>;
 }
 
 /**
- * Re-export Clerk components for use in non-mock mode
+ * Show children while auth is loading
  */
-export { SignInButton, UserButton };
+export function AuthLoadingView({ children }: { children: ReactNode }) {
+  const { isLoaded } = useClerkAuth();
+
+  if (isLoaded) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
 
 /**
- * Check if we're in mock auth mode
+ * Re-export Clerk components
  */
-export const isMockAuth = MOCK_AUTH_MODE;
+export { SignInButton, UserButton };

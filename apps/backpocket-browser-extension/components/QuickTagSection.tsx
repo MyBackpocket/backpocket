@@ -81,14 +81,14 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
   }
 
   return (
-    <div className="w-full">
-      <div className="mb-2.5 flex items-center gap-2 px-0.5 text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
-        <TagIcon className="size-4" />
+    <div className="w-full rounded-[var(--radius-md)] bg-[var(--bg-tertiary)] p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+        <TagIcon className="size-3.5" />
         <span>Tags</span>
         {isUpdating && <Loader2Icon className="ml-auto size-3.5 animate-spin" />}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {/* Selected tags */}
         {selectedTags.map((tag) => (
           <button
@@ -96,10 +96,10 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
             type="button"
             onClick={() => handleToggleTag(tag)}
             disabled={isUpdating}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-subtle)] px-3.5 py-1.5 text-sm font-medium text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] bg-[var(--accent-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span>{tag}</span>
-            <XIcon className="size-3.5" />
+            <XIcon className="size-3" />
           </button>
         ))}
 
@@ -110,16 +110,16 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
             type="button"
             onClick={() => handleToggleTag(tag.name)}
             disabled={isUpdating}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-muted)] px-3.5 py-1.5 text-sm font-medium text-[var(--text-secondary)] transition-all hover:bg-[var(--accent-subtle)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] bg-[var(--bg-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all hover:bg-[var(--accent-subtle)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <PlusIcon className="size-3.5" />
+            <PlusIcon className="size-3" />
             <span>{tag.name}</span>
           </button>
         ))}
 
         {/* Add new tag input */}
         {isAddingTag ? (
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-focus)] bg-[var(--bg-input)] py-1 pl-3.5 pr-1.5 shadow-[0_0_0_2px_var(--accent-subtle)]">
+          <div className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] border border-[var(--border-focus)] bg-[var(--bg-input)] py-1 pl-3 pr-1.5 shadow-[0_0_0_2px_var(--accent-subtle)]">
             <input
               type="text"
               value={newTagInput}
@@ -131,7 +131,7 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
                 }
               }}
               placeholder="tag name"
-              className="w-20 border-none bg-transparent py-1 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              className="w-20 border-none bg-transparent text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
               // biome-ignore lint/a11y/noAutofocus: intentional UX for new tag input
               autoFocus
             />
@@ -139,18 +139,18 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
               type="button"
               onClick={handleAddNewTag}
               disabled={!newTagInput.trim()}
-              className="flex size-6 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:bg-[var(--bg-muted)] disabled:text-[var(--text-muted)]"
+              className="flex size-5 items-center justify-center rounded-full bg-[var(--accent)] text-white transition-colors hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:bg-[var(--bg-muted)] disabled:text-[var(--text-muted)]"
             >
-              <CheckIcon className="size-3.5" />
+              <CheckIcon className="size-3" />
             </button>
           </div>
         ) : (
           <button
             type="button"
             onClick={() => setIsAddingTag(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-[var(--border)] px-3.5 py-1.5 text-sm font-medium text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] border border-dashed border-[var(--border)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
           >
-            <PlusIcon className="size-3.5" />
+            <PlusIcon className="size-3" />
             <span>New</span>
           </button>
         )}

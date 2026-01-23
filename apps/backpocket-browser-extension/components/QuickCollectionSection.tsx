@@ -56,10 +56,10 @@ export function QuickCollectionSection({
           href={`${webAppUrl}/app/collections`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center gap-3 rounded-xl border border-dashed border-[var(--border)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+          className="flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border border-dashed border-[var(--border)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-xs text-[var(--text-muted)] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
         >
           <FolderIcon className="size-4 shrink-0" />
-          <span className="flex-1 text-left">Create a collection</span>
+          <span className="flex-1 text-left font-medium">Create a collection</span>
           <ExternalLinkIcon className="size-3.5 shrink-0" />
         </a>
       </div>
@@ -78,15 +78,15 @@ export function QuickCollectionSection({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         disabled={isUpdating}
-        className={`flex w-full items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm transition-all ${
+        className={`flex w-full items-center gap-2.5 rounded-[var(--radius-md)] border bg-[var(--bg-tertiary)] px-3 py-2.5 text-xs transition-all ${
           isOpen
             ? "border-[var(--border-focus)] shadow-[0_0_0_2px_var(--accent-subtle)]"
-            : "hover:border-[var(--text-muted)]"
+            : "border-[var(--border)] hover:border-[var(--text-muted)]"
         } ${isUpdating ? "cursor-not-allowed opacity-60" : ""}`}
       >
         <FolderIcon className="size-4 shrink-0 text-[var(--text-muted)]" />
         <span
-          className={`flex-1 truncate text-left ${
+          className={`flex-1 truncate text-left font-medium ${
             selectedIds.length === 0 ? "text-[var(--text-muted)]" : "text-[var(--text-primary)]"
           }`}
         >
@@ -104,7 +104,7 @@ export function QuickCollectionSection({
       </button>
 
       {isOpen && (
-        <div className="mt-1.5 max-h-44 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-input)] shadow-[var(--shadow-lg)]">
+        <div className="mt-1.5 max-h-36 overflow-y-auto rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-input)] shadow-[var(--shadow-lg)] animate-[slideDown_0.15s_ease]">
           {collections.map((collection) => {
             const isSelected = selectedIds.includes(collection.id);
             return (
@@ -113,22 +113,22 @@ export function QuickCollectionSection({
                 type="button"
                 onClick={() => handleToggleCollection(collection.id)}
                 disabled={isUpdating}
-                className={`flex w-full items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-xs transition-colors ${
                   isSelected ? "bg-[var(--accent-subtle)]" : "hover:bg-[var(--bg-muted)]"
                 } ${isUpdating ? "cursor-not-allowed opacity-50" : ""}`}
               >
                 <span
-                  className={`flex size-5 shrink-0 items-center justify-center rounded border ${
+                  className={`flex size-4 shrink-0 items-center justify-center rounded border transition-all ${
                     isSelected
                       ? "border-[var(--accent)] bg-[var(--accent)] text-white"
                       : "border-[var(--border)]"
                   }`}
                 >
-                  {isSelected && <CheckIcon className="size-3.5" />}
+                  {isSelected && <CheckIcon className="size-2.5" />}
                 </span>
-                <span className="flex-1 text-[var(--text-primary)]">{collection.name}</span>
+                <span className="flex-1 font-medium text-[var(--text-primary)]">{collection.name}</span>
                 {collection._count?.saves !== undefined && (
-                  <span className="text-xs text-[var(--text-muted)]">
+                  <span className="text-[10px] text-[var(--text-muted)]">
                     {collection._count.saves}
                   </span>
                 )}

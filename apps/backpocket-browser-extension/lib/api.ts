@@ -300,3 +300,22 @@ export async function listRecentSaves(token: string, limit = 5): Promise<Save[]>
     throw new ApiError("Something went wrong");
   }
 }
+
+/**
+ * Delete a save by ID
+ */
+export async function deleteSave(saveId: string, token: string): Promise<void> {
+  const client = createClient(token);
+
+  try {
+    await client.mutation(api.saves.remove, {
+      saveId: saveId as any, // Convex ID
+      clientSource: "extension",
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new ApiError(error.message, "UNKNOWN_ERROR");
+    }
+    throw new ApiError("Failed to delete save");
+  }
+}

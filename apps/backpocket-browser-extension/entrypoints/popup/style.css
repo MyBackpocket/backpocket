@@ -1,78 +1,84 @@
 @import "tailwindcss";
 
-/* Backpocket Brand Palette */
+/* Backpocket Brand Palette - HSL format for consistency with web app */
 :root {
-  /* Primary Denim Blues */
-  --denim-blue: #5b7a8a;
-  --deep-denim: #3d5a6c;
-  --faded-denim: #8eacbd;
+  /* Primary Denim Blues (HSL) */
+  --denim-blue: hsl(200 21% 45%);
+  --deep-denim: hsl(200 28% 33%);
+  --faded-denim: hsl(200 30% 65%);
 
-  /* Accent Colors */
-  --rust-orange: #c96d3b;
-  --rust-orange-hover: #d67d4a;
-  --amber: #e8b86d;
-  --mint-green: #9dc08b;
-  --teal: #7fbfbf;
+  /* Accent Colors (HSL) */
+  --rust-orange: hsl(21 58% 51%);
+  --rust-orange-hover: hsl(21 58% 56%);
+  --amber: hsl(40 75% 70%);
+  --mint-green: hsl(100 30% 60%);
+  --teal: hsl(180 35% 62%);
 
   /* Light mode - Cream backgrounds (default) */
-  --bg-primary: #f5f0e6;
-  --bg-secondary: #e8dfd0;
-  --bg-tertiary: #f8f4ed;
-  --bg-input: #ffffff;
-  --bg-muted: #f0ebe1;
+  --bg-primary: hsl(40 43% 93%);
+  --bg-secondary: hsl(36 30% 86%);
+  --bg-tertiary: hsl(40 40% 95%);
+  --bg-input: hsl(0 0% 100%);
+  --bg-muted: hsl(40 30% 91%);
 
-  --text-primary: #3a3a3a;
-  --text-secondary: #5b7a8a;
-  --text-muted: #8eacbd;
+  --text-primary: hsl(0 0% 23%);
+  --text-secondary: hsl(200 21% 45%);
+  --text-muted: hsl(200 30% 65%);
 
-  --border: #d4cec2;
-  --border-focus: #c96d3b;
+  --border: hsl(36 18% 80%);
+  --border-focus: hsl(21 58% 51%);
 
   --accent: var(--rust-orange);
   --accent-hover: var(--rust-orange-hover);
-  --accent-subtle: rgba(201, 109, 59, 0.12);
+  --accent-subtle: hsl(21 58% 51% / 0.12);
 
-  --success: #9dc08b;
-  --success-bg: rgba(157, 192, 139, 0.15);
-  --error: #c44536;
-  --error-bg: rgba(196, 69, 54, 0.1);
-  --warning: #e8b86d;
-  --warning-bg: rgba(232, 184, 109, 0.12);
+  --success: hsl(100 30% 60%);
+  --success-bg: hsl(100 30% 60% / 0.15);
+  --error: hsl(6 56% 47%);
+  --error-bg: hsl(6 56% 47% / 0.1);
+  --warning: hsl(40 75% 70%);
+  --warning-bg: hsl(40 75% 70% / 0.12);
 
-  --shadow: 0 1px 3px rgba(61, 90, 108, 0.08), 0 2px 8px rgba(61, 90, 108, 0.04);
-  --shadow-lg: 0 4px 12px rgba(61, 90, 108, 0.1), 0 8px 24px rgba(61, 90, 108, 0.06);
+  --shadow: 0 1px 3px hsl(200 28% 33% / 0.08), 0 2px 8px hsl(200 28% 33% / 0.04);
+  --shadow-lg: 0 4px 12px hsl(200 28% 33% / 0.1), 0 8px 24px hsl(200 28% 33% / 0.06);
 
   --font-sans: "DM Sans Variable", "DM Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Border radius tokens */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
 }
 
 /* Dark mode - via data-theme attribute (set by JS) */
 :root[data-theme="dark"] {
-  --bg-primary: #141d22;
-  --bg-secondary: #1a2730;
-  --bg-tertiary: #1e2f3a;
-  --bg-input: #1a2730;
-  --bg-muted: #1e2730;
+  --bg-primary: hsl(200 25% 10%);
+  --bg-secondary: hsl(200 25% 14%);
+  --bg-tertiary: hsl(200 25% 17%);
+  --bg-input: hsl(200 25% 14%);
+  --bg-muted: hsl(200 20% 15%);
 
-  --text-primary: #e8e2d6;
-  --text-secondary: #8eacbd;
-  --text-muted: #5b7a8a;
+  --text-primary: hsl(40 20% 90%);
+  --text-secondary: hsl(200 30% 65%);
+  --text-muted: hsl(200 21% 45%);
 
-  --border: #2a3d4a;
-  --border-focus: #e8b86d;
+  --border: hsl(200 25% 23%);
+  --border-focus: hsl(40 75% 70%);
 
   --accent: var(--amber);
-  --accent-hover: #f0c47d;
-  --accent-subtle: rgba(232, 184, 109, 0.12);
+  --accent-hover: hsl(40 80% 75%);
+  --accent-subtle: hsl(40 75% 70% / 0.12);
 
-  --warning-bg: rgba(232, 184, 109, 0.1);
+  --warning-bg: hsl(40 75% 70% / 0.1);
 
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow: 0 1px 3px hsl(0 0% 0% / 0.2), 0 2px 8px hsl(0 0% 0% / 0.15);
+  --shadow-lg: 0 4px 12px hsl(0 0% 0% / 0.25), 0 8px 24px hsl(0 0% 0% / 0.2);
 }
 
-/* Base */
+/* Base - Larger font size for better readability */
 html {
-  font-size: 14px;
+  font-size: 16px;
 }
 
 body {

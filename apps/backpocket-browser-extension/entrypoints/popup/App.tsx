@@ -3,15 +3,28 @@ import { QuickSaveView } from "../../components/QuickSaveView";
 import { ThemePicker } from "../../components/ThemePicker";
 import {
   AuthenticatedView,
+  AuthLoadingView,
   AuthProvider,
-  isMockAuth,
   UnauthenticatedView,
   UserButton,
+  useSessionRefresh,
 } from "../../lib/auth";
 import { ThemeProvider } from "../../lib/theme";
 
 // Web app URL for sign-in (OAuth doesn't work directly in extension popups)
 const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL || "http://localhost:3000";
+
+function LoadingView() {
+  return (
+    <div className="flex flex-col items-center justify-center gap-5 px-6 py-16 text-center">
+      <div className="flex size-16 items-center justify-center rounded-2xl bg-[var(--bg-muted)]">
+        {/* biome-ignore lint/performance/noImgElement: browser extension, not Next.js */}
+        <img src={logoImg} alt="Backpocket" className="size-10 rounded-xl animate-pulse" />
+      </div>
+      <p className="text-base text-[var(--text-muted)]">Loading...</p>
+    </div>
+  );
+}
 
 function SignedOutView() {
   function handleSignIn() {
@@ -20,47 +33,78 @@ function SignedOutView() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-5 px-5 py-10 text-center">
+    <div className="flex flex-col items-center justify-center gap-6 px-6 py-12 text-center">
       <div className="flex flex-col items-center gap-4">
         {/* biome-ignore lint/performance/noImgElement: browser extension, not Next.js */}
-        <img src={logoImg} alt="Backpocket" className="size-16 rounded-xl drop-shadow-lg" />
-        <h1 className="text-xl font-semibold tracking-tight text-[var(--text-primary)]">
+        <img src={logoImg} alt="Backpocket" className="size-20 rounded-2xl shadow-lg" />
+        <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Backpocket
         </h1>
       </div>
-      <p className="text-base text-[var(--text-muted)]">Sign in to save links</p>
+
+      <p className="text-base text-[var(--text-secondary)]">
+        Save links to your personal library
+      </p>
+
       <button
         type="button"
         onClick={handleSignIn}
-        className="rounded-xl bg-[var(--accent)] px-7 py-3 text-base font-medium text-white transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+        className="w-full rounded-[var(--radius-md)] bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-white shadow-md transition-all hover:bg-[var(--accent-hover)] hover:shadow-lg active:scale-[0.98]"
       >
-        Sign In
+        Sign In to Continue
       </button>
-      <p className="mt-2 text-xs text-[var(--text-muted)]">Opens backpocket.my to sign in</p>
+
+      <div className="mt-2 space-y-2">
+        <p className="text-sm text-[var(--text-muted)]">
+          Opens backpocket.my to sign in
+        </p>
+        <p className="text-xs text-[var(--text-muted)]">
+          Your session will sync automatically
+        </p>
+      </div>
+
+      <TroubleshootingHint />
+    </div>
+  );
+}
+
+function TroubleshootingHint() {
+  const { refreshSession, isRefreshing } = useSessionRefresh();
+
+  return (
+    <div className="mt-4 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-tertiary)] p-4">
+      <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
+        Having trouble?
+      </p>
+      <p className="mb-3 text-xs leading-relaxed text-[var(--text-muted)]">
+        If you're already signed in on the web but the extension doesn't recognize you, try refreshing the session.
+      </p>
+      <button
+        type="button"
+        onClick={refreshSession}
+        disabled={isRefreshing}
+        className="w-full rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-input)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition-all hover:border-[var(--text-muted)] hover:bg-[var(--bg-muted)] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {isRefreshing ? "Refreshing..." : "Refresh Session"}
+      </button>
     </div>
   );
 }
 
 function SignedInView() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* biome-ignore lint/performance/noImgElement: browser extension, not Next.js */}
-          <img src={logoImg} alt="Backpocket" className="size-7 rounded-lg" />
+          <img src={logoImg} alt="Backpocket" className="size-7 rounded-[var(--radius-sm)]" />
           <h1 className="text-base font-semibold tracking-tight text-[var(--text-primary)]">
             Backpocket
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemePicker />
-          {isMockAuth ? (
-            <div className="rounded-lg bg-[var(--bg-muted)] px-2.5 py-1 text-[10px] font-semibold tracking-wider text-[var(--text-muted)]">
-              DEV
-            </div>
-          ) : (
-            <UserButton />
-          )}
+          <UserButton />
         </div>
       </header>
 
@@ -73,7 +117,10 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <div className="w-[360px] min-h-[520px] p-5 bg-[var(--bg-primary)]">
+        <div className="w-[380px] p-4 bg-[var(--bg-primary)]">
+          <AuthLoadingView>
+            <LoadingView />
+          </AuthLoadingView>
           <UnauthenticatedView>
             <SignedOutView />
           </UnauthenticatedView>
