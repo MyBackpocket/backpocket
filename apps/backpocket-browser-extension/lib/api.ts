@@ -18,20 +18,102 @@ export class ApiError extends Error {
   }
 }
 
+// =============================================================================
+// SINGLETON CLIENT
+// =============================================================================
+
 /**
- * Create a Convex client with authentication token
+ * Singleton Convex client - reused across all API calls
+ * Much faster than creating a new client for every request
  */
-function createClient(token: string) {
-  const client = new ConvexHttpClient(CONVEX_URL);
-  client.setAuth(token);
-  return client;
+let clientInstance: ConvexHttpClient | null = null;
+let currentToken: string | null = null;
+
+function getClient(token: string): ConvexHttpClient {
+  // Reuse existing client if token hasn't changed
+  if (clientInstance && currentToken === token) {
+    return clientInstance;
+  }
+
+  // Create new client or update auth
+  if (!clientInstance) {
+    clientInstance = new ConvexHttpClient(CONVEX_URL);
+  }
+  clientInstance.setAuth(token);
+  currentToken = token;
+
+  return clientInstance;
+}
+
+// =============================================================================
+// CACHING LAYER
+// =============================================================================
+
+interface CachedData<T> {
+  data: T;
+  timestamp: number;
+}
+
+const CACHE_KEYS = {
+  tags: "backpocket_cache_tags",
+  collections: "backpocket_cache_collections",
+  space: "backpocket_cache_space",
+} as const;
+
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Get data from cache if valid, otherwise fetch and cache it
+ */
+async function getCachedOrFetch<T>(
+  cacheKey: string,
+  fetcher: () => Promise<T>
+): Promise<T> {
+  try {
+    const result = await browser.storage.local.get(cacheKey);
+    const cached = result[cacheKey] as CachedData<T> | undefined;
+
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return cached.data;
+    }
+  } catch {
+    // Cache read failed, proceed to fetch
+  }
+
+  const data = await fetcher();
+
+  // Cache the result (don't await, fire and forget)
+  browser.storage.local
+    .set({
+      [cacheKey]: { data, timestamp: Date.now() } as CachedData<T>,
+    })
+    .catch(() => {});
+
+  return data;
+}
+
+/**
+ * Invalidate specific caches - call after mutations that affect cached data
+ */
+export async function invalidateCache(
+  keys: Array<keyof typeof CACHE_KEYS> = ["tags", "collections", "space"]
+): Promise<void> {
+  const keysToRemove = keys.map((k) => CACHE_KEYS[k]);
+  await browser.storage.local.remove(keysToRemove);
+}
+
+/**
+ * Clear all API caches
+ */
+export async function clearAllCaches(): Promise<void> {
+  await browser.storage.local.remove(Object.values(CACHE_KEYS));
 }
 
 /**
  * Create a new save (bookmark) in the user's space
  */
 export async function createSave(input: CreateSaveInput, token: string): Promise<Save> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     const result = await client.mutation(api.saves.create, {
@@ -90,38 +172,41 @@ export async function createSave(input: CreateSaveInput, token: string): Promise
 }
 
 /**
- * List all tags for the authenticated user
+ * List all tags for the authenticated user (cached for 5 minutes)
  */
 export async function listTags(token: string): Promise<Tag[]> {
-  const client = createClient(token);
+  return getCachedOrFetch(CACHE_KEYS.tags, async () => {
+    const client = getClient(token);
 
-  try {
-    const result = await client.query(api.tags.list, {});
+    try {
+      const result = await client.query(api.tags.list, {});
 
-    return result.map((t: any) => ({
-      id: t.id,
-      spaceId: t.spaceId,
-      name: t.name,
-      createdAt: new Date(t.createdAt),
-      updatedAt: new Date(t.updatedAt),
-      _count: t._count,
-    }));
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new ApiError(error.message, "UNKNOWN_ERROR");
+      return result.map((t: any) => ({
+        id: t.id,
+        spaceId: t.spaceId,
+        name: t.name,
+        createdAt: new Date(t.createdAt),
+        updatedAt: new Date(t.updatedAt),
+        _count: t._count,
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new ApiError(error.message, "UNKNOWN_ERROR");
+      }
+      throw new ApiError("Something went wrong");
     }
-    throw new ApiError("Something went wrong");
-  }
+  });
 }
 
 /**
  * Check for duplicate URL - returns existing save info if found
+ * Note: This is NOT cached since it's URL-specific and needs fresh data
  */
 export async function checkDuplicate(
   url: string,
   token: string
 ): Promise<DuplicateSaveInfo | null> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     const result = await client.query(api.saves.checkDuplicate, { url });
@@ -143,29 +228,31 @@ export async function checkDuplicate(
 }
 
 /**
- * List all collections for the authenticated user
+ * List all collections for the authenticated user (cached for 5 minutes)
  */
 export async function listCollections(token: string): Promise<Collection[]> {
-  const client = createClient(token);
+  return getCachedOrFetch(CACHE_KEYS.collections, async () => {
+    const client = getClient(token);
 
-  try {
-    const result = await client.query(api.collections.list, {});
+    try {
+      const result = await client.query(api.collections.list, {});
 
-    return result.map((c: any) => ({
-      id: c.id,
-      spaceId: c.spaceId,
-      name: c.name,
-      visibility: c.visibility,
-      createdAt: new Date(c.createdAt),
-      updatedAt: new Date(c.updatedAt),
-      _count: c._count,
-    }));
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new ApiError(error.message, "UNKNOWN_ERROR");
+      return result.map((c: any) => ({
+        id: c.id,
+        spaceId: c.spaceId,
+        name: c.name,
+        visibility: c.visibility,
+        createdAt: new Date(c.createdAt),
+        updatedAt: new Date(c.updatedAt),
+        _count: c._count,
+      }));
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new ApiError(error.message, "UNKNOWN_ERROR");
+      }
+      throw new ApiError("Something went wrong");
     }
-    throw new ApiError("Something went wrong");
-  }
+  });
 }
 
 /**
@@ -188,30 +275,41 @@ function transformSpace(s: any): Space {
 }
 
 /**
- * Get the user's space settings
+ * Get the user's space settings (cached for 5 minutes)
  */
 export async function getMySpace(token: string): Promise<Space | null> {
-  const client = createClient(token);
+  return getCachedOrFetch(CACHE_KEYS.space, async () => {
+    const client = getClient(token);
 
-  try {
-    const result = await client.query(api.spaces.getMySpace, {});
-    if (!result) return null;
-    return transformSpace(result);
-  } catch (error) {
-    console.error("Error fetching space:", error);
-    return null;
-  }
+    try {
+      const result = await client.query(api.spaces.getMySpace, {});
+      if (!result) return null;
+      return transformSpace(result);
+    } catch (error) {
+      console.error("Error fetching space:", error);
+      return null;
+    }
+  });
 }
 
 /**
  * Ensure user has a space (creates one if needed)
  */
 export async function ensureSpace(token: string): Promise<Space> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     const result = await client.mutation(api.spaces.ensureSpace, {});
-    return transformSpace(result);
+    const space = transformSpace(result);
+
+    // Cache the newly created space
+    browser.storage.local
+      .set({
+        [CACHE_KEYS.space]: { data: space, timestamp: Date.now() } as CachedData<Space>,
+      })
+      .catch(() => {});
+
+    return space;
   } catch (error) {
     if (error instanceof Error) {
       throw new ApiError(error.message, "UNKNOWN_ERROR");
@@ -233,7 +331,7 @@ export async function updateSave(
   },
   token: string
 ): Promise<void> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     await client.mutation(api.saves.update, {
@@ -243,6 +341,11 @@ export async function updateSave(
       collectionIds: input.collectionIds as any,
       note: input.note,
     });
+
+    // Invalidate tags cache if new tags may have been created
+    if (input.tagNames && input.tagNames.length > 0) {
+      invalidateCache(["tags"]).catch(() => {});
+    }
   } catch (error) {
     if (error instanceof Error) {
       throw new ApiError(error.message, "UNKNOWN_ERROR");
@@ -253,9 +356,10 @@ export async function updateSave(
 
 /**
  * List recent saves for the authenticated user
+ * Note: NOT cached since it changes frequently
  */
 export async function listRecentSaves(token: string, limit = 5): Promise<Save[]> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     const result = await client.query(api.saves.list, { limit });
@@ -305,7 +409,7 @@ export async function listRecentSaves(token: string, limit = 5): Promise<Save[]>
  * Delete a save by ID
  */
 export async function deleteSave(saveId: string, token: string): Promise<void> {
-  const client = createClient(token);
+  const client = getClient(token);
 
   try {
     await client.mutation(api.saves.remove, {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { updateSave } from "../lib/api";
 import type { Collection, Save } from "../lib/types";
 import { CheckIcon, ChevronDownIcon, ExternalLinkIcon, FolderIcon, Loader2Icon } from "./Icons";
@@ -9,7 +9,7 @@ interface QuickCollectionSectionProps {
   getToken: () => Promise<string | null>;
 }
 
-export function QuickCollectionSection({
+export const QuickCollectionSection = memo(function QuickCollectionSection({
   savedItem,
   collections,
   getToken,
@@ -22,31 +22,40 @@ export function QuickCollectionSection({
 
   const webAppUrl = import.meta.env.VITE_WEB_APP_URL || "https://backpocket.my";
 
-  async function handleToggleCollection(collectionId: string) {
-    if (isUpdating) return;
+  // Memoize computed display values - must be before any early returns
+  const displayText = useMemo(() => {
+    const selected = collections.filter((c) => selectedIds.includes(c.id));
+    return selected.length === 0 ? "Add to collection" : selected.map((c) => c.name).join(", ");
+  }, [collections, selectedIds]);
 
-    const isSelected = selectedIds.includes(collectionId);
-    const newIds = isSelected
-      ? selectedIds.filter((id) => id !== collectionId)
-      : [...selectedIds, collectionId];
+  const handleToggleCollection = useCallback(
+    async (collectionId: string) => {
+      if (isUpdating) return;
 
-    const previousIds = [...selectedIds];
-    setSelectedIds(newIds);
-    setIsUpdating(true);
+      const isSelected = selectedIds.includes(collectionId);
+      const newIds = isSelected
+        ? selectedIds.filter((id) => id !== collectionId)
+        : [...selectedIds, collectionId];
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const previousIds = [...selectedIds];
+      setSelectedIds(newIds);
+      setIsUpdating(true);
 
-      await updateSave(savedItem.id, { collectionIds: newIds }, token);
-    } catch (err) {
-      console.error("Failed to update collections:", err);
-      // Rollback
-      setSelectedIds(previousIds);
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Not authenticated");
+
+        await updateSave(savedItem.id, { collectionIds: newIds }, token);
+      } catch (err) {
+        console.error("Failed to update collections:", err);
+        // Rollback
+        setSelectedIds(previousIds);
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [isUpdating, selectedIds, getToken, savedItem.id]
+  );
 
   // Empty state - show link to create collections
   if (collections.length === 0) {
@@ -65,12 +74,6 @@ export function QuickCollectionSection({
       </div>
     );
   }
-
-  const selectedCollections = collections.filter((c) => selectedIds.includes(c.id));
-  const displayText =
-    selectedCollections.length === 0
-      ? "Add to collection"
-      : selectedCollections.map((c) => c.name).join(", ");
 
   return (
     <div className="w-full">
@@ -139,4 +142,4 @@ export function QuickCollectionSection({
       )}
     </div>
   );
-}
+});

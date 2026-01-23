@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ApiError,
   checkDuplicate,
@@ -11,6 +11,37 @@ import {
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
 import type { Collection, DuplicateSaveInfo, Save, SaveVisibility, Tag } from "../lib/types";
+
+/**
+ * Prefill data stored by background script (context menu / keyboard shortcut)
+ */
+interface PrefillData {
+  url: string;
+  title?: string;
+  timestamp: number;
+}
+
+/**
+ * Get and clear prefill data from storage (if valid and recent)
+ */
+async function consumePrefillData(): Promise<PrefillData | null> {
+  try {
+    const result = await browser.storage.local.get("backpocket_prefill");
+    const prefill = result.backpocket_prefill as PrefillData | undefined;
+
+    // Only use prefill if it's less than 5 minutes old
+    if (prefill && Date.now() - prefill.timestamp < 5 * 60 * 1000) {
+      // Clear it so it's not used again
+      await browser.storage.local.remove("backpocket_prefill");
+      // Notify background to clear badge
+      browser.runtime.sendMessage({ type: "POPUP_OPENED" }).catch(() => {});
+      return prefill;
+    }
+  } catch {
+    // Storage access failed
+  }
+  return null;
+}
 import {
   AlertCircleIcon,
   CheckIcon,
@@ -36,7 +67,7 @@ function extractDomain(url: string): string {
   }
 }
 
-export function QuickSaveView() {
+export const QuickSaveView = memo(function QuickSaveView() {
   const { getToken } = useAuth();
 
   // Tab info
@@ -60,17 +91,30 @@ export function QuickSaveView() {
   // Prevent double saves
   const saveInitiatedRef = useRef(false);
 
-  // Fetch current tab info
+  // Fetch URL/title - prioritize prefill data, fallback to current tab
   useEffect(() => {
-    browser.tabs
-      .query({ active: true, currentWindow: true })
-      .then((tabs) => {
+    async function loadUrlAndTitle() {
+      // First, check for prefill data (from context menu or keyboard shortcut)
+      const prefill = await consumePrefillData();
+      if (prefill) {
+        setCurrentUrl(prefill.url);
+        setCurrentTitle(prefill.title || null);
+        return;
+      }
+
+      // Fallback to current tab
+      try {
+        const tabs = await browser.tabs.query({ active: true, currentWindow: true });
         if (tabs[0]) {
           setCurrentUrl(tabs[0].url || null);
           setCurrentTitle(tabs[0].title || null);
         }
-      })
-      .catch(console.error);
+      } catch (err) {
+        console.error("Failed to get tab info:", err);
+      }
+    }
+
+    loadUrlAndTitle();
   }, []);
 
   // Auto-save flow - runs once when we have URL and auth
@@ -238,7 +282,8 @@ export function QuickSaveView() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const domain = currentUrl ? extractDomain(currentUrl) : null;
+  // Memoize domain extraction
+  const domain = useMemo(() => (currentUrl ? extractDomain(currentUrl) : null), [currentUrl]);
   const webAppUrl = import.meta.env.VITE_WEB_APP_URL || "https://backpocket.my";
 
   return (
@@ -390,7 +435,7 @@ export function QuickSaveView() {
       )}
     </div>
   );
-}
+});
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { updateSave } from "../lib/api";
 import type { Save, Tag } from "../lib/types";
 import { CheckIcon, Loader2Icon, PlusIcon, TagIcon, XIcon } from "./Icons";
@@ -9,7 +9,11 @@ interface QuickTagSectionProps {
   getToken: () => Promise<string | null>;
 }
 
-export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagSectionProps) {
+export const QuickTagSection = memo(function QuickTagSection({
+  savedItem,
+  existingTags,
+  getToken,
+}: QuickTagSectionProps) {
   const [selectedTags, setSelectedTags] = useState<string[]>(
     savedItem.tags?.map((t) => t.name) || []
   );
@@ -17,36 +21,42 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
   const [newTagInput, setNewTagInput] = useState("");
   const [isAddingTag, setIsAddingTag] = useState(false);
 
-  // Get suggested tags (not already selected), limit to 5
-  const suggestedTags = existingTags.filter((tag) => !selectedTags.includes(tag.name)).slice(0, 5);
+  // Memoize suggested tags to avoid recalculating on every render
+  const suggestedTags = useMemo(
+    () => existingTags.filter((tag) => !selectedTags.includes(tag.name)).slice(0, 5),
+    [existingTags, selectedTags]
+  );
 
-  async function handleToggleTag(tagName: string) {
-    if (isUpdating) return;
+  const handleToggleTag = useCallback(
+    async (tagName: string) => {
+      if (isUpdating) return;
 
-    const isSelected = selectedTags.includes(tagName);
-    const newTags = isSelected
-      ? selectedTags.filter((t) => t !== tagName)
-      : [...selectedTags, tagName];
+      const isSelected = selectedTags.includes(tagName);
+      const newTags = isSelected
+        ? selectedTags.filter((t) => t !== tagName)
+        : [...selectedTags, tagName];
 
-    const previousTags = [...selectedTags];
-    setSelectedTags(newTags);
-    setIsUpdating(true);
+      const previousTags = [...selectedTags];
+      setSelectedTags(newTags);
+      setIsUpdating(true);
 
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      try {
+        const token = await getToken();
+        if (!token) throw new Error("Not authenticated");
 
-      await updateSave(savedItem.id, { tagNames: newTags }, token);
-    } catch (err) {
-      console.error("Failed to update tags:", err);
-      // Rollback
-      setSelectedTags(previousTags);
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+        await updateSave(savedItem.id, { tagNames: newTags }, token);
+      } catch (err) {
+        console.error("Failed to update tags:", err);
+        // Rollback
+        setSelectedTags(previousTags);
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [isUpdating, selectedTags, getToken, savedItem.id]
+  );
 
-  async function handleAddNewTag() {
+  const handleAddNewTag = useCallback(async () => {
     const tagName = newTagInput.trim().toLowerCase();
     if (!tagName || selectedTags.includes(tagName) || isUpdating) return;
 
@@ -68,17 +78,20 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
     } finally {
       setIsUpdating(false);
     }
-  }
+  }, [newTagInput, selectedTags, isUpdating, getToken, savedItem.id]);
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddNewTag();
-    } else if (e.key === "Escape") {
-      setIsAddingTag(false);
-      setNewTagInput("");
-    }
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleAddNewTag();
+      } else if (e.key === "Escape") {
+        setIsAddingTag(false);
+        setNewTagInput("");
+      }
+    },
+    [handleAddNewTag]
+  );
 
   return (
     <div className="w-full rounded-[var(--radius-md)] bg-[var(--bg-tertiary)] p-3">
@@ -157,4 +170,4 @@ export function QuickTagSection({ savedItem, existingTags, getToken }: QuickTagS
       </div>
     </div>
   );
-}
+});

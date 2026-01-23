@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { updateSave } from "../lib/api";
 import type { Save } from "../lib/types";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon, FileTextIcon, Loader2Icon } from "./Icons";
@@ -8,18 +8,24 @@ interface QuickNoteSectionProps {
   getToken: () => Promise<string | null>;
 }
 
-export function QuickNoteSection({ savedItem, getToken }: QuickNoteSectionProps) {
+export const QuickNoteSection = memo(function QuickNoteSection({
+  savedItem,
+  getToken,
+}: QuickNoteSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [noteText, setNoteText] = useState(savedItem.note || "");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
-  function handleNoteChange(text: string) {
-    setNoteText(text);
-    setHasUnsavedChanges(text !== (savedItem.note || ""));
-  }
+  const handleNoteChange = useCallback(
+    (text: string) => {
+      setNoteText(text);
+      setHasUnsavedChanges(text !== (savedItem.note || ""));
+    },
+    [savedItem.note]
+  );
 
-  async function handleSaveNote() {
+  const handleSaveNote = useCallback(async () => {
     if (isUpdating || !hasUnsavedChanges) return;
 
     setIsUpdating(true);
@@ -39,14 +45,14 @@ export function QuickNoteSection({ savedItem, getToken }: QuickNoteSectionProps)
     } finally {
       setIsUpdating(false);
     }
-  }
+  }, [isUpdating, hasUnsavedChanges, getToken, savedItem.id, noteText]);
 
   // Auto-save on blur
-  function handleBlur() {
+  const handleBlur = useCallback(() => {
     if (hasUnsavedChanges) {
       handleSaveNote();
     }
-  }
+  }, [hasUnsavedChanges, handleSaveNote]);
 
   const hasNote = noteText.trim().length > 0;
 
@@ -104,4 +110,4 @@ export function QuickNoteSection({ savedItem, getToken }: QuickNoteSectionProps)
       )}
     </div>
   );
-}
+});

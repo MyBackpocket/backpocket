@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { SaveVisibility } from "../lib/types";
 import { GlobeIcon, LockIcon } from "./Icons";
 
@@ -7,7 +8,11 @@ interface VisibilityToggleProps {
   disabled?: boolean;
 }
 
-export function VisibilityToggle({ value, onChange, disabled = false }: VisibilityToggleProps) {
+export const VisibilityToggle = memo(function VisibilityToggle({
+  value,
+  onChange,
+  disabled = false,
+}: VisibilityToggleProps) {
   return (
     <div className="flex gap-0.5 rounded-[var(--radius-full)] bg-[var(--bg-muted)] p-1">
       <button
@@ -40,4 +45,4 @@ export function VisibilityToggle({ value, onChange, disabled = false }: Visibili
       </button>
     </div>
   );
-}
+});
