@@ -4,6 +4,12 @@ import type { Collection, CreateSaveInput, DuplicateSaveInfo, Save, Space, Tag }
 
 const CONVEX_URL = import.meta.env.VITE_CONVEX_URL || "https://your-project.convex.cloud";
 
+// Debug logging - only in development
+const DEBUG = import.meta.env.DEV;
+function log(...args: unknown[]) {
+  if (DEBUG) console.log("[Backpocket API]", ...args);
+}
+
 /**
  * Custom error class for API errors with additional context
  */
@@ -221,8 +227,8 @@ export async function checkDuplicate(
       siteName: result.siteName,
       savedAt: new Date(result.savedAt).toISOString(),
     };
-  } catch (error) {
-    console.error("Error checking duplicate:", error);
+  } catch {
+    // Silent fail - duplicate check is non-critical
     return null;
   }
 }
@@ -285,8 +291,8 @@ export async function getMySpace(token: string): Promise<Space | null> {
       const result = await client.query(api.spaces.getMySpace, {});
       if (!result) return null;
       return transformSpace(result);
-    } catch (error) {
-      console.error("Error fetching space:", error);
+    } catch {
+      // Silent fail - space fetch is non-critical
       return null;
     }
   });
@@ -438,15 +444,15 @@ export async function checkDuplicateFromBackground(url: string): Promise<boolean
     const tokenData = await browser.storage.session.get("auth_token") as { auth_token?: string };
     const token = tokenData?.auth_token;
     if (!token) {
-      console.log("[Backpocket] No auth token in session storage");
+      log("No auth token in session storage");
       return false;
     }
 
-    console.log("[Backpocket] Found auth token, checking duplicate...");
+    log("Found auth token, checking duplicate...");
     const result = await checkDuplicate(url, token);
     return result !== null;
-  } catch (err) {
-    console.error("[Backpocket] checkDuplicateFromBackground error:", err);
+  } catch {
+    // Silent fail - background check is non-critical
     return false;
   }
 }

@@ -22,10 +22,11 @@ export const QuickTagSection = memo(function QuickTagSection({
   const [isAddingTag, setIsAddingTag] = useState(false);
 
   // Memoize suggested tags to avoid recalculating on every render
-  const suggestedTags = useMemo(
-    () => existingTags.filter((tag) => !selectedTags.includes(tag.name)).slice(0, 5),
-    [existingTags, selectedTags]
-  );
+  // Use Set for O(1) lookups instead of Array.includes() which is O(n)
+  const suggestedTags = useMemo(() => {
+    const selectedSet = new Set(selectedTags);
+    return existingTags.filter((tag) => !selectedSet.has(tag.name)).slice(0, 5);
+  }, [existingTags, selectedTags]);
 
   const handleToggleTag = useCallback(
     async (tagName: string) => {

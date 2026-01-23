@@ -2,6 +2,21 @@ import { normalizeUrl } from "@backpocket/utils";
 import { checkDuplicateFromBackground } from "../lib/api";
 
 // =============================================================================
+// DEBUG LOGGING
+// =============================================================================
+
+const DEBUG = import.meta.env.DEV;
+
+function log(...args: unknown[]) {
+  if (DEBUG) console.log("[Backpocket]", ...args);
+}
+
+function logError(...args: unknown[]) {
+  // Always log errors, even in production
+  console.error("[Backpocket]", ...args);
+}
+
+// =============================================================================
 // URL STATUS CACHE
 // =============================================================================
 
@@ -36,7 +51,7 @@ function setIcon(tabId: number, isSaved: boolean) {
           48: "icon/default/48.png",
         },
   }).catch((err) => {
-    console.error("[Backpocket] Failed to set icon:", err);
+    logError("Failed to set icon:", err);
   });
 
   // Also set a badge to make saved state more visible
@@ -62,14 +77,14 @@ function setDefaultIcon(tabId: number) {
  * Uses normalized URL for cache keys to handle tracking params consistently
  */
 async function updateIconForTab(tabId: number, url: string) {
-  console.log("[Backpocket] Checking icon for:", url);
+  log("Checking icon for:", url);
   
   // Normalize URL for consistent cache keys (strips tracking params, www, etc.)
   const normalizedUrl = normalizeUrl(url);
 
   // Skip invalid or non-http URLs
   if (!normalizedUrl) {
-    console.log("[Backpocket] Invalid URL, showing default icon");
+    log("Invalid URL, showing default icon");
     setDefaultIcon(tabId);
     return;
   }
@@ -77,20 +92,20 @@ async function updateIconForTab(tabId: number, url: string) {
   // Check cache first (using normalized URL as key)
   const cached = urlStatusCache.get(normalizedUrl);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log("[Backpocket] Cache hit:", cached.saved ? "SAVED" : "NOT SAVED");
+    log("Cache hit:", cached.saved ? "SAVED" : "NOT SAVED");
     setIcon(tabId, cached.saved);
     return;
   }
 
   // Check API (pass original URL - backend normalizes too)
   try {
-    console.log("[Backpocket] Checking API for saved status...");
+    log("Checking API for saved status...");
     const isSaved = await checkDuplicateFromBackground(url);
-    console.log("[Backpocket] API result:", isSaved ? "SAVED" : "NOT SAVED");
+    log("API result:", isSaved ? "SAVED" : "NOT SAVED");
     urlStatusCache.set(normalizedUrl, { saved: isSaved, timestamp: Date.now() });
     setIcon(tabId, isSaved);
   } catch (err) {
-    console.error("[Backpocket] Failed to check duplicate:", err);
+    logError("Failed to check duplicate:", err);
     // On error, show default icon
     setDefaultIcon(tabId);
   }
@@ -106,7 +121,7 @@ async function updateIconForCurrentTab() {
       await updateIconForTab(tabs[0].id, tabs[0].url);
     }
   } catch (err) {
-    console.error("[Backpocket] Failed to update icon for current tab:", err);
+    logError("Failed to update icon for current tab:", err);
   }
 }
 
@@ -115,7 +130,7 @@ async function updateIconForCurrentTab() {
 // =============================================================================
 
 export default defineBackground(() => {
-  console.log("[Backpocket] Background script started");
+  log("Background script started");
 
   // Create context menu on install
   browser.runtime.onInstalled.addListener(() => {

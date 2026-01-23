@@ -256,6 +256,8 @@ export const QuickSaveView = memo(function QuickSaveView() {
   // Handle visibility change (update saved item)
   const handleVisibilityChange = useCallback(
     async (newVisibility: SaveVisibility) => {
+      // Capture previous value before optimistic update (avoids stale closure)
+      const previousVisibility = visibility;
       setVisibility(newVisibility);
 
       // If already saved, update the visibility
@@ -266,10 +268,9 @@ export const QuickSaveView = memo(function QuickSaveView() {
 
           const { updateSave } = await import("../lib/api");
           await updateSave(savedItem.id, { visibility: newVisibility }, token);
-        } catch (err) {
-          console.error("Failed to update visibility:", err);
-          // Rollback
-          setVisibility(visibility);
+        } catch {
+          // Rollback to captured previous value
+          setVisibility(previousVisibility);
         }
       }
     },
@@ -310,7 +311,7 @@ export const QuickSaveView = memo(function QuickSaveView() {
             <Loader2Icon className="size-6 animate-spin" />
           </div>
           <p className="text-base font-semibold text-[var(--text-primary)]">Saving...</p>
-          {domain && <p className="text-sm text-[var(--text-muted)]">{domain}</p>}
+          {domain ? <p className="text-sm text-[var(--text-muted)]">{domain}</p> : null}
         </div>
       )}
 
@@ -403,7 +404,7 @@ export const QuickSaveView = memo(function QuickSaveView() {
             <AlertCircleIcon className="size-6" />
           </div>
           <p className="text-base font-semibold text-[var(--text-primary)]">Already saved</p>
-          {domain && <p className="text-sm text-[var(--text-muted)]">{domain}</p>}
+          {domain ? <p className="text-sm text-[var(--text-muted)]">{domain}</p> : null}
           <p className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
             <ClockIcon className="size-3.5" />
             Saved {formatRelativeTime(duplicateSave.savedAt)}

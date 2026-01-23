@@ -130,11 +130,11 @@ export const QuickCollectionSection = memo(function QuickCollectionSection({
                   {isSelected && <CheckIcon className="size-2.5" />}
                 </span>
                 <span className="flex-1 font-medium text-[var(--text-primary)]">{collection.name}</span>
-                {collection._count?.saves !== undefined && (
+                {collection._count?.saves !== undefined ? (
                   <span className="text-[10px] text-[var(--text-muted)]">
                     {collection._count.saves}
                   </span>
-                )}
+                ) : null}
               </button>
             );
           })}
