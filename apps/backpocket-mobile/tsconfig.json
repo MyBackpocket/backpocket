@@ -5,6 +5,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@/tw": ["./src/tw/index"],
+      "@/tw/*": ["./src/tw/*"],
       "@convex/*": ["../../convex/*"]
     }
   },

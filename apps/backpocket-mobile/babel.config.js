@@ -8,6 +8,7 @@ module.exports = (api) => {
         {
           alias: {
             "@convex": "../../convex",
+            "@/tw": "./src/tw",
           },
         },
       ],

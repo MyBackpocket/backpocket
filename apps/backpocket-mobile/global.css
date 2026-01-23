@@ -1,14 +1,117 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
 
 /* 
  * Backpocket Mobile Global Styles
- * CSS Variables for NativeWind theming
+ * Tailwind CSS v4 + NativeWind v5
  */
 
+/* ============================================
+ * Theme Configuration (migrated from tailwind.config.js)
+ * ============================================ */
+@layer theme {
+  @theme {
+    /* Brand Colors */
+    --color-denim: #5B7A8A;
+    --color-denim-deep: #3D5A6C;
+    --color-denim-faded: #8EACBD;
+    --color-rust: #C96D3B;
+    --color-rust-deep: #9E3F2C;
+    --color-amber: #E8B86D;
+    --color-mint: #9DC08B;
+    --color-teal: #7FBFBF;
+    --color-cream: #F5F0E6;
+    --color-parchment: #E8DFD0;
+    --color-charcoal: #3A3A3A;
+
+    /* Semantic Colors (use CSS variables for light/dark mode) */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-info: var(--info);
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    /* Font Families */
+    --font-sans: "DMSans", system-ui, sans-serif;
+    --font-sans-light: "DMSans-Light", system-ui, sans-serif;
+    --font-sans-medium: "DMSans-Medium", system-ui, sans-serif;
+    --font-sans-bold: "DMSans-Bold", system-ui, sans-serif;
+    --font-serif: "Fraunces", Georgia, serif;
+    --font-serif-medium: "Fraunces-Medium", Georgia, serif;
+    --font-serif-bold: "Fraunces-Bold", Georgia, serif;
+
+    /* Font Sizes with Line Heights */
+    --text-xs: 12px;
+    --text-xs--line-height: 16px;
+    --text-sm: 14px;
+    --text-sm--line-height: 20px;
+    --text-base: 16px;
+    --text-base--line-height: 24px;
+    --text-lg: 18px;
+    --text-lg--line-height: 28px;
+    --text-xl: 20px;
+    --text-xl--line-height: 28px;
+    --text-2xl: 24px;
+    --text-2xl--line-height: 32px;
+    --text-3xl: 30px;
+    --text-3xl--line-height: 36px;
+    --text-4xl: 36px;
+    --text-4xl--line-height: 40px;
+    --text-5xl: 48px;
+    --text-5xl--line-height: 1;
+  }
+}
+
+/* ============================================
+ * Platform-Specific Font Families
+ * ============================================ */
+@media android {
+  :root {
+    --font-mono: monospace;
+    --font-rounded: normal;
+    --font-serif: serif;
+    --font-sans: normal;
+  }
+}
+
+@media ios {
+  :root {
+    --font-mono: ui-monospace;
+    --font-serif: ui-serif;
+    --font-sans: system-ui;
+    --font-rounded: ui-rounded;
+  }
+}
+
+/* ============================================
+ * Light Mode (Default)
+ * ============================================ */
 :root {
-  /* Light mode (default) */
   --background: #f5f0e6;
   --foreground: #3a3a3a;
   --card: #f7f4ed;
@@ -33,8 +136,10 @@
   --info: #7fbfbf;
 }
 
+/* ============================================
+ * Dark Mode
+ * ============================================ */
 .dark {
-  /* Dark mode */
   --background: #141d22;
   --foreground: #eae5dc;
   --card: #1a252c;

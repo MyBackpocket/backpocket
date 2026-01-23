@@ -1,13 +1,13 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
 const { getDefaultConfig } = require("expo/metro-config");
-const nativewindMetro = require("nativewind/metro");
+const { withNativewind } = require("nativewind/metro");
 const path = require("node:path");
 
 // Monorepo root and convex folder
 const monorepoRoot = path.resolve(__dirname, "../..");
 const _convexPath = path.resolve(monorepoRoot, "convex");
 
-let config = getDefaultConfig(__dirname);
+const config = getDefaultConfig(__dirname);
 
 // Watch the monorepo root for changes (extend defaults, don't replace)
 config.watchFolders = [...(config.watchFolders || []), monorepoRoot];
@@ -18,8 +18,10 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
-// Apply NativeWind configuration
-const withNativeWind = nativewindMetro.withNativeWind;
-config = withNativeWind(config, { input: "./global.css" });
-
-module.exports = config;
+// Apply NativeWind v5 configuration
+// - inlineVariables: false - prevents breaking PlatformColor in CSS variables
+// - globalClassNamePolyfill: false - we add className support manually via useCssElement
+module.exports = withNativewind(config, {
+  inlineVariables: false,
+  globalClassNamePolyfill: false,
+});
