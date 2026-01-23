@@ -20,7 +20,6 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
-  Loader2,
   Pencil,
   Plus,
   RefreshCw,
@@ -843,18 +842,21 @@ interface RefreshIndicatorProps {
 function RefreshIndicator({ state, colors }: RefreshIndicatorProps) {
   const slideAnim = useRef(new Animated.Value(100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const spinAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
   const successScaleAnim = useRef(new Animated.Value(0)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (state === "refreshing") {
-      // Slide in from bottom with spring
+      // Reset progress
+      progressAnim.setValue(0);
+
+      // Slide in from bottom
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
-          tension: 50,
-          friction: 8,
+          tension: 65,
+          friction: 10,
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
@@ -862,28 +864,37 @@ function RefreshIndicator({ state, colors }: RefreshIndicatorProps) {
           duration: 200,
           useNativeDriver: true,
         }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 6,
-          useNativeDriver: true,
-        }),
       ]).start();
 
-      // Start spinning animation
-      const spin = Animated.loop(
-        Animated.timing(spinAnim, {
+      // Animate progress bar - quick start, then slow in middle, fast finish
+      Animated.timing(progressAnim, {
+        toValue: 0.85, // Stop at 85% while waiting
+        duration: 2500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+
+      // Shimmer effect on progress bar
+      const shimmer = Animated.loop(
+        Animated.timing(shimmerAnim, {
           toValue: 1,
-          duration: 1200,
+          duration: 1500,
           easing: Easing.linear,
           useNativeDriver: true,
         })
       );
-      spin.start();
+      shimmer.start();
     } else if (state === "success") {
-      // Stop spinning by resetting and animate success
-      spinAnim.stopAnimation();
-      spinAnim.setValue(0);
+      // Complete the progress bar
+      Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: 200,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }).start();
+
+      // Stop shimmer
+      shimmerAnim.stopAnimation();
 
       // Pop in the checkmark
       Animated.spring(successScaleAnim, {
@@ -908,79 +919,106 @@ function RefreshIndicator({ state, colors }: RefreshIndicatorProps) {
             useNativeDriver: true,
           }),
         ]).start();
-      }, 1500);
+      }, 1800);
 
       return () => clearTimeout(timeout);
     } else if (state === "idle") {
       // Reset all animations
       slideAnim.setValue(100);
       opacityAnim.setValue(0);
-      scaleAnim.setValue(0.8);
+      progressAnim.setValue(0);
       successScaleAnim.setValue(0);
-      spinAnim.stopAnimation();
-      spinAnim.setValue(0);
+      shimmerAnim.stopAnimation();
+      shimmerAnim.setValue(0);
     }
-  }, [state, slideAnim, opacityAnim, spinAnim, scaleAnim, successScaleAnim]);
-
-  const spin = spinAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  }, [state, slideAnim, opacityAnim, progressAnim, successScaleAnim, shimmerAnim]);
 
   if (state === "idle") return null;
 
   const isSuccess = state === "success";
+
+  // Progress bar width interpolation
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
+  // Shimmer position
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-100, 300],
+  });
 
   return (
     <Animated.View
       style={[
         refreshIndicatorStyles.container,
         {
-          backgroundColor: isSuccess ? `${brandColors.teal}15` : colors.card,
-          borderColor: isSuccess ? `${brandColors.teal}40` : colors.border,
-          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+          backgroundColor: isSuccess ? brandColors.teal : colors.card,
+          borderColor: isSuccess ? brandColors.teal : colors.border,
+          transform: [{ translateY: slideAnim }],
           opacity: opacityAnim,
         },
       ]}
     >
+      {/* Progress bar track */}
+      {!isSuccess && (
+        <View style={[refreshIndicatorStyles.progressTrack, { backgroundColor: colors.muted }]}>
+          <Animated.View
+            style={[
+              refreshIndicatorStyles.progressBar,
+              {
+                backgroundColor: brandColors.amber,
+                width: progressWidth,
+              },
+            ]}
+          >
+            {/* Shimmer overlay */}
+            <Animated.View
+              style={[
+                refreshIndicatorStyles.shimmer,
+                {
+                  transform: [{ translateX: shimmerTranslate }],
+                },
+              ]}
+            />
+          </Animated.View>
+        </View>
+      )}
+
       <View style={refreshIndicatorStyles.content}>
         {isSuccess ? (
           <Animated.View
             style={[
-              refreshIndicatorStyles.iconContainer,
-              { backgroundColor: `${brandColors.teal}25` },
+              refreshIndicatorStyles.successIcon,
               { transform: [{ scale: successScaleAnim }] },
             ]}
           >
-            <Check size={18} color={brandColors.teal} strokeWidth={3} />
+            <Check size={20} color="#FFFFFF" strokeWidth={3} />
           </Animated.View>
         ) : (
-          <Animated.View
-            style={[
-              refreshIndicatorStyles.iconContainer,
-              { backgroundColor: `${brandColors.amber}20` },
-              { transform: [{ rotate: spin }] },
-            ]}
-          >
-            <Loader2 size={18} color={brandColors.amber} strokeWidth={2.5} />
-          </Animated.View>
+          <View style={[refreshIndicatorStyles.iconContainer, { backgroundColor: `${brandColors.amber}25` }]}>
+            <RefreshCw size={18} color={brandColors.amber} strokeWidth={2.5} />
+          </View>
         )}
         <View style={refreshIndicatorStyles.textContainer}>
           <Text
             style={[
               refreshIndicatorStyles.title,
-              { color: isSuccess ? brandColors.teal : colors.text },
+              { color: isSuccess ? "#FFFFFF" : colors.text },
             ]}
           >
             {isSuccess ? "Content refreshed!" : "Refreshing content..."}
           </Text>
-          <Text style={[refreshIndicatorStyles.subtitle, { color: colors.mutedForeground }]}>
-            {isSuccess ? "Latest version loaded" : "Fetching latest from source"}
-          </Text>
+          {!isSuccess && (
+            <Text style={[refreshIndicatorStyles.subtitle, { color: colors.mutedForeground }]}>
+              Fetching title, image & reader mode
+            </Text>
+          )}
         </View>
         {isSuccess && (
           <Animated.View style={{ transform: [{ scale: successScaleAnim }] }}>
-            <Sparkles size={16} color={brandColors.teal} />
+            <Sparkles size={18} color="#FFFFFF" />
           </Animated.View>
         )}
       </View>
@@ -992,21 +1030,39 @@ const refreshIndicatorStyles = StyleSheet.create({
   container: {
     position: "absolute",
     bottom: 32,
-    left: 20,
-    right: 20,
+    left: 16,
+    right: 16,
     borderRadius: radii.lg,
-    borderWidth: 1,
+    borderWidth: 1.5,
+    overflow: "hidden",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 16,
       },
       android: {
-        elevation: 8,
+        elevation: 12,
       },
     }),
+  },
+  progressTrack: {
+    height: 4,
+    width: "100%",
+  },
+  progressBar: {
+    height: "100%",
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  shimmer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    width: 80,
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    transform: [{ skewX: "-20deg" }],
   },
   content: {
     flexDirection: "row",
@@ -1016,9 +1072,17 @@ const refreshIndicatorStyles = StyleSheet.create({
     gap: 14,
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  successIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1029,11 +1093,11 @@ const refreshIndicatorStyles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "DMSans-Bold",
     fontWeight: "600",
-    marginBottom: 2,
   },
   subtitle: {
     fontSize: 13,
     fontFamily: "DMSans",
+    marginTop: 2,
   },
 });
 
@@ -1182,16 +1246,28 @@ export default function SaveDetailScreen() {
             setIsRefreshing(true);
             setRefreshState("refreshing");
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+            // Minimum display time so users can see the animation
+            const minDisplayTime = 1800;
+            const startTime = Date.now();
+
             try {
               // Request a new snapshot which also re-enriches metadata
               await requestSnapshotMutation({ saveId: save.id as any, force: true });
+
+              // Wait for minimum display time if needed
+              const elapsed = Date.now() - startTime;
+              if (elapsed < minDisplayTime) {
+                await new Promise((resolve) => setTimeout(resolve, minDisplayTime - elapsed));
+              }
+
               // Show success state
               setRefreshState("success");
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               // Reset to idle after animation completes
               setTimeout(() => {
                 setRefreshState("idle");
-              }, 2000);
+              }, 2200);
             } catch {
               setRefreshState("idle");
               Alert.alert("Error", "Failed to refresh save");
