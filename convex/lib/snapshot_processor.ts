@@ -10,7 +10,7 @@ import { v } from "convex/values";
 import { parseHTML } from "linkedom";
 import { internal } from "../_generated/api";
 import { internalAction } from "../_generated/server";
-import { getDomainExtractor } from "./domain_extractors";
+import { getDomainExtractor } from "./extractors";
 import { createWideEvent, extractDomain, generateTraceId } from "./logger";
 
 // Constants
