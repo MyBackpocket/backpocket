@@ -80,8 +80,8 @@ export function HeroMobileVisual() {
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
 
-          {/* Screen Content - Full height */}
-          <div className="relative bg-background min-h-[420px] sm:min-h-[480px] overflow-hidden">
+{/* Screen Content - Full height */}
+            <div className="relative bg-background min-h-[480px] sm:min-h-[540px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>
@@ -354,6 +354,9 @@ interface SideSitePreviewProps {
  * Designed to be partially cut off on the right edge for visual effect.
  */
 function SideSitePreview({ showNewCard, isSaved }: SideSitePreviewProps) {
+  // Height of new card + gap for shift calculation
+  const CARD_SHIFT = 106; // ~90px card height + 8px gap + buffer
+
   return (
     <div className="relative rounded-xl border border-border/60 bg-card overflow-hidden shadow-lg">
       {/* Browser chrome dots */}
@@ -390,15 +393,22 @@ function SideSitePreview({ showNewCard, isSaved }: SideSitePreviewProps) {
         <span className="text-[8px] text-muted-foreground">live updates</span>
       </div>
 
-      {/* Cards column */}
-      <div className="p-2 space-y-2">
-        {/* New card - animates in */}
-        <div
-          className={`rounded-lg border bg-background overflow-hidden transition-all duration-500 ${
-            showNewCard
-              ? "opacity-100 scale-100 translate-y-0 border-rust shadow-md"
-              : "opacity-0 scale-95 -translate-y-2 border-transparent"
-          }`}
+      {/* Cards column - with animated shift */}
+      <div className="p-2 relative overflow-hidden">
+        {/* New card - slides in from top */}
+        <motion.div
+          initial={false}
+          animate={{
+            y: showNewCard ? 0 : -CARD_SHIFT,
+            opacity: showNewCard ? 1 : 0,
+            scale: showNewCard ? 1 : 0.9,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+          }}
+          className="rounded-lg border bg-background overflow-hidden border-rust shadow-md mb-2"
         >
           <div className="h-14 bg-linear-to-br from-amber/30 to-rust/20 relative flex items-center justify-center">
             <span className="text-xl">🌽</span>
@@ -410,45 +420,59 @@ function SideSitePreview({ showNewCard, isSaved }: SideSitePreviewProps) {
             </p>
             <p className="text-[8px] text-muted-foreground mt-0.5">proofofcorn.com</p>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Existing card 1 */}
-        <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-          <div className="h-14 bg-linear-to-br from-slate-800 to-slate-900 relative">
-            <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-white/60" />
+        {/* Existing cards container - shifts down when new card appears */}
+        <motion.div
+          initial={false}
+          animate={{
+            y: showNewCard ? 0 : -CARD_SHIFT,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 30,
+          }}
+          className="space-y-2"
+        >
+          {/* Existing card 1 */}
+          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
+            <div className="h-14 bg-linear-to-br from-slate-800 to-slate-900 relative">
+              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-white/60" />
+            </div>
+            <div className="p-2">
+              <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
+                AGENTS.md Guide
+              </p>
+              <p className="text-[8px] text-muted-foreground mt-0.5">aihero.dev</p>
+            </div>
           </div>
-          <div className="p-2">
-            <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
-              AGENTS.md Guide
-            </p>
-            <p className="text-[8px] text-muted-foreground mt-0.5">aihero.dev</p>
-          </div>
-        </div>
 
-        {/* Existing card 2 */}
-        <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-          <div className="h-14 bg-linear-to-br from-denim/20 to-teal/10 relative">
-            <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
+          {/* Existing card 2 */}
+          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
+            <div className="h-14 bg-linear-to-br from-denim/20 to-teal/10 relative">
+              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
+            </div>
+            <div className="p-2">
+              <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
+                AWS Cost Tips
+              </p>
+              <p className="text-[8px] text-muted-foreground mt-0.5">github.com</p>
+            </div>
           </div>
-          <div className="p-2">
-            <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
-              AWS Cost Tips
-            </p>
-            <p className="text-[8px] text-muted-foreground mt-0.5">github.com</p>
-          </div>
-        </div>
 
-        {/* Existing card 3 - partially visible at bottom */}
-        <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-          <div className="h-14 bg-muted/50 flex items-center justify-center relative">
-            <Bookmark className="w-5 h-5 text-muted-foreground/30" />
-            <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
+          {/* Existing card 3 - partially visible at bottom */}
+          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
+            <div className="h-14 bg-muted/50 flex items-center justify-center relative">
+              <Bookmark className="w-5 h-5 text-muted-foreground/30" />
+              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
+            </div>
+            <div className="p-2">
+              <p className="text-[9px] font-medium text-foreground line-clamp-1">Design Systems</p>
+              <p className="text-[8px] text-muted-foreground mt-0.5">figma.com</p>
+            </div>
           </div>
-          <div className="p-2">
-            <p className="text-[9px] font-medium text-foreground line-clamp-1">Design Systems</p>
-            <p className="text-[8px] text-muted-foreground mt-0.5">figma.com</p>
-          </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Gradient fade at bottom to suggest more content */}
