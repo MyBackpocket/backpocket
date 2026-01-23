@@ -280,10 +280,13 @@ export async function syncSaves(
 
     console.log(`[sync-manager] Stored ${snapshotsSynced} snapshots`);
 
-    // Cache images
-    const imagesToCache = saves
-      .filter((save) => save.imageUrl)
-      .map((save) => ({ saveId: save._id, imageUrl: save.imageUrl }));
+    // Cache images - filter and map with proper type narrowing
+    const imagesToCache: Array<{ saveId: string; imageUrl: string }> = [];
+    for (const save of saves) {
+      if (save.imageUrl && save._id) {
+        imagesToCache.push({ saveId: save._id, imageUrl: save.imageUrl });
+      }
+    }
 
     if (imagesToCache.length > 0) {
       onProgress?.({ current: 0, total: imagesToCache.length, phase: "images" });

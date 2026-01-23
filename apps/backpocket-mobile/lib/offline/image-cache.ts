@@ -59,6 +59,15 @@ function getCachedImageFile(saveId: string, imageUrl: string): File {
 }
 
 /**
+ * Extract filename from URL
+ */
+function getFilenameFromUrl(url: string): string {
+  const urlPath = url.split("?")[0];
+  const parts = urlPath.split("/");
+  return parts[parts.length - 1] || "image";
+}
+
+/**
  * Download and cache an image
  * @returns The local file path if successful, null if failed
  */
@@ -66,6 +75,11 @@ export async function cacheImage(
   saveId: string,
   imageUrl: string
 ): Promise<string | null> {
+  if (!saveId || !imageUrl) {
+    console.warn(`[image-cache] Invalid params - saveId: ${saveId}, imageUrl: ${imageUrl?.slice(0, 50)}`);
+    return null;
+  }
+
   try {
     ensureCacheDirectory();
     
@@ -73,26 +87,42 @@ export async function cacheImage(
     
     // Check if already cached
     if (cachedFile.exists) {
-      console.log(`[image-cache] Image already cached: ${saveId}`);
+      console.log(`[image-cache] Already cached: ${saveId}`);
       return cachedFile.uri;
     }
 
-    // Download the image using the new API
     const cacheDir = getCacheDirectory();
+    
+    // File.downloadFileAsync uses the URL's filename, which can cause collisions
+    // when multiple images have the same filename (e.g., "og-image.png").
+    // We need to clean up any existing file with that name before downloading.
+    const urlFilename = getFilenameFromUrl(imageUrl);
+    const potentialConflict = new File(cacheDir, urlFilename);
+    if (potentialConflict.exists) {
+      potentialConflict.delete();
+    }
+
+    // Download the image
     const downloadedFile = await File.downloadFileAsync(imageUrl, cacheDir);
     
     if (downloadedFile.exists) {
-      // Rename to our expected filename
-      const targetPath = getLocalImagePath(saveId, imageUrl);
-      downloadedFile.move(new File(targetPath));
-      console.log(`[image-cache] Cached image: ${saveId}`);
-      return targetPath;
+      // Move to our final filename (saveId.extension)
+      const targetFile = getCachedImageFile(saveId, imageUrl);
+      
+      // If target already exists (race condition), delete it first
+      if (targetFile.exists) {
+        targetFile.delete();
+      }
+      
+      downloadedFile.move(targetFile);
+      console.log(`[image-cache] Cached: ${saveId}`);
+      return targetFile.uri;
     } else {
-      console.warn(`[image-cache] Failed to download image: ${imageUrl}`);
+      console.warn(`[image-cache] Download failed: ${imageUrl.slice(0, 80)}`);
       return null;
     }
   } catch (error) {
-    console.error(`[image-cache] Error caching image: ${error}`);
+    console.error(`[image-cache] Error caching ${saveId}: ${error}`);
     return null;
   }
 }
