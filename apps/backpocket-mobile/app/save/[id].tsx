@@ -58,25 +58,22 @@ import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
+import { useCreateCollection, useRequestSaveSnapshot } from "@/lib/convex/hooks";
 import {
+  useDeleteSave,
   useGetSave,
   useGetSaveSnapshot,
   useListCollections,
   useListTags,
   useToggleArchive,
   useToggleFavorite,
-  useDeleteSave,
   useUpdateSave,
 } from "@/lib/data/hooks";
-import {
-  useCreateCollection,
-  useRequestSaveSnapshot,
-} from "@/lib/convex/hooks";
 import { useIsSaveAvailableOffline } from "@/lib/offline";
 import { useSettings } from "@/lib/settings";
 import type { Save, SaveVisibility } from "@/lib/types";
-import { isSaveProcessing } from "@/lib/utils/processing-saves";
 import { useOpenUrl } from "@/lib/utils";
+import { isSaveProcessing } from "@/lib/utils/processing-saves";
 
 // === Visibility Selector Component ===
 interface VisibilitySelectorProps {
@@ -838,13 +835,13 @@ export default function SaveDetailScreen() {
   const { openUrl } = useOpenUrl();
   const { width } = useWindowDimensions();
   const { settings } = useSettings();
-  
+
   // Offline support
   const offlineEnabled = settings.offline.enabled;
-  
+
   // Check if save is available offline
   const { isAvailable: isAvailableOffline } = useIsSaveAvailableOffline(id);
-  
+
   // Unified hooks that handle online/offline automatically
   const { save, isLoading, isOffline } = useGetSave(id);
   const isError = !isOffline && save === null && !isLoading;
@@ -895,23 +892,23 @@ export default function SaveDetailScreen() {
 
     Alert.alert(`${action} Save`, message, [
       { text: "Cancel", style: "cancel" },
-          {
-            text: action,
-            onPress: async () => {
-              setIsArchiving(true);
-              try {
-                await toggleArchiveMutation({
-                  saveId: save.id as any,
-                });
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              } catch {
-                Alert.alert("Error", `Failed to ${action.toLowerCase()} save`);
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              } finally {
-                setIsArchiving(false);
-              }
-            },
-          },
+      {
+        text: action,
+        onPress: async () => {
+          setIsArchiving(true);
+          try {
+            await toggleArchiveMutation({
+              saveId: save.id as any,
+            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          } catch {
+            Alert.alert("Error", `Failed to ${action.toLowerCase()} save`);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          } finally {
+            setIsArchiving(false);
+          }
+        },
+      },
     ]);
   }, [save, toggleArchiveMutation]);
 
@@ -940,23 +937,23 @@ export default function SaveDetailScreen() {
       "Are you sure you want to delete this save? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              setIsDeleting(true);
-              try {
-                await deleteSaveMutation({ saveId: save.id as any });
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                router.back();
-              } catch {
-                Alert.alert("Error", "Failed to delete save");
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              } finally {
-                setIsDeleting(false);
-              }
-            },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              await deleteSaveMutation({ saveId: save.id as any });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.back();
+            } catch {
+              Alert.alert("Error", "Failed to delete save");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } finally {
+              setIsDeleting(false);
+            }
           },
+        },
       ]
     );
   }, [save, deleteSaveMutation, router]);
@@ -969,23 +966,23 @@ export default function SaveDetailScreen() {
       "This will re-fetch the title, description, thumbnail, and reader mode content from the source URL.",
       [
         { text: "Cancel", style: "cancel" },
-          {
-            text: "Refresh",
-            onPress: async () => {
-              setIsRefreshing(true);
-              try {
-                // Request a new snapshot which also re-enriches metadata
-                await requestSnapshotMutation({ saveId: save.id as any, force: true });
-                // Convex auto-refetches, but wait a moment for reactivity
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              } catch {
-                Alert.alert("Error", "Failed to refresh save");
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-              } finally {
-                setIsRefreshing(false);
-              }
-            },
+        {
+          text: "Refresh",
+          onPress: async () => {
+            setIsRefreshing(true);
+            try {
+              // Request a new snapshot which also re-enriches metadata
+              await requestSnapshotMutation({ saveId: save.id as any, force: true });
+              // Convex auto-refetches, but wait a moment for reactivity
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch {
+              Alert.alert("Error", "Failed to refresh save");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } finally {
+              setIsRefreshing(false);
+            }
           },
+        },
       ]
     );
   }, [save, requestSnapshotMutation]);
@@ -1111,11 +1108,15 @@ export default function SaveDetailScreen() {
         scrollEventThrottle={16}
       >
         {/* Offline Banner */}
-        <OfflineBanner 
-          message={isAvailableOffline ? "You're offline. Viewing cached version." : "You're offline. This save may not be fully available."}
+        <OfflineBanner
+          message={
+            isAvailableOffline
+              ? "You're offline. Viewing cached version."
+              : "You're offline. This save may not be fully available."
+          }
           showReconnect={false}
         />
-        
+
         {/* Image */}
         {save.imageUrl && (
           <Image source={{ uri: save.imageUrl }} style={styles.image} resizeMode="cover" />
@@ -1443,7 +1444,7 @@ export default function SaveDetailScreen() {
                 )}
               </View>
             )}
-            
+
             {/* Visibility */}
             <View style={[styles.metadataRow, offlineEnabled && { borderTopColor: colors.border }]}>
               {save.visibility === "public" ? (

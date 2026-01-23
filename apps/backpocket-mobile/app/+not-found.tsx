@@ -1,13 +1,14 @@
 /**
  * Not Found / Catch-all Route
  *
- * This handles unmatched routes, including the expo-share-intent deep link format.
- * When expo-share-intent opens the app with `backpocket://dataUrl=backpocketShareKey#type`,
- * Expo Router doesn't recognize this as a valid path. We catch it here and redirect
- * to the /share route where useShareIntent will read the shared data from UserDefaults.
+ * This handles unmatched routes, including share extension deep links.
+ * When expo-sharing opens the app via share extension, it uses the `/expo-sharing` path.
+ * We catch it here and redirect to the /share route where getSharedPayloads() will
+ * read the shared data.
  */
 
 import * as Linking from "expo-linking";
+import * as Sharing from "expo-sharing";
 import { Redirect, useGlobalSearchParams, usePathname } from "expo-router";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
@@ -32,24 +33,20 @@ export default function NotFoundScreen() {
       console.log("[+not-found] Initial URL:", url);
     });
 
-    // Check if this is an expo-share-intent deep link
-    // Format: backpocket://dataUrl=backpocketShareKey#type
-    const isShareIntent =
-      pathname.includes("dataUrl") ||
-      pathname.includes("backpocketShareKey") ||
-      Object.keys(params).some(
-        (key) =>
-          key.includes("dataUrl") ||
-          key.includes("backpocketShareKey") ||
-          key === "weburl" ||
-          key === "media" ||
-          key === "text" ||
-          key === "file"
-      );
+    // Check if this is an expo-sharing deep link (new format)
+    // The share extension opens the app with /expo-sharing path
+    const isExpoSharingPath = pathname === "/expo-sharing" || pathname.startsWith("/expo-sharing");
 
-    console.log("[+not-found] isShareIntent:", isShareIntent);
+    // Also check if there are shared payloads available
+    const sharedPayloads = Sharing.getSharedPayloads();
+    const hasSharedPayloads = sharedPayloads.length > 0;
 
-    if (isShareIntent) {
+    console.log("[+not-found] isExpoSharingPath:", isExpoSharingPath);
+    console.log("[+not-found] hasSharedPayloads:", hasSharedPayloads);
+    console.log("[+not-found] sharedPayloads:", JSON.stringify(sharedPayloads, null, 2));
+
+    // Redirect to share screen if this is a share intent
+    if (isExpoSharingPath || hasSharedPayloads) {
       console.log("[+not-found] Redirecting to /share");
       setShouldRedirect("/share");
       return;

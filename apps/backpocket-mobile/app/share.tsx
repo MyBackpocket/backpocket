@@ -9,7 +9,7 @@ import { useSafeAuth } from "@/lib/auth/safe-hooks";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useShareIntent } from "expo-share-intent";
+import * as Sharing from "expo-sharing";
 import {
   Bookmark,
   Check,
@@ -609,8 +609,22 @@ export default function ShareScreen() {
   // Get user's space settings for default visibility (raw Convex hook)
   const space = useGetMySpace();
 
-  // Get share intent data (for Android/iOS share intent flow)
-  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
+  // Get share payloads from expo-sharing (for Android/iOS share intent flow)
+  const [sharePayloads, setSharePayloads] = useState<Sharing.SharePayload[]>([]);
+  const hasShareIntent = sharePayloads.length > 0;
+
+  // Load share payloads on mount
+  useEffect(() => {
+    const payloads = Sharing.getSharedPayloads();
+    console.log("[share] Loaded share payloads:", JSON.stringify(payloads, null, 2));
+    setSharePayloads(payloads);
+  }, []);
+
+  // Clear share payloads helper
+  const resetShareIntent = useCallback(() => {
+    Sharing.clearSharedPayloads();
+    setSharePayloads([]);
+  }, []);
 
   // Create save mutation
   const createSaveMutation = useCreateSave();
@@ -667,7 +681,7 @@ export default function ShareScreen() {
     console.log("[share] === Share Screen Debug ===");
     console.log("[share] params:", JSON.stringify(params));
     console.log("[share] hasShareIntent:", hasShareIntent);
-    console.log("[share] shareIntent:", JSON.stringify(shareIntent, null, 2));
+    console.log("[share] sharePayloads:", JSON.stringify(sharePayloads, null, 2));
     console.log("[share] isLoaded:", isLoaded);
     console.log("[share] isSignedIn:", isSignedIn);
     console.log("[share] status:", status);
@@ -678,10 +692,10 @@ export default function ShareScreen() {
     Linking.getInitialURL().then((initialUrl) => {
       console.log("[share] Initial URL:", initialUrl);
     });
-  }, [params, hasShareIntent, shareIntent, isLoaded, isSignedIn, status]);
+  }, [params, hasShareIntent, sharePayloads, isLoaded, isSignedIn, status]);
 
   /**
-   * Extract URL from params or share intent
+   * Extract URL from params or share payloads
    */
   const extractUrl = useCallback((): string | null => {
     // Check URL params first (from iOS share extension openHostApp)
@@ -693,15 +707,18 @@ export default function ShareScreen() {
       }
     }
 
-    // Check share intent (from useShareIntent hook)
-    if (hasShareIntent && shareIntent) {
-      // Direct URL
-      if (shareIntent.webUrl) {
-        return shareIntent.webUrl;
+    // Check share payloads (from expo-sharing)
+    if (sharePayloads.length > 0) {
+      // Look for URL type payloads first
+      const urlPayload = sharePayloads.find((p) => p.shareType === "url");
+      if (urlPayload) {
+        return urlPayload.value;
       }
-      // Check text for URL
-      if (shareIntent.text) {
-        const urlMatch = shareIntent.text.match(/https?:\/\/[^\s]+/);
+
+      // Check text payloads for URLs
+      const textPayload = sharePayloads.find((p) => p.shareType === "text");
+      if (textPayload) {
+        const urlMatch = textPayload.value.match(/https?:\/\/[^\s]+/);
         if (urlMatch) {
           return urlMatch[0];
         }
@@ -709,7 +726,7 @@ export default function ShareScreen() {
     }
 
     return null;
-  }, [params.url, hasShareIntent, shareIntent]);
+  }, [params.url, sharePayloads]);
 
   /**
    * Handle the share flow - runs once when data is ready
@@ -754,7 +771,7 @@ export default function ShareScreen() {
 
     // Mark as initiated IMMEDIATELY to prevent any re-runs
     saveInitiatedRef.current = true;
-    // Store the URL in case shareIntent gets cleared
+    // Store the URL in case sharePayloads gets cleared
     urlToSaveRef.current = url;
 
     console.log("[share] Starting save for:", url);

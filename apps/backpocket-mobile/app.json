@@ -34,17 +34,18 @@
       "expo-router",
       "expo-secure-store",
       [
-        "expo-share-intent",
+        "expo-sharing",
         {
-          "iosActivationRules": {
-            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
-            "NSExtensionActivationSupportsText": true
+          "ios": {
+            "enabled": true,
+            "activationRule": {
+              "supportsWebUrlWithMaxCount": 1,
+              "supportsText": 1
+            }
           },
-          "androidIntentFilters": [
-            "text/*"
-          ],
-          "androidMainActivityAttributes": {
-            "android:launchMode": "singleTask"
+          "android": {
+            "enabled": true,
+            "singleShareMimeTypes": ["text/*"]
           }
         }
       ],
@@ -62,7 +63,8 @@
       ],
       "expo-font",
       "expo-sqlite",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

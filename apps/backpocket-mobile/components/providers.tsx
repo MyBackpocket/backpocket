@@ -14,7 +14,6 @@ import {
   DefaultTheme,
   ThemeProvider as NavigationThemeProvider,
 } from "@react-navigation/native";
-import { ShareIntentProvider } from "expo-share-intent";
 import { useEffect, useState, type ReactNode } from "react";
 import { ActivityIndicator, View, StyleSheet } from "react-native";
 
@@ -291,26 +290,20 @@ export function Providers({ children }: ProvidersProps) {
   // If Clerk key is not configured, render without Clerk (for development)
   if (!CLERK_PUBLISHABLE_KEY) {
     console.warn("[auth] Clerk publishable key not configured. Auth features disabled.");
-    return (
-      <ShareIntentProvider options={{ debug: true }}>
-        <SettingsWrapper cachedUser={cachedUser}>{children}</SettingsWrapper>
-      </ShareIntentProvider>
-    );
+    return <SettingsWrapper cachedUser={cachedUser}>{children}</SettingsWrapper>;
   }
 
   // OFFLINE + NO CACHED USER = Show sign-in required screen
   if (isOffline && !cachedUser) {
     return (
-      <ShareIntentProvider options={{ debug: true }}>
-        <OfflineAwareSettingsWrapper cachedUser={null}>
-          <OfflineSignInRequired
-            onRetry={async () => {
-              const { isOnline } = await checkNetworkStatus();
-              setIsOffline(!isOnline);
-            }}
-          />
-        </OfflineAwareSettingsWrapper>
-      </ShareIntentProvider>
+      <OfflineAwareSettingsWrapper cachedUser={null}>
+        <OfflineSignInRequired
+          onRetry={async () => {
+            const { isOnline } = await checkNetworkStatus();
+            setIsOffline(!isOnline);
+          }}
+        />
+      </OfflineAwareSettingsWrapper>
     );
   }
 
@@ -318,25 +311,21 @@ export function Providers({ children }: ProvidersProps) {
   if (isOffline && cachedUser) {
     console.log("[providers] Starting in offline mode with cached user");
     return (
-      <ShareIntentProvider options={{ debug: true }}>
-        <OfflineAwareSettingsWrapper cachedUser={cachedUser}>
-          {children}
-        </OfflineAwareSettingsWrapper>
-      </ShareIntentProvider>
+      <OfflineAwareSettingsWrapper cachedUser={cachedUser}>
+        {children}
+      </OfflineAwareSettingsWrapper>
     );
   }
 
   // ONLINE = Normal Clerk + Convex flow
   return (
-    <ShareIntentProvider options={{ debug: true }}>
-      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
-        <ClerkLoaded>
-          <UserCacher>
-            <SettingsWrapper cachedUser={cachedUser}>{children}</SettingsWrapper>
-          </UserCacher>
-        </ClerkLoaded>
-      </ClerkProvider>
-    </ShareIntentProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+      <ClerkLoaded>
+        <UserCacher>
+          <SettingsWrapper cachedUser={cachedUser}>{children}</SettingsWrapper>
+        </UserCacher>
+      </ClerkLoaded>
+    </ClerkProvider>
   );
 }
 
