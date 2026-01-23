@@ -42,8 +42,8 @@ export function MobileDomainBanner() {
   return (
     <div
       className={cn(
-        // Mobile only - hidden on sm and above
-        "sm:hidden",
+        // Mobile only - hidden on lg and above (matches when mobile hero visual appears)
+        "lg:hidden",
         // Fixed positioning below navbar
         "fixed top-16 left-0 right-0 z-40",
         // Transitions

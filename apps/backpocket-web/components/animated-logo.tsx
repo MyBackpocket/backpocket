@@ -24,8 +24,8 @@ const CYCLE_DOMAINS = [
   },
 ] as const;
 
-// Tailwind sm breakpoint
-const SM_BREAKPOINT = 640;
+// Tailwind lg breakpoint - matches when mobile hero visual appears
+const LG_BREAKPOINT = 1024;
 
 interface AnimatedLogoProps {
   className?: string;
@@ -40,10 +40,10 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
 
   const current = CYCLE_DOMAINS[currentIndex];
 
-  // Detect mobile viewport - disable animation on mobile
+  // Detect mobile viewport - disable animation when mobile hero visual is shown
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < SM_BREAKPOINT);
+      setIsMobile(window.innerWidth < LG_BREAKPOINT);
     };
 
     // Check on mount
@@ -155,10 +155,10 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
         />
       </span>
 
-      {/* "Your domain" badge that fades in for custom domains - hidden on mobile */}
+      {/* "Your domain" badge that fades in for custom domains - hidden when mobile hero is shown */}
       <span
         className={cn(
-          "hidden sm:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full transition-all duration-300 whitespace-nowrap shrink-0",
+          "hidden lg:inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full transition-all duration-300 whitespace-nowrap shrink-0",
           current.isCustom && phase === "visible"
             ? "opacity-100 translate-x-0 bg-mint/15 text-mint border border-mint/30"
             : "opacity-0 -translate-x-2 pointer-events-none"
