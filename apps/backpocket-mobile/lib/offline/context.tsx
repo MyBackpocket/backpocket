@@ -3,7 +3,7 @@
  * Provides offline mode state and cached user info throughout the app
  */
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { type CachedUser, getCachedUser } from "./auth-cache";
 import { checkNetworkStatus, getSyncState, subscribeSyncState } from "./sync-manager";
 
@@ -20,6 +20,8 @@ export interface OfflineContextValue {
   isInitializing: boolean;
   /** Check and update network status */
   refreshNetworkStatus: () => Promise<void>;
+  /** Update the cached user (used by ClerkUserSync to sync Clerk state) */
+  updateCachedUser: (user: CachedUser | null) => void;
 }
 
 const OfflineContext = createContext<OfflineContextValue | null>(null);
@@ -85,6 +87,10 @@ export function OfflineProvider({ children, initialCachedUser, isOfflineOnly = f
     setIsOffline(!isOnline);
   };
 
+  const updateCachedUser = useCallback((user: CachedUser | null) => {
+    setCachedUser(user);
+  }, []);
+
   const value: OfflineContextValue = {
     isOffline,
     isOfflineMode: isOffline && cachedUser !== null,
@@ -92,6 +98,7 @@ export function OfflineProvider({ children, initialCachedUser, isOfflineOnly = f
     cachedUser,
     isInitializing,
     refreshNetworkStatus,
+    updateCachedUser,
   };
 
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;
@@ -112,6 +119,7 @@ export function useOfflineContext(): OfflineContextValue {
       cachedUser: null,
       isInitializing: false,
       refreshNetworkStatus: async () => {},
+      updateCachedUser: () => {},
     };
   }
   return context;

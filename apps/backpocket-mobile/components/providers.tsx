@@ -31,11 +31,13 @@ import {
   getCachedUser,
   clearCachedUser,
   OfflineProvider,
+  useOfflineContext,
+  useAutoSync,
   checkNetworkStatus,
   initializeOffline,
   subscribeSyncState,
 } from "@/lib/offline";
-import { SettingsContext, type ThemePreference, useSettingsStore } from "@/lib/settings";
+import { SettingsContext, type ThemePreference, useSettingsStore, useSettings } from "@/lib/settings";
 import { ThemeProvider } from "@/lib/theme/provider";
 
 // Custom navigation themes with Backpocket colors
@@ -76,6 +78,7 @@ interface InnerProvidersProps extends ProvidersProps {
 
 /**
  * Component that caches the Clerk user when available
+ * This runs ABOVE OfflineProvider - it caches to SecureStore for persistence
  */
 function UserCacher({ children }: { children: ReactNode }) {
   const { user, isLoaded, isSignedIn } = useUser();
@@ -93,6 +96,61 @@ function UserCacher({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Component that syncs Clerk user state to OfflineContext
+ * This runs INSIDE OfflineProvider - it updates the React state for immediate use
+ */
+function ClerkUserSync({ children }: { children: ReactNode }) {
+  const { user, isLoaded, isSignedIn } = useUser();
+  const { updateCachedUser, cachedUser } = useOfflineContext();
+
+  // Extract stable values from user to avoid infinite loops
+  const userId = user?.id;
+  const userFirstName = user?.firstName;
+  const userLastName = user?.lastName;
+  const userFullName = user?.fullName;
+  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const userImageUrl = user?.imageUrl;
+
+  const cachedUserId = cachedUser?.id;
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && userId) {
+      // Only update if the user ID changed (avoid unnecessary updates)
+      if (cachedUserId !== userId) {
+        updateCachedUser({
+          id: userId,
+          firstName: userFirstName ?? null,
+          lastName: userLastName ?? null,
+          fullName: userFullName ?? null,
+          email: userEmail ?? null,
+          imageUrl: userImageUrl ?? null,
+          cachedAt: Date.now(),
+        });
+      }
+    } else if (isLoaded && !isSignedIn && cachedUserId) {
+      // Clear the cached user when signed out
+      updateCachedUser(null);
+    }
+  }, [isLoaded, isSignedIn, userId, userFirstName, userLastName, userFullName, userEmail, userImageUrl, cachedUserId, updateCachedUser]);
+
+  return <>{children}</>;
+}
+
+/**
+ * Component that triggers auto-sync when offline mode is enabled
+ * This runs INSIDE ConvexProvider so it has access to Convex hooks
+ */
+function AutoSyncManager({ children }: { children: ReactNode }) {
+  const { settings } = useSettings();
+  const offlineSettings = settings.offline;
+  
+  // Trigger auto-sync when offline mode is enabled
+  useAutoSync(offlineSettings, offlineSettings.enabled);
+  
+  return <>{children}</>;
+}
+
 function InnerProviders({ children, themePreference, cachedUser }: InnerProvidersProps) {
   const colorScheme = useColorScheme();
 
@@ -103,12 +161,18 @@ function InnerProviders({ children, themePreference, cachedUser }: InnerProvider
   return (
     <ThemeProvider forcedColorScheme={themePreference}>
       <OfflineProvider initialCachedUser={cachedUser}>
-        {/* Mark Clerk as available - we have ClerkProvider in the tree */}
-        <ClerkAvailableProvider available={true}>
-          <ConvexProvider>
-            <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
-          </ConvexProvider>
-        </ClerkAvailableProvider>
+        {/* Sync Clerk user to OfflineContext for immediate access */}
+        <ClerkUserSync>
+          {/* Mark Clerk as available - we have ClerkProvider in the tree */}
+          <ClerkAvailableProvider available={true}>
+            <ConvexProvider>
+              {/* Auto-sync offline data when enabled */}
+              <AutoSyncManager>
+                <NavigationThemeProvider value={navigationTheme}>{children}</NavigationThemeProvider>
+              </AutoSyncManager>
+            </ConvexProvider>
+          </ClerkAvailableProvider>
+        </ClerkUserSync>
       </OfflineProvider>
     </ThemeProvider>
   );
