@@ -61,11 +61,12 @@ export function DemoSection() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Demo 1: Multi-platform */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 3 }}
+            className="max-w-md mx-auto lg:max-w-none"
           >
-            <div className="mb-4">
+            <div className="mb-4 text-center lg:text-left">
               <h3 className="text-lg font-semibold">Multi-Platform Magic</h3>
               <p className="text-sm text-muted-foreground">
                 Paste any URL and get rich previews instantly
@@ -76,11 +77,12 @@ export function DemoSection() {
 
           {/* Demo 2: Notes and curation */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 4 }}
+            className="max-w-md mx-auto lg:max-w-none"
           >
-            <div className="mb-4">
+            <div className="mb-4 text-center lg:text-left">
               <h3 className="text-lg font-semibold">Notes & Curation</h3>
               <p className="text-sm text-muted-foreground">
                 Add personal notes and organize with tags
