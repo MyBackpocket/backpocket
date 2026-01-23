@@ -9,7 +9,7 @@ import { ANIMATED_LOGO } from "@/lib/constants/animations";
 import { cn } from "@/lib/utils";
 
 const CYCLE_DOMAINS = [
-  { text: "backpocket", isProduct: true, href: "/" },
+  { text: "backpocket", isProduct: true, isCustom: false, href: "/" },
   {
     text: "mario.backpocket.my",
     isProduct: false,
