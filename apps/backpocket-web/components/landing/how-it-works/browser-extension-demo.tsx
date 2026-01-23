@@ -3,6 +3,7 @@
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { Bookmark, Check, Eye, Globe, Rss, Search, Sun } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { BROWSER_EXTENSION_DEMO } from "@/lib/constants/animations";
 import { BROWSER_ARTICLE, type BrowserPhase } from "./constants";
 
 export function BrowserExtensionDemo() {
@@ -24,25 +25,25 @@ export function BrowserExtensionDemo() {
       setPhase("browsing");
       setShowNewCard(false);
 
-      timeoutIds.push(setTimeout(() => setPhase("clicking"), 3000));
-      timeoutIds.push(setTimeout(() => setPhase("saving"), 3600));
-      timeoutIds.push(setTimeout(() => setPhase("saved"), 4500));
+      timeoutIds.push(setTimeout(() => setPhase("clicking"), BROWSER_EXTENSION_DEMO.browsingToClicking));
+      timeoutIds.push(setTimeout(() => setPhase("saving"), BROWSER_EXTENSION_DEMO.clickingToSaving));
+      timeoutIds.push(setTimeout(() => setPhase("saved"), BROWSER_EXTENSION_DEMO.savingToSaved));
       timeoutIds.push(
         setTimeout(() => {
           setPhase("appearing");
           setShowNewCard(true);
-        }, 5500)
+        }, BROWSER_EXTENSION_DEMO.savedToAppearing)
       );
       timeoutIds.push(
         setTimeout(() => {
           setShowNewCard(false);
           setPhase("browsing");
-        }, 10000)
+        }, BROWSER_EXTENSION_DEMO.appearingToReset)
       );
     };
 
     runAnimation();
-    const interval = setInterval(runAnimation, 10500);
+    const interval = setInterval(runAnimation, BROWSER_EXTENSION_DEMO.loopInterval);
 
     return () => {
       clearInterval(interval);
@@ -105,7 +106,7 @@ export function BrowserExtensionDemo() {
                     className="absolute inset-0 rounded-lg bg-white/40"
                     initial={{ scale: 1, opacity: 1 }}
                     animate={{ scale: 2, opacity: 0 }}
-                    transition={{ duration: 0.5 }}
+                    transition={{ duration: BROWSER_EXTENSION_DEMO.clickRippleDuration }}
                   />
                 )}
               </motion.button>

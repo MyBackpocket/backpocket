@@ -308,23 +308,28 @@ html {
   }
 }
 
+/*
+ * Animation utilities - keep in sync with @/lib/constants/animations.ts CSS_ANIMATIONS
+ */
 .animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
 .animate-slide-up {
-  animation: slideUp 0.5s ease-out forwards;
+  animation: slideUp 0.4s ease-out forwards;
 }
 
 .animate-slide-down {
-  animation: slideDown 0.5s ease-out forwards;
+  animation: slideDown 0.4s ease-out forwards;
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.4s ease-out forwards;
+  animation: scaleIn 0.3s ease-out forwards;
 }
 
-/* Floating card animations for hero section - GPU accelerated */
+/* Floating card animations for hero section - GPU accelerated
+ * Keep durations in sync with @/lib/constants/animations.ts CSS_ANIMATIONS.floatSlow/Medium/Fast
+ */
 @keyframes float-slow {
   0%,
   100% {
@@ -356,17 +361,17 @@ html {
 }
 
 .animate-float-slow {
-  animation: float-slow 8s ease-in-out infinite;
+  animation: float-slow 6s ease-in-out infinite;
 }
 
 .animate-float-medium {
-  animation: float-medium 6s ease-in-out infinite;
-  animation-delay: -2s;
+  animation: float-medium 4.5s ease-in-out infinite;
+  animation-delay: -1.5s;
 }
 
 .animate-float-fast {
-  animation: float-fast 4s ease-in-out infinite;
-  animation-delay: -1s;
+  animation: float-fast 3s ease-in-out infinite;
+  animation-delay: -0.75s;
 }
 
 /* Reduce motion for accessibility */
@@ -378,7 +383,9 @@ html {
   }
 }
 
-/* Stagger children animations - uses opacity only to prevent CLS */
+/* Stagger children animations - uses opacity only to prevent CLS
+ * Keep durations in sync with @/lib/constants/animations.ts CSS_ANIMATIONS.fadeInUp/staggerDelay
+ */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -392,7 +399,7 @@ html {
 
 .stagger-children > * {
   opacity: 0;
-  animation: fadeInUp 0.5s ease-out forwards;
+  animation: fadeInUp 0.4s ease-out forwards;
   /* Ensure element reserves its full space even when transparent */
   will-change: opacity, transform;
 }
@@ -401,25 +408,25 @@ html {
   animation-delay: 0ms;
 }
 .stagger-children > *:nth-child(2) {
-  animation-delay: 60ms;
+  animation-delay: 50ms;
 }
 .stagger-children > *:nth-child(3) {
-  animation-delay: 120ms;
+  animation-delay: 100ms;
 }
 .stagger-children > *:nth-child(4) {
-  animation-delay: 180ms;
+  animation-delay: 150ms;
 }
 .stagger-children > *:nth-child(5) {
-  animation-delay: 240ms;
+  animation-delay: 200ms;
 }
 .stagger-children > *:nth-child(6) {
-  animation-delay: 300ms;
+  animation-delay: 250ms;
 }
 .stagger-children > *:nth-child(7) {
-  animation-delay: 360ms;
+  animation-delay: 300ms;
 }
 .stagger-children > *:nth-child(8) {
-  animation-delay: 420ms;
+  animation-delay: 350ms;
 }
 
 /* Reduced motion: skip animation, show immediately */

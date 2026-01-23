@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Globe, Hash, Link2, MessageSquare } from "lucide-react";
 import { useEffect, useState } from "react";
+import { MULTI_PLATFORM_DEMO } from "@/lib/constants/animations";
 import { AnimatedBrowserFrame } from "./animated-browser-frame";
 
 const demoContent = [
@@ -42,9 +43,11 @@ const demoContent = [
   },
 ];
 
-const TYPING_SPEED = 40;
-const CARD_DISPLAY_TIME = 3500;
-const TRANSITION_DELAY = 300;
+const {
+  typingSpeed: TYPING_SPEED,
+  cardDisplayTime: CARD_DISPLAY_TIME,
+  transitionDelay: TRANSITION_DELAY,
+} = MULTI_PLATFORM_DEMO;
 
 export function MultiPlatformDemo() {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -122,7 +125,7 @@ export function MultiPlatformDemo() {
                 initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
+                transition={{ duration: MULTI_PLATFORM_DEMO.cardTransition, ease: "easeOut" }}
                 className="rounded-lg border border-border bg-card/50 p-4 shadow-sm"
               >
                 <div className="flex items-start gap-3">
@@ -150,7 +153,7 @@ export function MultiPlatformDemo() {
                   className="mt-4 flex justify-end"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.2 }}
+                  transition={{ delay: MULTI_PLATFORM_DEMO.cardTransition }}
                 >
                   <motion.button
                     className="rounded-lg bg-denim px-4 py-2 text-sm font-medium text-white"
@@ -162,9 +165,9 @@ export function MultiPlatformDemo() {
                       ],
                     }}
                     transition={{
-                      duration: 1.5,
+                      duration: MULTI_PLATFORM_DEMO.buttonPulseDuration,
                       repeat: Number.POSITIVE_INFINITY,
-                      repeatDelay: 0.5,
+                      repeatDelay: MULTI_PLATFORM_DEMO.buttonPulseRepeatDelay,
                     }}
                   >
                     Save to Library

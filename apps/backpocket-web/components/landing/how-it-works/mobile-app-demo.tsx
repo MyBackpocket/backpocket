@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LogoIcon } from "@/components/logo";
+import { MOBILE_APP_DEMO } from "@/lib/constants/animations";
 import type { MobilePhase } from "./constants";
 
 export function MobileAppDemo() {
@@ -31,15 +32,15 @@ export function MobileAppDemo() {
     const runAnimation = () => {
       setPhase("article");
 
-      timeoutIds.push(setTimeout(() => setPhase("share-sheet"), 2500));
-      timeoutIds.push(setTimeout(() => setPhase("app-opening"), 6500));
-      timeoutIds.push(setTimeout(() => setPhase("saved"), 7500));
-      timeoutIds.push(setTimeout(() => setPhase("complete"), 9000));
-      timeoutIds.push(setTimeout(() => setPhase("article"), 13000));
+      timeoutIds.push(setTimeout(() => setPhase("share-sheet"), MOBILE_APP_DEMO.articleToShareSheet));
+      timeoutIds.push(setTimeout(() => setPhase("app-opening"), MOBILE_APP_DEMO.shareSheetToAppOpening));
+      timeoutIds.push(setTimeout(() => setPhase("saved"), MOBILE_APP_DEMO.appOpeningToSaved));
+      timeoutIds.push(setTimeout(() => setPhase("complete"), MOBILE_APP_DEMO.savedToComplete));
+      timeoutIds.push(setTimeout(() => setPhase("article"), MOBILE_APP_DEMO.completeToReset));
     };
 
     runAnimation();
-    const interval = setInterval(runAnimation, 13500);
+    const interval = setInterval(runAnimation, MOBILE_APP_DEMO.loopInterval);
 
     return () => {
       clearInterval(interval);
@@ -274,7 +275,7 @@ export function MobileAppDemo() {
                       <motion.div
                         className="flex flex-col items-center gap-1.5 min-w-[44px] sm:min-w-[50px]"
                         animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: 0.5, delay: 0.8 }}
+                        transition={{ duration: MOBILE_APP_DEMO.iconScaleDuration, delay: MOBILE_APP_DEMO.iconScaleDelay }}
                       >
                         <motion.div
                           className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl overflow-hidden shadow-lg"
@@ -285,7 +286,7 @@ export function MobileAppDemo() {
                               "0 0 0 0 rgba(var(--rust), 0)",
                             ],
                           }}
-                          transition={{ duration: 1.2, delay: 0.5 }}
+                          transition={{ duration: MOBILE_APP_DEMO.glowDuration, delay: MOBILE_APP_DEMO.glowDelay }}
                         >
                           <LogoIcon size="lg" className="w-full h-full" />
                         </motion.div>

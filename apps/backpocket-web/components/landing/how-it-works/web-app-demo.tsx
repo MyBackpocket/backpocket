@@ -4,6 +4,7 @@ import { motion, useInView } from "framer-motion";
 import { Bookmark, Check, Globe, Link as LinkIcon, Lock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { LogoIcon } from "@/components/logo";
+import { WEB_APP_DEMO } from "@/lib/constants/animations";
 import { WEB_ARTICLE, type WebPhase } from "./constants";
 
 export function WebAppDemo() {
@@ -40,23 +41,23 @@ export function WebAppDemo() {
             } else {
               if (typeIntervalId) clearInterval(typeIntervalId);
             }
-          }, 30);
-        }, 1500)
+          }, WEB_APP_DEMO.typingSpeed);
+        }, WEB_APP_DEMO.emptyToPasting)
       );
 
-      timeoutIds.push(setTimeout(() => setPhase("processing"), 3500));
-      timeoutIds.push(setTimeout(() => setPhase("saved"), 4500));
-      timeoutIds.push(setTimeout(() => setPhase("complete"), 6000));
+      timeoutIds.push(setTimeout(() => setPhase("processing"), WEB_APP_DEMO.pastingToProcessing));
+      timeoutIds.push(setTimeout(() => setPhase("saved"), WEB_APP_DEMO.processingToSaved));
+      timeoutIds.push(setTimeout(() => setPhase("complete"), WEB_APP_DEMO.savedToComplete));
       timeoutIds.push(
         setTimeout(() => {
           setPhase("empty");
           setInputText("");
-        }, 9000)
+        }, WEB_APP_DEMO.completeToReset)
       );
     };
 
     runAnimation();
-    const interval = setInterval(runAnimation, 9500);
+    const interval = setInterval(runAnimation, WEB_APP_DEMO.loopInterval);
 
     return () => {
       clearInterval(interval);

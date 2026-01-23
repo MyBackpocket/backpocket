@@ -3,6 +3,7 @@
 import { useInView } from "framer-motion";
 import { Bookmark, ChevronRight, Eye, Rss } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { RSS_FEED_DEMO } from "@/lib/constants/animations";
 import { NEW_RSS_ITEM, RSS_ITEMS, type RssPhase } from "./constants";
 
 export function RssFeedDemo() {
@@ -25,30 +26,30 @@ export function RssFeedDemo() {
       setShowNewItem(false);
 
       // Step 1: Show "saving" indicator
-      timeoutIds.push(setTimeout(() => setPhase("saving"), 2000));
+      timeoutIds.push(setTimeout(() => setPhase("saving"), RSS_FEED_DEMO.idleToSaving));
 
       // Step 2: New item appears in feed
       timeoutIds.push(
         setTimeout(() => {
           setPhase("updating");
           setShowNewItem(true);
-        }, 3000)
+        }, RSS_FEED_DEMO.savingToUpdating)
       );
 
       // Step 3: Complete
-      timeoutIds.push(setTimeout(() => setPhase("complete"), 4000));
+      timeoutIds.push(setTimeout(() => setPhase("complete"), RSS_FEED_DEMO.updatingToComplete));
 
       // Step 4: Reset
       timeoutIds.push(
         setTimeout(() => {
           setPhase("idle");
           setShowNewItem(false);
-        }, 8000)
+        }, RSS_FEED_DEMO.completeToReset)
       );
     };
 
     runAnimation();
-    const interval = setInterval(runAnimation, 8500);
+    const interval = setInterval(runAnimation, RSS_FEED_DEMO.loopInterval);
 
     return () => {
       clearInterval(interval);

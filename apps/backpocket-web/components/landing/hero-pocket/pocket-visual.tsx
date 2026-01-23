@@ -2,6 +2,7 @@
 
 import { Bookmark, Check, ExternalLink, Eye, Rss, Search, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
+import { HERO_POCKET } from "@/lib/constants/animations";
 import { type AnimationPhase, SAVE_CARDS } from "./constants";
 
 interface SaveCardProps {
@@ -77,7 +78,7 @@ export function PocketVisual() {
       timeoutIds.push(
         setTimeout(() => {
           setPhase("saving");
-        }, 2000)
+        }, HERO_POCKET.idleToSaving)
       );
 
       // Step 2: "Saved!" confirmation + card appears
@@ -86,7 +87,7 @@ export function PocketVisual() {
           setPhase("saved");
           setSaveCount(5);
           setShowNewCard(true);
-        }, 3000)
+        }, HERO_POCKET.savingToSaved)
       );
 
       // Step 3: Start fade out
@@ -94,7 +95,7 @@ export function PocketVisual() {
         setTimeout(() => {
           setPhase("fading");
           setIsFadingOut(true);
-        }, 6000)
+        }, HERO_POCKET.savedToFading)
       );
 
       // Step 4: Reset for next loop
@@ -104,12 +105,12 @@ export function PocketVisual() {
           setShowNewCard(false);
           setIsFadingOut(false);
           setPhase("idle");
-        }, 7000)
+        }, HERO_POCKET.fadingToReset)
       );
     };
 
     runAnimation();
-    const interval = setInterval(runAnimation, 7500);
+    const interval = setInterval(runAnimation, HERO_POCKET.loopInterval);
 
     return () => {
       clearInterval(interval);

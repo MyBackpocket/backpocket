@@ -1,15 +1,7 @@
-import {
-  ArrowRight,
-  Bookmark,
-  Eye,
-  FolderOpen,
-  Globe,
-  Lock,
-  Rss,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, Bookmark, Eye, FolderOpen, Globe, Lock, Rss, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { AnimatedLogo } from "@/components/animated-logo";
 import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
 import { HeroPocket } from "@/components/landing";
 
@@ -22,6 +14,7 @@ const DemoSection = dynamic(
   () => import("@/components/landing/demo-section").then((m) => m.DemoSection),
   { ssr: true }
 );
+
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
@@ -35,9 +28,7 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <Link href={routes.home} className="flex items-center gap-2">
-            <Logo size="md" />
-          </Link>
+          <AnimatedLogo />
 
           <div className="flex items-center gap-4">
             <ThemeSwitcher />
@@ -76,8 +67,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-16 text-center">
             <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Everything you need,{" "}
-              <span className="text-rust italic">nothing you don&apos;t</span>
+              Everything you need, <span className="text-rust italic">nothing you don&apos;t</span>
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
               A calm, focused space for your reading and curation.
@@ -175,12 +165,11 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Intentionally{" "}
-              <span className="text-denim italic">non-social</span>
+              Intentionally <span className="text-denim italic">non-social</span>
             </h2>
             <p className="mt-6 text-lg text-muted-foreground">
-              Most people use backpocket as a private library — and that&apos;s perfect. If you choose
-              to share, there are no followers, likes, comments, or discovery feeds. No user
+              Most people use backpocket as a private library — and that&apos;s perfect. If you
+              choose to share, there are no followers, likes, comments, or discovery feeds. No user
               directory or algorithmic recommendations. People find your space only via the URL you
               share — in your bio, email signature, or conversation.
             </p>
@@ -215,8 +204,7 @@ export default function HomePage() {
             </div>
 
             <h2 className="text-center font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Why{" "}
-              <span className="text-rust italic">backpocket</span>?
+              Why <span className="text-rust italic">backpocket</span>?
             </h2>
 
             <div className="mt-10 space-y-6 text-lg leading-relaxed text-muted-foreground">
@@ -246,8 +234,8 @@ export default function HomePage() {
                 for the people who miss what Pocket offered — and for anyone who wants a calm,
                 focused way to save their finds. No social features, no algorithms. Just your
                 collection, beautifully organized and completely private by default. If you ever
-                want to share select saves publicly, that option is there — but it&apos;s entirely up to
-                you.
+                want to share select saves publicly, that option is there — but it&apos;s entirely
+                up to you.
               </p>
             </div>
 
@@ -337,8 +325,7 @@ export default function HomePage() {
             {/* Content */}
             <div className="relative z-10">
               <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-                Start building{" "}
-                <span className="italic opacity-90">your collection</span>
+                Start building <span className="italic opacity-90">your collection</span>
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-lg opacity-90">
                 Free to start. Save unlimited private links. If you ever want to share, get your own

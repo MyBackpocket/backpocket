@@ -3,16 +3,19 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Bold, Italic, MessageSquare, StickyNote, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
+import { NOTES_DEMO } from "@/lib/constants/animations";
 import { AnimatedBrowserFrame } from "./animated-browser-frame";
 
 const NOTE_TEXT =
   "This is exactly what I was thinking about for the new product strategy. Naval's mental models are so clear — save this for the team discussion next week.";
 const TAGS = ["strategy", "mental-models", "team"];
 
-const TYPING_SPEED = 35;
-const PHASE_DELAY = 800;
-const TAG_STAGGER = 200;
-const LOOP_PAUSE = 3000;
+const {
+  typingSpeed: TYPING_SPEED,
+  phaseDelay: PHASE_DELAY,
+  tagStagger: TAG_STAGGER,
+  loopPause: LOOP_PAUSE,
+} = NOTES_DEMO;
 
 type Phase = "typing" | "formatting" | "tagging" | "saved" | "resetting";
 
@@ -84,7 +87,7 @@ export function NotesCurationDemo() {
       setVisibleTags([]);
       setShowSaved(false);
       setPhase("typing");
-    }, 500);
+    }, NOTES_DEMO.resetDelay);
 
     return () => clearTimeout(resetTimeout);
   }, [phase]);
@@ -151,7 +154,7 @@ export function NotesCurationDemo() {
                           }
                         : {}
                     }
-                    transition={{ duration: 0.3 }}
+                    transition={{ duration: NOTES_DEMO.toolbarButtonDuration }}
                   >
                     <Bold className="h-4 w-4" />
                   </motion.button>
@@ -166,7 +169,7 @@ export function NotesCurationDemo() {
                           }
                         : {}
                     }
-                    transition={{ duration: 0.3, delay: 0.15 }}
+                    transition={{ duration: NOTES_DEMO.toolbarButtonDuration, delay: NOTES_DEMO.toolbarButtonDuration / 2 }}
                   >
                     <Italic className="h-4 w-4" />
                   </motion.button>
@@ -211,7 +214,7 @@ export function NotesCurationDemo() {
                   initial={{ opacity: 0, scale: 0.8, x: -10 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  transition={{ duration: NOTES_DEMO.tagEntranceDuration, delay: index * (NOTES_DEMO.tagEntranceDuration / 4) }}
                   className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
                     index === 0 ? "tag-denim" : index === 1 ? "tag-rust" : "tag-mint"
                   }`}

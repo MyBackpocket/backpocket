@@ -8,6 +8,7 @@ import AndroidLogo from "@/assets/img/Android-Logo.svg";
 import AppleLogo from "@/assets/img/Apple-Logo.svg";
 import ChromeLogo from "@/assets/img/Chrome-Logo.svg";
 import FirefoxLogo from "@/assets/img/Firefox-Logo.svg";
+import { HOW_IT_WORKS, TRANSITIONS } from "@/lib/constants/animations";
 import { externalLinks } from "@/lib/constants/links";
 import { routes } from "@/lib/constants/routes";
 import { BrowserExtensionDemo } from "./browser-extension-demo";
@@ -42,12 +43,12 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5 }}
+            transition={TRANSITIONS.normal}
             className="inline-flex items-center gap-2 rounded-full border border-rust/25 bg-rust/5 px-5 py-2 text-sm mb-8"
           >
             <motion.div
               animate={{ rotate: [0, 360] }}
-              transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              transition={{ duration: HOW_IT_WORKS.globeRotation, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
             >
               <Globe className="h-4 w-4 text-rust" />
             </motion.div>
@@ -57,7 +58,7 @@ export function HowItWorksSection() {
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
+            transition={{ ...TRANSITIONS.normal, delay: TRANSITIONS.staggerDelay }}
             className="font-serif text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6"
           >
             Save from <span className="text-rust italic">anywhere</span>
@@ -66,7 +67,7 @@ export function HowItWorksSection() {
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ ...TRANSITIONS.normal, delay: TRANSITIONS.staggerDelay * 2 }}
             className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto"
           >
             One click from your browser. One tap from your phone. Paste in the app. Your collection
@@ -80,7 +81,7 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 3 }}
           >
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-denim/10 text-denim text-sm font-medium mb-4">
@@ -99,7 +100,7 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
+            transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 4 }}
           >
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-mint/10 text-mint text-sm font-medium mb-4">
@@ -118,7 +119,7 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
+            transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 5 }}
           >
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber/10 text-amber text-sm font-medium mb-4">
@@ -137,7 +138,7 @@ export function HowItWorksSection() {
           <motion.div
             initial={{ opacity: 0, y: 40 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
+            transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 6 }}
           >
             <div className="text-center mb-8">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rust/10 text-rust text-sm font-medium mb-4">
@@ -157,7 +158,7 @@ export function HowItWorksSection() {
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-          transition={{ duration: 0.6, delay: 0.7 }}
+          transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 7 }}
           className="mt-20 md:mt-28"
         >
           <div className="text-center mb-10">
