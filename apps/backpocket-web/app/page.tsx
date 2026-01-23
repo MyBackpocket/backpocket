@@ -1,28 +1,29 @@
-export const dynamic = "force-dynamic";
-
 import {
   ArrowRight,
-  Bell,
   Bookmark,
   Eye,
   FolderOpen,
-  Github,
   Globe,
   Lock,
   Rss,
   Sparkles,
 } from "lucide-react";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import AndroidLogo from "@/assets/img/Android-Logo.svg";
-import AppleLogo from "@/assets/img/Apple-Logo.svg";
-import ChromeLogo from "@/assets/img/Chrome-Logo.svg";
-import FirefoxLogo from "@/assets/img/Firefox-Logo.svg";
 import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
-import { DemoSection, FloatingCards } from "@/components/landing";
+import { HeroPocket } from "@/components/landing";
+
+// Dynamic imports for heavy below-the-fold components (framer-motion heavy)
+const HowItWorksSection = dynamic(
+  () => import("@/components/landing/how-it-works-section").then((m) => m.HowItWorksSection),
+  { ssr: true }
+);
+const DemoSection = dynamic(
+  () => import("@/components/landing/demo-section").then((m) => m.DemoSection),
+  { ssr: true }
+);
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { TypewriterUrl } from "@/components/typewriter-url";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { externalLinks } from "@/lib/constants/links";
@@ -68,80 +69,17 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
-        {/* Background decoration - playful colored blobs */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-20 left-1/4 h-72 w-72 rounded-full bg-denim/10 blur-3xl" />
-          <div className="absolute bottom-40 right-1/4 h-96 w-96 rounded-full bg-rust/10 blur-3xl" />
-          <div className="absolute top-60 right-1/3 h-48 w-48 rounded-full bg-mint/10 blur-3xl" />
-          <div className="absolute bottom-20 left-1/3 h-64 w-64 rounded-full bg-amber/8 blur-3xl" />
-        </div>
-
-        {/* Floating content cards */}
-        <FloatingCards />
-
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="stagger-children mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-denim/20 bg-background/60 px-4 py-1.5 text-sm backdrop-blur-sm">
-              <Sparkles className="h-4 w-4 text-amber" />
-              <span>No social features. Just your content.</span>
-            </div>
-
-            <h1 className="font-serif text-4xl font-medium tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-              Your collection,
-              <br />
-              <span className="text-rust">beautifully shared</span>
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Save articles, videos, and links into your personal library. Optionally publish a
-              read-only collection at your own URL — no followers, no likes, just your curated
-              finds.
-            </p>
-
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              {/* Skeleton while Clerk loads - matches button dimensions */}
-              <AuthLoading>
-                <Skeleton className="h-12 w-[156px] rounded-md" />
-                <Skeleton className="h-12 w-[138px] rounded-md" />
-              </AuthLoading>
-              <SignedOut>
-                <Link href={routes.signUp}>
-                  <Button size="lg" className="h-12 px-8 text-base">
-                    Start for free
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-                <a href="#features">
-                  <Button variant="outline" size="lg" className="h-12 px-8 text-base">
-                    Learn more
-                  </Button>
-                </a>
-              </SignedOut>
-              <SignedIn>
-                <Link href={routes.app.root}>
-                  <Button size="lg" className="h-12 px-8 text-base">
-                    Open your library
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </SignedIn>
-            </div>
-
-            {/* Example URL - styled like a denim patch */}
-            <TypewriterUrl />
-          </div>
-        </div>
-      </section>
+      <HeroPocket />
 
       {/* Features Section */}
       <section id="features" className="py-20 md:py-32">
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-16 text-center">
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl">
-              Everything you need, nothing you don&apos;t
+            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
+              Everything you need,{" "}
+              <span className="text-rust italic">nothing you don&apos;t</span>
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
+            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
               A calm, focused space for your reading and curation.
             </p>
           </div>
@@ -176,10 +114,10 @@ export default function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-denim/12 text-denim transition-colors group-hover:bg-denim group-hover:text-white">
                 <Globe className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Share via URL</h3>
+              <h3 className="mb-2 text-xl font-semibold">Share if you want</h3>
               <p className="text-muted-foreground">
-                Publish your collection at your own subdomain or custom domain. People find you via
-                the link you share.
+                Optionally publish select saves at your own subdomain or custom domain. Sharing is
+                always your choice — most people keep everything private.
               </p>
             </div>
 
@@ -212,15 +150,18 @@ export default function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-denim-faded/20 text-denim-deep transition-colors group-hover:bg-denim-deep group-hover:text-white">
                 <Rss className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">RSS included</h3>
+              <h3 className="mb-2 text-xl font-semibold">RSS if you share</h3>
               <p className="text-muted-foreground">
-                Your public saves get an RSS feed automatically. Let people follow your finds in
-                their favorite reader.
+                If you choose to share saves publicly, they get an RSS feed automatically. Let
+                people follow your curated finds in their favorite reader.
               </p>
             </div>
           </div>
         </div>
       </section>
+
+      {/* How It Works Section */}
+      <HowItWorksSection />
 
       {/* Interactive Demo Section */}
       <DemoSection />
@@ -233,13 +174,15 @@ export default function HomePage() {
 
         <div className="mx-auto max-w-6xl px-6">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl">
-              Intentionally non-social
+            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
+              Intentionally{" "}
+              <span className="text-denim italic">non-social</span>
             </h2>
             <p className="mt-6 text-lg text-muted-foreground">
-              We believe in organic sharing. There are no followers, likes, comments, or discovery
-              feeds. No user directory or algorithmic recommendations. People find your space via
-              the URL you share — in your bio, email signature, or conversation.
+              Most people use backpocket as a private library — and that&apos;s perfect. If you choose
+              to share, there are no followers, likes, comments, or discovery feeds. No user
+              directory or algorithmic recommendations. People find your space only via the URL you
+              share — in your bio, email signature, or conversation.
             </p>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
               {[
@@ -271,8 +214,9 @@ export default function HomePage() {
               </span>
             </div>
 
-            <h2 className="text-center font-serif text-3xl font-medium tracking-tight md:text-4xl">
-              Why backpocket?
+            <h2 className="text-center font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
+              Why{" "}
+              <span className="text-rust italic">backpocket</span>?
             </h2>
 
             <div className="mt-10 space-y-6 text-lg leading-relaxed text-muted-foreground">
@@ -300,8 +244,10 @@ export default function HomePage() {
               <p>
                 <span className="font-medium text-foreground">backpocket</span> is our answer. Built
                 for the people who miss what Pocket offered — and for anyone who wants a calm,
-                focused way to save and share their finds. No social features, no algorithms. Just
-                your collection, beautifully organized and optionally shared at your own URL.
+                focused way to save their finds. No social features, no algorithms. Just your
+                collection, beautifully organized and completely private by default. If you ever
+                want to share select saves publicly, that option is there — but it&apos;s entirely up to
+                you.
               </p>
             </div>
 
@@ -310,130 +256,6 @@ export default function HomePage() {
                 <span className="text-muted-foreground">Pocket, 2007–2025</span>
                 <span className="text-denim/40">→</span>
                 <span className="font-medium text-rust">backpocket, 2025–</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Coming Soon Section */}
-      <section className="py-20 md:py-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mb-16 text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-rust/20 bg-rust/5 px-4 py-1.5 text-sm">
-              <Bell className="h-4 w-4 text-rust" />
-              <span className="text-rust font-medium">Coming Soon</span>
-            </div>
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl">
-              Save from anywhere
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Browser extensions and mobile apps are on the way.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Chrome Extension */}
-            <div className="group relative overflow-hidden rounded-2xl border border-dashed border-denim/30 bg-card/50 p-6 text-center transition-all hover:border-denim/50 hover:bg-card">
-              <div className="absolute inset-0 bg-linear-to-br from-amber/5 via-transparent to-mint/5 opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-amber/20 via-rust/10 to-mint/20">
-                  <Image src={ChromeLogo} alt="Chrome" className="h-9 w-9" />
-                </div>
-                <h3 className="mb-1 text-lg font-semibold">Chrome</h3>
-                <p className="text-sm text-muted-foreground">Extension</p>
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-denim/10 px-3 py-1 text-xs font-medium text-denim">
-                    In Development
-                  </span>
-                  <a
-                    href={externalLinks.browserExtensionRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                    View source
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Firefox Extension */}
-            <div className="group relative overflow-hidden rounded-2xl border border-dashed border-denim/30 bg-card/50 p-6 text-center transition-all hover:border-denim/50 hover:bg-card">
-              <div className="absolute inset-0 bg-linear-to-br from-rust/5 via-transparent to-amber/5 opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-rust/25 to-amber/20">
-                  <Image src={FirefoxLogo} alt="Firefox" className="h-9 w-9" />
-                </div>
-                <h3 className="mb-1 text-lg font-semibold">Firefox</h3>
-                <p className="text-sm text-muted-foreground">Extension</p>
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-denim/10 px-3 py-1 text-xs font-medium text-denim">
-                    In Development
-                  </span>
-                  <a
-                    href={externalLinks.browserExtensionRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                    View source
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* iOS App */}
-            <div className="group relative overflow-hidden rounded-2xl border border-dashed border-denim/30 bg-card/50 p-6 text-center transition-all hover:border-denim/50 hover:bg-card">
-              <div className="absolute inset-0 bg-linear-to-br from-slate-500/5 via-transparent to-slate-400/5 opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700">
-                  <Image src={AppleLogo} alt="Apple" className="h-8 w-auto dark:invert-0 invert" />
-                </div>
-                <h3 className="mb-1 text-lg font-semibold">iOS</h3>
-                <p className="text-sm text-muted-foreground">iPhone & iPad</p>
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-denim/10 px-3 py-1 text-xs font-medium text-denim">
-                    In Development
-                  </span>
-                  <a
-                    href={externalLinks.mobileAppRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                    View source
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            {/* Android App */}
-            <div className="group relative overflow-hidden rounded-2xl border border-dashed border-denim/30 bg-card/50 p-6 text-center transition-all hover:border-denim/50 hover:bg-card">
-              <div className="absolute inset-0 bg-linear-to-br from-mint/5 via-transparent to-teal/5 opacity-0 transition-opacity group-hover:opacity-100" />
-              <div className="relative">
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-linear-to-br from-mint/25 to-teal/20">
-                  <Image src={AndroidLogo} alt="Android" className="h-6 w-auto" />
-                </div>
-                <h3 className="mb-1 text-lg font-semibold">Android</h3>
-                <p className="text-sm text-muted-foreground">Phone & Tablet</p>
-                <div className="mt-4 flex flex-col items-center gap-2">
-                  <span className="inline-flex items-center rounded-full bg-denim/10 px-3 py-1 text-xs font-medium text-denim">
-                    In Development
-                  </span>
-                  <a
-                    href={externalLinks.mobileAppRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <Github className="h-3.5 w-3.5" />
-                    View source
-                  </a>
-                </div>
               </div>
             </div>
           </div>
@@ -468,7 +290,7 @@ export default function HomePage() {
             </div>
 
             <div className="absolute left-12 bottom-1/4 hidden lg:block animate-float-medium pointer-events-none">
-              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-[6deg] border border-white/20">
+              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-6 border border-white/20">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <div className="w-4 h-4 rounded bg-mint/30 flex items-center justify-center">
                     <Globe className="w-2.5 h-2.5 text-mint" />
@@ -482,7 +304,7 @@ export default function HomePage() {
 
             {/* Floating mini cards - right side */}
             <div className="absolute right-4 top-1/3 hidden md:block animate-float-medium pointer-events-none">
-              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-[10deg] border border-white/20">
+              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-10 border border-white/20">
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <div className="w-5 h-5 rounded bg-amber/30 flex items-center justify-center">
                     <Sparkles className="w-3 h-3 text-amber" />
@@ -515,11 +337,12 @@ export default function HomePage() {
             {/* Content */}
             <div className="relative z-10">
               <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-                Start building your collection
+                Start building{" "}
+                <span className="italic opacity-90">your collection</span>
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-lg opacity-90">
-                Free to start. Save unlimited private links. Up to 100 public saves on your own
-                subdomain.
+                Free to start. Save unlimited private links. If you ever want to share, get your own
+                subdomain with up to 100 public saves.
               </p>
               <div className="mt-10">
                 {/* Skeleton while Clerk loads */}

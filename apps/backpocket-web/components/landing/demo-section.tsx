@@ -10,13 +10,16 @@ export function DemoSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: "-50px" });
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  const hasTriggeredRef = useRef(false);
 
   // Once visible, stay visible (prevents unmounting)
+  // Using ref to avoid re-triggering when hasBeenVisible state changes
   useEffect(() => {
-    if (isInView && !hasBeenVisible) {
+    if (isInView && !hasTriggeredRef.current) {
+      hasTriggeredRef.current = true;
       setHasBeenVisible(true);
     }
-  }, [isInView, hasBeenVisible]);
+  }, [isInView]);
 
   return (
     <section ref={sectionRef} className="py-20 md:py-32 overflow-hidden">
@@ -37,9 +40,10 @@ export function DemoSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="font-serif text-3xl font-medium tracking-tight md:text-4xl"
+            className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl"
           >
-            Save, annotate, organize
+            Save, annotate,{" "}
+            <span className="text-mint italic">organize</span>
           </motion.h2>
 
           <motion.p
