@@ -73,7 +73,7 @@ export function HeroMobileVisual() {
   const isSaved = phase === "saved" || phase === "complete";
 
   return (
-    <div className="relative flex items-start justify-center gap-3 sm:gap-4">
+    <div className="relative flex items-center justify-center gap-3 sm:gap-4">
       {/* iPhone Frame - Full height */}
       <div className="relative w-[220px] sm:w-[260px] shrink-0">
         <div className="relative rounded-[2.5rem] sm:rounded-[3rem] border-[10px] sm:border-[12px] border-border bg-muted shadow-2xl overflow-hidden">
@@ -337,7 +337,7 @@ export function HeroMobileVisual() {
       </div>
 
       {/* Live Site Preview - Side panel, partially cut off */}
-      <div className="relative w-[160px] sm:w-[180px] -mr-8 sm:-mr-12 self-center">
+      <div className="relative w-[160px] sm:w-[180px] -mr-8 sm:-mr-12">
         <SideSitePreview showNewCard={showNewCard} isSaved={isSaved} />
       </div>
     </div>
