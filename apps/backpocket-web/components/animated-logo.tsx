@@ -24,6 +24,9 @@ const CYCLE_DOMAINS = [
   },
 ] as const;
 
+// Tailwind sm breakpoint
+const SM_BREAKPOINT = 640;
+
 interface AnimatedLogoProps {
   className?: string;
   paused?: boolean;
@@ -33,8 +36,23 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<"visible" | "morphing">("visible");
   const [isPaused, setIsPaused] = useState(paused);
+  const [isMobile, setIsMobile] = useState(false);
 
   const current = CYCLE_DOMAINS[currentIndex];
+
+  // Detect mobile viewport - disable animation on mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < SM_BREAKPOINT);
+    };
+
+    // Check on mount
+    checkMobile();
+
+    // Listen for resize
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const advanceToNext = useCallback(() => {
     setPhase("morphing");
@@ -45,13 +63,14 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
   }, []);
 
   useEffect(() => {
-    if (isPaused) return;
+    // Don't animate on mobile or when paused
+    if (isPaused || isMobile) return;
 
     const delay =
       currentIndex === 0 ? ANIMATED_LOGO.initialDelay : ANIMATED_LOGO.cycleDelay;
     const timeout = setTimeout(advanceToNext, delay);
     return () => clearTimeout(timeout);
-  }, [currentIndex, isPaused, advanceToNext]);
+  }, [currentIndex, isPaused, isMobile, advanceToNext]);
 
   const isExternal = !current.isProduct;
   const LinkComponent = isExternal ? "a" : Link;

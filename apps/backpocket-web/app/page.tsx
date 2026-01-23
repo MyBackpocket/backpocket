@@ -20,7 +20,6 @@ import { Logo } from "@/components/logo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { externalLinks } from "@/lib/constants/links";
 import { routes } from "@/lib/constants/routes";
 
 export default function HomePage() {
@@ -160,208 +159,274 @@ export default function HomePage() {
       {/* Interactive Demo Section */}
       <DemoSection />
 
-      {/* No Social Section - with stitching detail */}
-      <section className="relative border-y border-denim/20 bg-card/50 py-20 md:py-32">
-        {/* Decorative stitching lines */}
-        <div className="absolute inset-x-0 top-4 border-t-2 border-dashed border-rust/20" />
-        <div className="absolute inset-x-0 bottom-4 border-b-2 border-dashed border-rust/20" />
+      {/* CTA Section - Editorial / Literary aesthetic */}
+      <section className="relative py-24 md:py-40 overflow-hidden">
+        {/* Warm gradient background - adapts to dark mode */}
+        <div className="absolute inset-0 bg-gradient-to-br from-parchment via-cream to-amber/5 dark:from-[hsl(203,28%,14%)] dark:via-[hsl(203,25%,12%)] dark:to-amber/5" />
 
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Intentionally <span className="text-denim italic">non-social</span>
-            </h2>
-            <p className="mt-6 text-lg text-muted-foreground">
-              Most people use backpocket as a private library — and that&apos;s perfect. If you
-              choose to share, there are no followers, likes, comments, or discovery feeds. No user
-              directory or algorithmic recommendations. People find your space only via the URL you
-              share — in your bio, email signature, or conversation.
-            </p>
-            <div className="mt-10 flex flex-wrap justify-center gap-3">
-              {[
-                { label: "No followers", color: "tag-denim" },
-                { label: "No likes", color: "tag-rust" },
-                { label: "No comments", color: "tag-mint" },
-                { label: "No feed", color: "tag-teal" },
-                { label: "No algorithms", color: "tag-amber" },
-              ].map((item) => (
-                <span
-                  key={item.label}
-                  className={`rounded-full px-4 py-2 text-sm font-medium ${item.color}`}
-                >
-                  {item.label}
+        {/* Subtle paper texture grain */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')]" />
+
+        {/* === ANIMATED BACKGROUND ELEMENTS === */}
+        
+        {/* Large floating gradient orbs - visible on all screens, subtle opacity */}
+        <div className="absolute -top-20 -right-20 w-72 h-72 md:w-96 md:h-96 rounded-full bg-gradient-to-br from-rust/10 to-amber/5 dark:from-rust/5 dark:to-amber/[0.02] blur-3xl animate-float-slow pointer-events-none opacity-70" />
+        <div className="absolute -bottom-32 -left-20 w-80 h-80 md:w-[28rem] md:h-[28rem] rounded-full bg-gradient-to-tr from-denim/10 to-teal/5 dark:from-denim/5 dark:to-teal/[0.02] blur-3xl animate-float-medium pointer-events-none opacity-60" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full bg-gradient-to-b from-mint/5 to-transparent dark:from-mint/[0.02] blur-2xl animate-float-fast pointer-events-none opacity-50" />
+
+        {/* Geometric rings - decorative arcs, faded */}
+        <div className="absolute top-10 right-10 md:top-20 md:right-32 pointer-events-none opacity-40">
+          <div className="w-20 h-20 md:w-32 md:h-32 rounded-full border-2 border-dashed border-rust/15 dark:border-rust/8 animate-[spin_25s_linear_infinite]" />
+        </div>
+        <div className="absolute bottom-20 left-4 md:bottom-32 md:left-20 pointer-events-none opacity-30">
+          <div className="w-16 h-16 md:w-24 md:h-24 rounded-full border border-denim/15 dark:border-denim/8 animate-[spin_30s_linear_infinite_reverse]" />
+        </div>
+
+        {/* Scattered floating icons - faded for subtlety */}
+        <div className="absolute top-16 left-8 md:top-24 md:left-16 animate-float-slow pointer-events-none opacity-40">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-card/40 dark:bg-card/20 backdrop-blur-sm border border-border/30 flex items-center justify-center shadow-lg rotate-12">
+            <Bookmark className="w-5 h-5 md:w-6 md:h-6 text-rust/50" />
+          </div>
+        </div>
+        <div className="absolute bottom-28 right-8 md:bottom-40 md:right-24 animate-float-medium pointer-events-none opacity-35">
+          <div className="w-9 h-9 md:w-11 md:h-11 rounded-lg bg-card/30 dark:bg-card/15 backdrop-blur-sm border border-border/30 flex items-center justify-center shadow-md -rotate-6">
+            <FolderOpen className="w-4 h-4 md:w-5 md:h-5 text-mint/50" />
+          </div>
+        </div>
+        <div className="absolute top-1/3 right-4 md:right-12 animate-float-fast pointer-events-none opacity-30">
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-card/25 dark:bg-card/10 backdrop-blur-sm border border-border/25 flex items-center justify-center shadow rotate-3">
+            <Globe className="w-4 h-4 md:w-5 md:h-5 text-teal/40" />
+          </div>
+        </div>
+
+        {/* Animated dots constellation - faded */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-50">
+          <div className="absolute top-[15%] left-[20%] w-2 h-2 rounded-full bg-rust/20 dark:bg-rust/10 animate-pulse" />
+          <div className="absolute top-[25%] right-[15%] w-1.5 h-1.5 rounded-full bg-amber/25 dark:bg-amber/12 animate-pulse" style={{ animationDelay: '500ms' }} />
+          <div className="absolute top-[60%] left-[10%] w-2.5 h-2.5 rounded-full bg-denim/15 dark:bg-denim/8 animate-pulse" style={{ animationDelay: '1000ms' }} />
+          <div className="absolute top-[45%] right-[8%] w-1.5 h-1.5 rounded-full bg-mint/20 dark:bg-mint/10 animate-pulse" style={{ animationDelay: '750ms' }} />
+          <div className="absolute bottom-[20%] left-[25%] w-2 h-2 rounded-full bg-teal/20 dark:bg-teal/10 animate-pulse" style={{ animationDelay: '1250ms' }} />
+          <div className="absolute bottom-[35%] right-[22%] w-1 h-1 rounded-full bg-rust/25 dark:bg-rust/12 animate-pulse" style={{ animationDelay: '250ms' }} />
+        </div>
+
+        {/* Diagonal accent lines - very subtle */}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-[0.04] dark:opacity-[0.02]">
+          <div className="absolute top-0 -left-1/4 w-[150%] h-px bg-gradient-to-r from-transparent via-rust to-transparent rotate-[25deg] origin-left" />
+          <div className="absolute bottom-1/4 -left-1/4 w-[150%] h-px bg-gradient-to-r from-transparent via-denim to-transparent rotate-[-15deg] origin-left" />
+        </div>
+
+        {/* Decorative book spines on the left - editorial feel (desktop only) */}
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 hidden xl:flex flex-row gap-1.5 -translate-x-1/3 rotate-12 opacity-20">
+          {[
+            { h: "h-48", bg: "bg-rust" },
+            { h: "h-52", bg: "bg-denim" },
+            { h: "h-44", bg: "bg-amber" },
+            { h: "h-56", bg: "bg-teal" },
+            { h: "h-40", bg: "bg-mint" },
+            { h: "h-[12.5rem]", bg: "bg-denim-deep" },
+          ].map((book, i) => (
+            <div
+              key={book.bg + i}
+              className={`w-4 ${book.h} ${book.bg} rounded-sm shadow-md`}
+              style={{ animationDelay: `${i * 100}ms` }}
+            />
+          ))}
+        </div>
+
+        {/* Decorative floating cards - right side (desktop only) */}
+        <div className="absolute right-8 top-20 hidden lg:block animate-float-slow pointer-events-none opacity-60">
+          <div className="w-32 rounded-xl bg-card/80 backdrop-blur-sm p-3 rotate-6 border border-border shadow-denim-lg">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-lg bg-rust/15 flex items-center justify-center">
+                <Bookmark className="w-3.5 h-3.5 text-rust" />
+              </div>
+              <span className="text-[10px] font-medium text-muted-foreground">Design Guide</span>
+            </div>
+            <div className="h-1.5 bg-foreground/10 rounded-full w-full mb-1.5" />
+            <div className="h-1.5 bg-foreground/5 rounded-full w-3/4" />
+          </div>
+        </div>
+
+        <div className="absolute right-20 bottom-32 hidden lg:block animate-float-medium pointer-events-none opacity-50">
+          <div className="w-28 rounded-xl bg-card/80 backdrop-blur-sm p-2.5 -rotate-3 border border-border shadow-denim">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="w-5 h-5 rounded-md bg-mint/15 flex items-center justify-center">
+                <FolderOpen className="w-3 h-3 text-mint" />
+              </div>
+              <span className="text-[9px] font-medium text-muted-foreground">Archive</span>
+            </div>
+            <div className="h-1 bg-foreground/8 rounded-full w-full mb-1" />
+            <div className="h-1 bg-foreground/5 rounded-full w-2/3" />
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="relative mx-auto max-w-6xl px-6">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left - Typography heavy */}
+            <div className="text-center lg:text-left">
+              {/* Eyebrow - with shimmer effect */}
+              <div className="relative inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-gradient-to-r from-rust/10 via-amber/10 to-rust/10 border border-rust/20 overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
+                <Sparkles className="w-4 h-4 text-rust animate-pulse" />
+                <span className="text-sm font-medium text-rust">Free to start</span>
+              </div>
+
+              {/* Giant headline */}
+              <h2 className="font-serif text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium tracking-tight leading-[1.1]">
+                Your
+                <br />
+                <span className="relative inline-block">
+                  <span className="text-rust">collection</span>
+                  {/* Hand-drawn underline effect */}
+                  <svg
+                    className="absolute -bottom-2 left-0 w-full h-3 text-rust/40"
+                    viewBox="0 0 200 12"
+                    fill="none"
+                    preserveAspectRatio="none"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M2 8 C 30 3, 70 11, 100 6 S 160 2, 198 7"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      fill="none"
+                    />
+                  </svg>
                 </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Section */}
-      <section className="py-20 md:py-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="mx-auto max-w-3xl">
-            <div className="mb-8 text-center">
-              <span className="inline-block rounded-full bg-rust/10 px-4 py-1.5 text-sm font-medium text-rust">
-                The backstory
-              </span>
-            </div>
-
-            <h2 className="text-center font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-              Why <span className="text-rust italic">backpocket</span>?
-            </h2>
-
-            <div className="mt-10 space-y-6 text-lg leading-relaxed text-muted-foreground">
-              <p>
-                On July 8, 2025,{" "}
-                <a
-                  href={externalLinks.pocketShutdown}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-denim underline decoration-denim/30 underline-offset-4 transition-colors hover:text-denim-deep hover:decoration-denim"
-                >
-                  Mozilla shut down Pocket
-                </a>
-                — the beloved read-it-later app that millions of people used to save articles,
-                videos, and links for later. By November 2025, all user data was permanently
-                deleted.
-              </p>
-
-              <p>
-                For many of us, Pocket wasn&apos;t just an app. It was a personal library, a
-                collection of ideas worth revisiting, a quiet corner of the internet where we could
-                save things that mattered without the noise of social media.
-              </p>
-
-              <p>
-                <span className="font-medium text-foreground">backpocket</span> is our answer. Built
-                for the people who miss what Pocket offered — and for anyone who wants a calm,
-                focused way to save their finds. No social features, no algorithms. Just your
-                collection, beautifully organized and completely private by default. If you ever
-                want to share select saves publicly, that option is there — but it&apos;s entirely
-                up to you.
-              </p>
-            </div>
-
-            <div className="mt-10 flex justify-center">
-              <div className="inline-flex items-center gap-3 rounded-xl border border-denim/20 bg-card/50 px-5 py-3 text-sm">
-                <span className="text-muted-foreground">Pocket, 2007–2025</span>
-                <span className="text-denim/40">→</span>
-                <span className="font-medium text-rust">backpocket, 2025–</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section - Denim pocket inspired */}
-      <section className="py-20 md:py-32">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="relative overflow-hidden rounded-3xl bg-linear-to-b from-denim to-denim-deep px-8 py-16 text-center text-white md:px-16 md:py-24">
-            {/* Stitching detail */}
-            <div className="absolute inset-6 rounded-2xl border-2 border-dashed border-rust/40 pointer-events-none" />
-
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 left-0 h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2)_0%,transparent_50%)]" />
-              <div className="absolute bottom-0 right-0 h-full w-full bg-[radial-gradient(circle_at_70%_80%,rgba(255,255,255,0.15)_0%,transparent_50%)]" />
-            </div>
-
-            {/* Floating mini cards - left side */}
-            <div className="absolute left-4 top-1/4 hidden md:block animate-float-slow pointer-events-none">
-              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-[-8deg] border border-white/20">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-5 h-5 rounded bg-rust/30 flex items-center justify-center">
-                    <Bookmark className="w-3 h-3 text-rust" />
-                  </div>
-                  <span className="text-[9px] text-white/70">Article</span>
-                </div>
-                <div className="h-1.5 bg-white/20 rounded w-full mb-1" />
-                <div className="h-1.5 bg-white/15 rounded w-3/4" />
-              </div>
-            </div>
-
-            <div className="absolute left-12 bottom-1/4 hidden lg:block animate-float-medium pointer-events-none">
-              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-6 border border-white/20">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-4 h-4 rounded bg-mint/30 flex items-center justify-center">
-                    <Globe className="w-2.5 h-2.5 text-mint" />
-                  </div>
-                  <span className="text-[8px] text-white/70">Link</span>
-                </div>
-                <div className="h-1 bg-white/20 rounded w-full mb-0.5" />
-                <div className="h-1 bg-white/15 rounded w-2/3" />
-              </div>
-            </div>
-
-            {/* Floating mini cards - right side */}
-            <div className="absolute right-4 top-1/3 hidden md:block animate-float-medium pointer-events-none">
-              <div className="w-28 rounded-lg bg-white/10 backdrop-blur-sm p-2.5 rotate-10 border border-white/20">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-5 h-5 rounded bg-amber/30 flex items-center justify-center">
-                    <Sparkles className="w-3 h-3 text-amber" />
-                  </div>
-                  <span className="text-[9px] text-white/70">Thread</span>
-                </div>
-                <div className="h-1.5 bg-white/20 rounded w-full mb-1" />
-                <div className="h-1.5 bg-white/15 rounded w-4/5" />
-              </div>
-            </div>
-
-            <div className="absolute right-8 bottom-1/3 hidden lg:block animate-float-fast pointer-events-none">
-              <div className="w-24 rounded-lg bg-white/10 backdrop-blur-sm p-2 rotate-[-5deg] border border-white/20">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <div className="w-4 h-4 rounded bg-teal/30 flex items-center justify-center">
-                    <FolderOpen className="w-2.5 h-2.5 text-teal" />
-                  </div>
-                  <span className="text-[8px] text-white/70">Collection</span>
-                </div>
-                <div className="h-1 bg-white/20 rounded w-full mb-0.5" />
-                <div className="h-1 bg-white/15 rounded w-1/2" />
-              </div>
-            </div>
-
-            {/* Animated accent shapes */}
-            <div className="absolute top-8 left-1/4 w-2 h-2 rounded-full bg-amber/40 animate-pulse" />
-            <div className="absolute bottom-12 right-1/4 w-3 h-3 rounded-full bg-mint/30 animate-pulse delay-300" />
-            <div className="absolute top-1/2 right-8 w-1.5 h-1.5 rounded-full bg-rust/50 animate-pulse delay-150 hidden md:block" />
-
-            {/* Content */}
-            <div className="relative z-10">
-              <h2 className="font-serif text-3xl font-medium tracking-tight md:text-4xl lg:text-5xl">
-                Start building <span className="italic opacity-90">your collection</span>
+                <br />
+                <span className="italic text-denim-deep/80 dark:text-denim-faded">awaits.</span>
               </h2>
-              <p className="mx-auto mt-4 max-w-xl text-lg opacity-90">
-                Free to start. Save unlimited private links. If you ever want to share, get your own
-                subdomain with up to 100 public saves.
+
+              {/* Subtext */}
+              <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-md mx-auto lg:mx-0 leading-relaxed">
+                Save unlimited private links. Share your favorites at your own subdomain. No algorithms, no noise — just your curated corner of the web.
               </p>
-              <div className="mt-10">
-                {/* Skeleton while Clerk loads */}
+
+              {/* CTA buttons - with glow effect */}
+              <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <AuthLoading>
-                  <Skeleton className="h-12 w-[180px] rounded-md mx-auto bg-white/20" />
+                  <Skeleton className="h-14 w-48 rounded-xl" />
                 </AuthLoading>
                 <SignedOut>
-                  <Link href={routes.signUp}>
+                  <Link href={routes.signUp} className="relative group">
+                    {/* Animated glow behind button */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-rust via-amber to-rust rounded-xl opacity-40 group-hover:opacity-70 blur-lg transition-all duration-500 group-hover:blur-xl animate-pulse" />
                     <Button
                       size="lg"
-                      className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white shadow-lg shadow-rust/30 hover:shadow-xl hover:shadow-rust/40 transition-all hover:scale-105"
+                      className="relative h-14 px-8 text-base font-medium bg-rust hover:bg-rust/90 text-white rounded-xl shadow-lg shadow-rust/25 hover:shadow-xl hover:shadow-rust/35 transition-all duration-300 hover:scale-[1.02]"
                     >
-                      Create your space
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      Start collecting
+                      <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </Link>
                 </SignedOut>
                 <SignedIn>
-                  <Link href={routes.app.root}>
+                  <Link href={routes.app.root} className="relative group">
+                    {/* Animated glow behind button */}
+                    <div className="absolute -inset-1 bg-gradient-to-r from-rust via-amber to-rust rounded-xl opacity-40 group-hover:opacity-70 blur-lg transition-all duration-500 group-hover:blur-xl animate-pulse" />
                     <Button
                       size="lg"
-                      className="h-12 px-8 text-base bg-rust hover:bg-rust/90 text-white shadow-lg shadow-rust/30 hover:shadow-xl hover:shadow-rust/40 transition-all hover:scale-105"
+                      className="relative h-14 px-8 text-base font-medium bg-rust hover:bg-rust/90 text-white rounded-xl shadow-lg shadow-rust/25 hover:shadow-xl hover:shadow-rust/35 transition-all duration-300 hover:scale-[1.02]"
                     >
                       Open your library
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </Link>
                 </SignedIn>
+              </div>
+            </div>
+
+            {/* Right - Visual card stack */}
+            <div className="relative hidden lg:block">
+              <div className="relative w-full aspect-square max-w-md mx-auto">
+                {/* Stacked cards visual - like a curated pile of saves */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {/* Bottom card */}
+                  <div className="absolute w-72 h-44 rounded-2xl bg-card border border-border shadow-denim-lg rotate-[-8deg] translate-x-4 translate-y-8 opacity-60">
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-teal/15 flex items-center justify-center">
+                          <Globe className="w-5 h-5 text-teal" />
+                        </div>
+                        <div>
+                          <div className="h-2.5 bg-foreground/15 rounded-full w-28 mb-1.5" />
+                          <div className="h-2 bg-foreground/8 rounded-full w-20" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-2 bg-foreground/8 rounded-full w-full" />
+                        <div className="h-2 bg-foreground/5 rounded-full w-4/5" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle card */}
+                  <div className="absolute w-72 h-44 rounded-2xl bg-card border border-border shadow-denim-lg rotate-3 -translate-x-2 translate-y-2 opacity-80">
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-amber/15 flex items-center justify-center">
+                          <Sparkles className="w-5 h-5 text-amber" />
+                        </div>
+                        <div>
+                          <div className="h-2.5 bg-foreground/15 rounded-full w-32 mb-1.5" />
+                          <div className="h-2 bg-foreground/8 rounded-full w-24" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-2 bg-foreground/8 rounded-full w-full" />
+                        <div className="h-2 bg-foreground/5 rounded-full w-3/4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top card - featured */}
+                  <div className="absolute w-72 h-44 rounded-2xl bg-card border-2 border-rust/20 shadow-denim-lg rotate-[-2deg] -translate-x-4 -translate-y-4">
+                    <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-rust flex items-center justify-center shadow-md">
+                      <Bookmark className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-rust/15 flex items-center justify-center">
+                          <Bookmark className="w-5 h-5 text-rust" />
+                        </div>
+                        <div>
+                          <div className="h-3 bg-foreground/20 rounded-full w-36 mb-1.5" />
+                          <div className="h-2 bg-rust/30 rounded-full w-28" />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-2.5 bg-foreground/12 rounded-full w-full" />
+                        <div className="h-2.5 bg-foreground/8 rounded-full w-5/6" />
+                        <div className="h-2.5 bg-foreground/5 rounded-full w-2/3" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Decorative dots */}
+                <div className="absolute top-4 right-8 w-2 h-2 rounded-full bg-rust/40 animate-pulse" />
+                <div className="absolute bottom-12 left-4 w-3 h-3 rounded-full bg-mint/30 animate-pulse" style={{ animationDelay: '300ms' }} />
+                <div className="absolute top-1/2 left-0 w-1.5 h-1.5 rounded-full bg-amber/50 animate-pulse" style={{ animationDelay: '600ms' }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom trust elements */}
+          <div className="mt-16 pt-10 border-t border-border/50">
+            <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-denim" />
+                <span>Private by default</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-mint" />
+                <span>Your own subdomain</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Rss className="w-4 h-4 text-amber" />
+                <span>RSS if you share</span>
               </div>
             </div>
           </div>
