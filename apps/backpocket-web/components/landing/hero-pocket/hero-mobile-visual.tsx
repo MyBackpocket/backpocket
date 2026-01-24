@@ -80,7 +80,7 @@ export function HeroMobileVisual() {
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
 
 {/* Screen Content - Fixed height to prevent layout shifts */}
-            <div className="relative bg-background h-[400px] sm:h-[460px] overflow-hidden">
+            <div className="relative bg-background h-[360px] sm:h-[420px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>
@@ -107,39 +107,38 @@ export function HeroMobileVisual() {
                   key="article"
                   initial={{ opacity: 1 }}
                   exit={{ opacity: 0.3 }}
-                  className="px-4 sm:px-5 pb-4"
+                  className="px-4 sm:px-5 pb-3"
                 >
                   {/* Safari header */}
-                  <div className="flex items-center gap-2 text-rust text-xs mb-3">
+                  <div className="flex items-center gap-2 text-rust text-xs mb-2">
                     <ChevronRight className="w-3 h-3 rotate-180" />
                     <span>Safari</span>
                   </div>
 
                   {/* URL Bar */}
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-muted/50 border border-border/50 mb-4">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50 border border-border/50 mb-3">
                     <Globe className="w-3 h-3 text-muted-foreground" />
                     <span className="text-[10px] text-muted-foreground truncate">proofofcorn.com</span>
                   </div>
 
                   {/* Article header image */}
-                  <div className="h-24 sm:h-28 rounded-xl bg-linear-to-br from-amber-100 via-orange-100 to-yellow-50 mb-3 flex items-center justify-center">
-                    <span className="text-4xl">🌽</span>
+                  <div className="h-20 sm:h-24 rounded-xl bg-linear-to-br from-amber-100 via-orange-100 to-yellow-50 mb-2 flex items-center justify-center">
+                    <span className="text-3xl">🌽</span>
                   </div>
 
                   {/* Article content */}
-                  <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight mb-2">
+                  <h3 className="text-sm sm:text-base font-bold text-foreground leading-tight mb-1">
                     Can AI Grow Corn? A Deep Dive Into Agricultural ML
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
                     by Sarah Chen · 8 min read
                   </p>
                   
                   {/* Article text placeholder */}
-                  <div className="space-y-1.5 mb-4">
-                    <div className="h-2 bg-muted/60 rounded w-full" />
-                    <div className="h-2 bg-muted/60 rounded w-11/12" />
-                    <div className="h-2 bg-muted/60 rounded w-full" />
-                    <div className="h-2 bg-muted/60 rounded w-4/5" />
+                  <div className="space-y-1 mb-3">
+                    <div className="h-1.5 bg-muted/60 rounded w-full" />
+                    <div className="h-1.5 bg-muted/60 rounded w-11/12" />
+                    <div className="h-1.5 bg-muted/60 rounded w-full" />
                   </div>
 
                   {/* Share button indicator */}
@@ -166,23 +165,23 @@ export function HeroMobileVisual() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="absolute inset-0 bg-background px-4 sm:px-5 pt-16 sm:pt-20 pb-4"
+                  className="absolute inset-0 bg-background px-4 sm:px-5 pt-14 sm:pt-16 pb-4"
                 >
-                  <div className="bg-card rounded-2xl p-5 sm:p-6 border border-border shadow-xl">
+                  <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-xl">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-5">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-lg">
                         <LogoIcon size="lg" className="w-full h-full" />
                       </div>
-                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
-                        <span className="text-muted-foreground text-base">×</span>
+                      <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
+                        <span className="text-muted-foreground text-sm">×</span>
                       </div>
                     </div>
 
                     {/* Success indicator */}
-                    <div className="flex justify-center mb-5">
+                    <div className="flex justify-center mb-3">
                       <motion.div
-                        className="w-16 sm:w-20 h-16 sm:h-20 rounded-full bg-mint/20 flex items-center justify-center"
+                        className="w-14 sm:w-16 h-14 sm:h-16 rounded-full bg-mint/20 flex items-center justify-center"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.1 }}
@@ -192,13 +191,13 @@ export function HeroMobileVisual() {
                           animate={{ scale: 1 }}
                           transition={{ type: "spring", stiffness: 400, damping: 15, delay: 0.25 }}
                         >
-                          <Check className="w-8 sm:w-10 h-8 sm:h-10 text-mint" strokeWidth={3} />
+                          <Check className="w-7 sm:w-8 h-7 sm:h-8 text-mint" strokeWidth={3} />
                         </motion.div>
                       </motion.div>
                     </div>
 
                     <motion.h3
-                      className="text-foreground text-lg sm:text-xl font-semibold text-center mb-3"
+                      className="text-foreground text-base sm:text-lg font-semibold text-center mb-2"
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.35 }}
@@ -207,35 +206,28 @@ export function HeroMobileVisual() {
                     </motion.h3>
 
                     <motion.div
-                      className="flex justify-center mb-5"
+                      className="flex justify-center mb-3"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.45 }}
                     >
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-xs">
-                        <Globe className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-muted-foreground text-[11px]">
+                        <Globe className="w-3 h-3" />
                         proofofcorn.com
                       </div>
                     </motion.div>
 
                     <motion.div
-                      className="space-y-2.5"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.55 }}
                     >
                       <button
                         type="button"
-                        className="w-full py-3 rounded-xl bg-amber text-foreground font-semibold text-sm flex items-center justify-center gap-1.5"
+                        className="w-full py-2.5 rounded-xl bg-amber text-foreground font-semibold text-sm flex items-center justify-center gap-1.5"
                       >
                         <ExternalLink className="w-4 h-4" />
                         View Saves
-                      </button>
-                      <button
-                        type="button"
-                        className="w-full py-3 rounded-xl bg-muted text-foreground font-medium text-sm"
-                      >
-                        Done
                       </button>
                     </motion.div>
                   </div>
