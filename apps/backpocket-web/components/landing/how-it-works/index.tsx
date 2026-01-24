@@ -167,16 +167,6 @@ export function HowItWorksSection() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* Web */}
-            <PlatformCard
-              name="Web"
-              description="Any browser"
-              logo={<Globe className="h-7 w-7 sm:h-8 sm:w-8 text-denim" />}
-              gradient="from-denim/20 to-teal/15"
-              status="available"
-              href={routes.signUp}
-            />
-
             {/* Chrome */}
             <PlatformCard
               name="Chrome"
@@ -222,6 +212,20 @@ export function HowItWorksSection() {
               status="development"
               repoHref={externalLinks.mobileAppRepo}
             />
+
+            {/* Web - centered when alone on mobile */}
+            <div className="col-span-2 sm:col-span-1 flex justify-center">
+              <div className="w-[calc(50%-0.5rem)] sm:w-full">
+                <PlatformCard
+                  name="Web"
+                  description="Any browser"
+                  logo={<Globe className="h-7 w-7 sm:h-8 sm:w-8 text-denim" />}
+                  gradient="from-denim/20 to-teal/15"
+                  status="available"
+                  href={routes.signUp}
+                />
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
