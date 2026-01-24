@@ -25,11 +25,27 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { use, useCallback, useEffect, useRef, useState } from "react";
-import { NoteEditor } from "@/components/note-editor";
+import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// Dynamic import for heavy TipTap editor (~100KB+ gzipped)
+const NoteEditor = dynamic(
+  () => import("@/components/note-editor").then((m) => m.NoteEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-lg border bg-background shadow-sm p-4 min-h-[200px] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          Loading editor...
+        </div>
+      </div>
+    ),
+  }
+);
 import { ReaderMode } from "@/components/reader-mode";
 import { ScrollNavigator } from "@/components/scroll-navigator";
 import { Badge } from "@/components/ui/badge";
@@ -90,22 +106,21 @@ function EditableText({
   as: Component = "span",
 }: EditableTextProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
+  // Only track local edit value when actively editing
+  const [editValue, setEditValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setEditValue(value);
-  }, [value]);
-
-  useEffect(() => {
     if (isEditing && textareaRef.current) {
+      // Initialize edit value from prop when starting to edit
+      setEditValue(value);
       textareaRef.current.focus();
       textareaRef.current.select();
       // Auto-resize to fit content
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [isEditing]);
+  }, [isEditing, value]);
 
   const handleSave = useCallback(() => {
     const trimmed = editValue.trim();
@@ -192,22 +207,21 @@ function EditableTextarea({
   className,
 }: EditableTextareaProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
+  // Only track local edit value when actively editing
+  const [editValue, setEditValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    setEditValue(value);
-  }, [value]);
-
-  useEffect(() => {
     if (isEditing && textareaRef.current) {
+      // Initialize edit value from prop when starting to edit
+      setEditValue(value);
       textareaRef.current.focus();
       textareaRef.current.select();
       // Auto-resize
       textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
-  }, [isEditing]);
+  }, [isEditing, value]);
 
   const handleSave = useCallback(() => {
     const trimmed = editValue.trim();
@@ -301,19 +315,18 @@ interface InlineTagsEditorProps {
 
 function InlineTagsEditor({ tags, onSave, isSaving }: InlineTagsEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editTags, setEditTags] = useState<string[]>(tags);
+  // Only track local state when actively editing
+  const [editTags, setEditTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setEditTags(tags);
-  }, [tags]);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
+    if (isEditing) {
+      // Initialize from prop when starting to edit
+      setEditTags(tags);
+      inputRef.current?.focus();
     }
-  }, [isEditing]);
+  }, [isEditing, tags]);
 
   const handleAddTag = useCallback(() => {
     const trimmed = tagInput.trim().toLowerCase();
@@ -462,14 +475,18 @@ function InlineCollectionsEditor({
   isCreating,
 }: InlineCollectionsEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editIds, setEditIds] = useState<string[]>(selectedIds);
+  // Only track local state when actively editing
+  const [editIds, setEditIds] = useState<string[]>([]);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newName, setNewName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setEditIds(selectedIds);
-  }, [selectedIds]);
+    if (isEditing) {
+      // Initialize from prop when starting to edit
+      setEditIds(selectedIds);
+    }
+  }, [isEditing, selectedIds]);
 
   useEffect(() => {
     if (isCreatingNew && inputRef.current) {
@@ -914,6 +931,13 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     await Promise.all([handleRefreshMetadata(), handleRefreshContent()]);
   }, [handleRefreshMetadata, handleRefreshContent]);
 
+  // Memoize derived arrays to prevent breaking child component memoization
+  const tagNames = useMemo(() => save?.tags?.map((t) => t.name) ?? [], [save?.tags]);
+  const selectedCollectionIds = useMemo(
+    () => save?.collections?.map((c) => c.id) ?? [],
+    [save?.collections]
+  );
+
   if (isLoading) {
     return (
       <div className="p-6 lg:p-8">
@@ -1167,12 +1191,12 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             {/* Tags and Collections */}
             <div className="grid gap-6 md:grid-cols-2">
               <InlineTagsEditor
-                tags={save.tags?.map((t) => t.name) || []}
+                tags={tagNames}
                 onSave={handleUpdateTags}
                 isSaving={isSaving}
               />
               <InlineCollectionsEditor
-                selectedIds={save.collections?.map((c) => c.id) || []}
+                selectedIds={selectedCollectionIds}
                 allCollections={allCollections || []}
                 onSave={handleUpdateCollections}
                 onCreateCollection={handleCreateCollection}

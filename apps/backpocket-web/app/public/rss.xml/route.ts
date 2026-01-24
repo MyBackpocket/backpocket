@@ -1,5 +1,4 @@
-import { api } from "@convex/_generated/api";
-import { fetchQuery } from "convex/nextjs";
+import type { Id } from "@convex/_generated/dataModel";
 import { headers } from "next/headers";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
@@ -9,6 +8,7 @@ import {
   PUBLIC_LIST_LIMIT,
   PUBLIC_RSS_CACHE_SECONDS,
 } from "@/lib/constants/public-space";
+import { getSpaceBySlug, listPublicSaves } from "@/lib/server/cached-queries";
 
 export async function GET() {
   const headersList = await headers();
@@ -19,19 +19,16 @@ export async function GET() {
   }
 
   try {
-    // Resolve space - use different query depending on whether it's a custom domain
-    const isCustomDomain = isCustomDomainSlug(spaceSlug);
-    const space = isCustomDomain
-      ? await fetchQuery(api.public.resolveSpaceByDomain, { domain: extractCustomDomain(spaceSlug) })
-      : await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
+    // Resolve space using cached query (deduped if called multiple times)
+    const space = await getSpaceBySlug(spaceSlug);
 
     if (!space) {
       return new Response("Space not found", { status: 404 });
     }
 
-    // Get public saves
-    const { items: saves } = await fetchQuery(api.public.listPublicSaves, {
-      spaceId: space.id as any,
+    // Get public saves using cached query
+    const { items: saves } = await listPublicSaves({
+      spaceId: space.id as Id<"spaces">,
       limit: PUBLIC_LIST_LIMIT,
     });
 

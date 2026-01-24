@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { PrefetchLink } from "@/components/prefetch-link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,7 +103,8 @@ interface SaveItem {
   tags?: Array<{ id: string; name: string }>;
 }
 
-function SaveListItem({
+// Memoized list item component - use saveId-based callbacks to maintain stable references
+const SaveListItem = memo(function SaveListItem({
   save,
   isSelected,
   isSelectionMode,
@@ -116,11 +117,11 @@ function SaveListItem({
   save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
-  onSelect: () => void;
-  onToggleFavorite: () => void;
-  onToggleArchive: () => void;
-  onDelete: () => void;
-  onPrefetch?: () => void;
+  onSelect: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onToggleArchive: (id: string) => void;
+  onDelete: (save: SaveItem) => void;
+  onPrefetch?: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -130,11 +131,20 @@ function SaveListItem({
   const vis = visibilityConfig[save.visibility];
   const VisIcon = vis.icon;
 
+  // Create stable handlers that call parent callbacks with save.id
+  const handleSelect = useCallback(() => onSelect(save.id), [onSelect, save.id]);
+  const handleToggleFavorite = useCallback(() => onToggleFavorite(save.id), [onToggleFavorite, save.id]);
+  const handleToggleArchive = useCallback(() => onToggleArchive(save.id), [onToggleArchive, save.id]);
+  const handleDelete = useCallback(() => onDelete(save), [onDelete, save]);
+  const handlePrefetch = useCallback(() => onPrefetch?.(save.id), [onPrefetch, save.id]);
+
   return (
     <div
       className={cn(
         "group relative flex gap-4 rounded-xl border bg-card/50 p-4 transition-all duration-200",
         "hover:bg-card hover:shadow-denim",
+        // Add content-visibility for rendering performance on long lists
+        "content-visibility-auto contain-intrinsic-size-[auto_100px]",
         isSelected && "border-primary/50 bg-primary/5 shadow-denim"
       )}
     >
@@ -151,7 +161,7 @@ function SaveListItem({
         >
           <Checkbox
             checked={isSelected}
-            onCheckedChange={onSelect}
+            onCheckedChange={handleSelect}
             onClick={(e) => e.stopPropagation()}
             className="bg-background/90 backdrop-blur-sm shadow-sm"
           />
@@ -189,7 +199,7 @@ function SaveListItem({
             </Badge>
             <PrefetchLink
               href={`/app/saves/${save.id}`}
-              onPrefetch={onPrefetch}
+              onPrefetch={handlePrefetch}
               className="font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-1"
             >
               {save.title || save.url}
@@ -236,7 +246,7 @@ function SaveListItem({
           size="icon"
           onClick={(e) => {
             e.preventDefault();
-            onToggleFavorite();
+            handleToggleFavorite();
           }}
           className={cn(
             "h-8 w-8 rounded-lg",
@@ -250,7 +260,7 @@ function SaveListItem({
           size="icon"
           onClick={(e) => {
             e.preventDefault();
-            onToggleArchive();
+            handleToggleArchive();
           }}
           className={cn(
             "h-8 w-8 rounded-lg",
@@ -281,7 +291,7 @@ function SaveListItem({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="gap-2 text-destructive focus:text-destructive"
-              onClick={onDelete}
+              onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4" />
               Delete
@@ -291,9 +301,10 @@ function SaveListItem({
       </div>
     </div>
   );
-}
+});
 
-function SaveGridCard({
+// Memoized grid card component
+const SaveGridCard = memo(function SaveGridCard({
   save,
   isSelected,
   isSelectionMode,
@@ -304,9 +315,9 @@ function SaveGridCard({
   save: SaveItem;
   isSelected: boolean;
   isSelectionMode: boolean;
-  onSelect: () => void;
-  onToggleFavorite: () => void;
-  onPrefetch?: () => void;
+  onSelect: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
+  onPrefetch?: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -316,10 +327,17 @@ function SaveGridCard({
   const vis = visibilityConfig[save.visibility];
   const VisIcon = vis.icon;
 
+  // Create stable handlers
+  const handleSelect = useCallback(() => onSelect(save.id), [onSelect, save.id]);
+  const handleToggleFavorite = useCallback(() => onToggleFavorite(save.id), [onToggleFavorite, save.id]);
+  const handlePrefetch = useCallback(() => onPrefetch?.(save.id), [onPrefetch, save.id]);
+
   return (
     <Card
       className={cn(
         "group overflow-hidden transition-all duration-200 card-hover relative",
+        // Add content-visibility for rendering performance on long lists
+        "content-visibility-auto contain-intrinsic-size-[auto_280px]",
         isSelected && "ring-2 ring-primary shadow-denim-lg"
       )}
     >
@@ -334,7 +352,7 @@ function SaveGridCard({
       >
         <Checkbox
           checked={isSelected}
-          onCheckedChange={onSelect}
+          onCheckedChange={handleSelect}
           onClick={(e) => e.stopPropagation()}
           className="bg-background/90 backdrop-blur-sm shadow-sm"
         />
@@ -346,7 +364,7 @@ function SaveGridCard({
         size="icon"
         onClick={(e) => {
           e.preventDefault();
-          onToggleFavorite();
+          handleToggleFavorite();
         }}
         className={cn(
           "absolute right-3 top-3 z-10 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm transition-all duration-200",
@@ -385,7 +403,7 @@ function SaveGridCard({
       <div className="p-4">
         <PrefetchLink
           href={`/app/saves/${save.id}`}
-          onPrefetch={onPrefetch}
+          onPrefetch={handlePrefetch}
           className="block font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-2"
         >
           {save.title || save.url}
@@ -408,7 +426,7 @@ function SaveGridCard({
       </div>
     </Card>
   );
-}
+});
 
 function SavesSkeleton({ viewMode }: { viewMode: ViewMode }) {
   if (viewMode === "list") {
@@ -470,7 +488,6 @@ export default function SavesPage() {
 
   // Prefetch hook for warming up save detail data on hover
   const prefetch = usePrefetchTargets();
-  const prefetchSave = useCallback((saveId: string) => () => prefetch.save(saveId), [prefetch]);
 
   // Debounce search to avoid firing on every keystroke (300ms delay)
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -622,18 +639,6 @@ export default function SavesPage() {
   const isSelectionMode = selectedIds.size > 0;
   const allSelected = displayItems.length > 0 && selectedIds.size === displayItems.length;
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
   const selectAll = () => {
     if (displayItems.length === 0) return;
     if (allSelected) {
@@ -665,9 +670,9 @@ export default function SavesPage() {
     }
   };
 
-  const handleSingleDelete = (save: SaveItem) => {
+  const handleSingleDelete = useCallback((save: SaveItem) => {
     setSingleDeleteTarget(save);
-  };
+  }, []);
 
   const confirmSingleDelete = async () => {
     if (!singleDeleteTarget) return;
@@ -682,21 +687,40 @@ export default function SavesPage() {
     }
   };
 
-  const handleToggleFavorite = async (saveId: string) => {
+  // Stable callbacks that accept id parameter - won't change between renders
+  const handleToggleFavorite = useCallback(async (saveId: string) => {
     try {
       await toggleFavorite({ saveId: saveId as any });
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
     }
-  };
+  }, [toggleFavorite]);
 
-  const handleToggleArchive = async (saveId: string) => {
+  const handleToggleArchive = useCallback(async (saveId: string) => {
     try {
       await toggleArchive({ saveId: saveId as any });
     } catch (error) {
       console.error("Failed to toggle archive:", error);
     }
-  };
+  }, [toggleArchive]);
+
+  // Stable callback for selection - accepts id
+  const handleToggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }, []);
+
+  // Stable callback for prefetch - accepts id
+  const handlePrefetch = useCallback((saveId: string) => {
+    prefetch.save(saveId);
+  }, [prefetch]);
 
   return (
     <div className="p-6 lg:p-8">
@@ -936,11 +960,11 @@ export default function SavesPage() {
                   save={save}
                   isSelected={selectedIds.has(save.id)}
                   isSelectionMode={isSelectionMode}
-                  onSelect={() => toggleSelect(save.id)}
-                  onToggleFavorite={() => handleToggleFavorite(save.id)}
-                  onToggleArchive={() => handleToggleArchive(save.id)}
-                  onDelete={() => handleSingleDelete(save)}
-                  onPrefetch={prefetchSave(save.id)}
+                  onSelect={handleToggleSelect}
+                  onToggleFavorite={handleToggleFavorite}
+                  onToggleArchive={handleToggleArchive}
+                  onDelete={handleSingleDelete}
+                  onPrefetch={handlePrefetch}
                 />
               ))}
             </div>
@@ -952,9 +976,9 @@ export default function SavesPage() {
                   save={save}
                   isSelected={selectedIds.has(save.id)}
                   isSelectionMode={isSelectionMode}
-                  onSelect={() => toggleSelect(save.id)}
-                  onToggleFavorite={() => handleToggleFavorite(save.id)}
-                  onPrefetch={prefetchSave(save.id)}
+                  onSelect={handleToggleSelect}
+                  onToggleFavorite={handleToggleFavorite}
+                  onPrefetch={handlePrefetch}
                 />
               ))}
             </div>

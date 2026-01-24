@@ -1,6 +1,4 @@
-import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { fetchQuery } from "convex/nextjs";
 import {
   ArrowLeft,
   BookOpen,
@@ -26,7 +24,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VisitTracker } from "@/components/visit-tracker";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import { MARKETING_URL } from "@/lib/constants/links";
-import { extractCustomDomain, isCustomDomainSlug } from "@/lib/constants/public-space";
+import {
+  getPublicSave,
+  getPublicSaveSnapshot,
+  getSpaceBySlug,
+} from "@/lib/server/cached-queries";
 import { formatDate, getDomainFromUrl } from "@/lib/utils";
 import { PublicSaveTabs } from "./public-save-tabs";
 
@@ -59,27 +61,17 @@ interface SnapshotData {
 
 async function getSaveData(spaceSlug: string, saveId: string) {
   try {
-    // Resolve space - use different query depending on whether it's a custom domain
-    const isCustomDomain = isCustomDomainSlug(spaceSlug);
-    const space = isCustomDomain
-      ? await fetchQuery(api.public.resolveSpaceByDomain, { domain: extractCustomDomain(spaceSlug) })
-      : await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
+    // Resolve space using cached query (deduped if called multiple times)
+    const space = await getSpaceBySlug(spaceSlug);
 
     if (!space) {
       return { space: null, save: null, snapshot: null };
     }
 
-    // Get the specific save and snapshot in parallel
+    // Get the specific save and snapshot in parallel using cached queries
     const [save, snapshot] = await Promise.all([
-      fetchQuery(api.public.getPublicSave, {
-        spaceId: space.id as any,
-        saveId: saveId as Id<"saves">,
-      }),
-      fetchQuery(api.public.getPublicSaveSnapshot, {
-        spaceId: space.id as any,
-        saveId: saveId as Id<"saves">,
-        includeContent: true,
-      }),
+      getPublicSave(space.id as Id<"spaces">, saveId as Id<"saves">),
+      getPublicSaveSnapshot(space.id as Id<"spaces">, saveId as Id<"saves">, true),
     ]);
 
     return { space, save, snapshot: snapshot as SnapshotData | null };

@@ -1,8 +1,17 @@
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { headers } from "next/headers";
 import { DM_Sans, Fraunces } from "next/font/google";
+
+// Defer analytics loading to not block initial render
+const Analytics = dynamic(
+  () => import("@vercel/analytics/next").then((m) => m.Analytics),
+  { ssr: false }
+);
+const SpeedInsights = dynamic(
+  () => import("@vercel/speed-insights/next").then((m) => m.SpeedInsights),
+  { ssr: false }
+);
 import { ClerkProvider } from "@/components/clerk-provider";
 import { Providers } from "@/components/providers";
 import { WebVitals } from "@/components/web-vitals";

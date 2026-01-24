@@ -806,12 +806,11 @@ export function NoteEditor({
   });
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
-  const [localValue, setLocalValue] = useState(value);
+  // Use prop value directly, only diverge when user makes local changes
+  const [localValue, setLocalValue] = useState<string | null>(null);
 
-  // Sync local value with prop
-  useEffect(() => {
-    setLocalValue(value);
-  }, [value]);
+  // Derive display value: use local value if user has unsaved changes, otherwise use prop
+  const displayValue = localValue ?? value;
 
   // Persist editor mode preference
   useEffect(() => {
@@ -869,6 +868,8 @@ export function NoteEditor({
         onSave();
       }
       lastSavedValueRef.current = newValue;
+      // Clear local override after successful save
+      setLocalValue(null);
       // Show "saved" status briefly
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2000);
@@ -897,7 +898,7 @@ export function NoteEditor({
   if (isRichMode) {
     return (
       <RichNoteEditor
-        value={localValue}
+        value={displayValue}
         onChange={handleChange}
         onSwitchToSimple={() => setIsRichMode(false)}
         saveStatus={saveStatus}
@@ -909,7 +910,7 @@ export function NoteEditor({
 
   return (
     <SimpleNoteEditor
-      value={localValue}
+      value={displayValue}
       onChange={handleChange}
       onSwitchToRich={() => setIsRichMode(true)}
       placeholder={placeholder}

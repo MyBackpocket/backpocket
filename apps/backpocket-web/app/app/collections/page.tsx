@@ -18,7 +18,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { memo, useCallback, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -83,14 +83,15 @@ type CollectionItem = {
   _count?: { saves: number };
 };
 
-function CollectionListItem({
+// Memoized list item component
+const CollectionListItem = memo(function CollectionListItem({
   collection,
   onEdit,
   onDelete,
 }: {
   collection: CollectionItem;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit: (collection: CollectionItem) => void;
+  onDelete: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -100,11 +101,17 @@ function CollectionListItem({
   const vis = visibilityConfig[collection.visibility];
   const VisIcon = vis.icon;
 
+  // Create stable handlers
+  const handleEdit = useCallback(() => onEdit(collection), [onEdit, collection]);
+  const handleDelete = useCallback(() => onDelete(collection.id), [onDelete, collection.id]);
+
   return (
     <div
       className={cn(
         "group relative flex gap-4 rounded-xl border bg-card/50 p-4 transition-all duration-200",
-        "hover:bg-card hover:shadow-denim"
+        "hover:bg-card hover:shadow-denim",
+        // Add content-visibility for rendering performance
+        "content-visibility-auto contain-intrinsic-size-[auto_80px]"
       )}
     >
       {/* Icon */}
@@ -152,7 +159,7 @@ function CollectionListItem({
           size="icon"
           onClick={(e) => {
             e.preventDefault();
-            onEdit();
+            handleEdit();
           }}
           className="h-8 w-8 rounded-lg"
         >
@@ -165,13 +172,13 @@ function CollectionListItem({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={onEdit} className="gap-2">
+            <DropdownMenuItem onClick={handleEdit} className="gap-2">
               <Edit className="h-4 w-4" />
               Edit collection
             </DropdownMenuItem>
             <DropdownMenuItem
               className="gap-2 text-destructive focus:text-destructive"
-              onClick={onDelete}
+              onClick={handleDelete}
             >
               <Trash2 className="h-4 w-4" />
               Delete
@@ -181,16 +188,17 @@ function CollectionListItem({
       </div>
     </div>
   );
-}
+});
 
-function CollectionGridCard({
+// Memoized grid card component
+const CollectionGridCard = memo(function CollectionGridCard({
   collection,
   onEdit,
   onDelete,
 }: {
   collection: CollectionItem;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit: (collection: CollectionItem) => void;
+  onDelete: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -200,8 +208,12 @@ function CollectionGridCard({
   const vis = visibilityConfig[collection.visibility];
   const VisIcon = vis.icon;
 
+  // Create stable handlers
+  const handleEdit = useCallback(() => onEdit(collection), [onEdit, collection]);
+  const handleDelete = useCallback(() => onDelete(collection.id), [onDelete, collection.id]);
+
   return (
-    <Card className="group card-hover">
+    <Card className="group card-hover content-visibility-auto contain-intrinsic-size-[auto_200px]">
       <CardHeader className="flex flex-row items-start justify-between pb-3">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -229,11 +241,11 @@ function CollectionGridCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
+            <DropdownMenuItem onClick={handleEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive" onClick={onDelete}>
+            <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
               <Trash2 className="mr-2 h-4 w-4" />
               Delete
             </DropdownMenuItem>
@@ -255,7 +267,7 @@ function CollectionGridCard({
       </CardContent>
     </Card>
   );
-}
+});
 
 function CollectionsSkeleton({ viewMode }: { viewMode: ViewMode }) {
   if (viewMode === "list") {
@@ -418,20 +430,17 @@ export default function CollectionsPage() {
     }
   };
 
-  const handleDelete = async (collectionId: string) => {
+  // Stable callback for delete - accepts id
+  const handleDelete = useCallback(async (collectionId: string) => {
     try {
       await deleteCollectionMutation({ collectionId: collectionId as any });
     } catch (error) {
       console.error("Failed to delete collection:", error);
     }
-  };
+  }, [deleteCollectionMutation]);
 
-  const openEditModal = (collection: {
-    id: string;
-    name: string;
-    visibility: "private" | "public";
-    defaultTags: { name: string }[];
-  }) => {
+  // Stable callback for opening edit modal - accepts collection object
+  const openEditModal = useCallback((collection: CollectionItem) => {
     setEditCollection({
       id: collection.id,
       name: collection.name,
@@ -441,7 +450,7 @@ export default function CollectionsPage() {
     setEditVisibility(collection.visibility);
     setEditDefaultTags(collection.defaultTags.map((t) => t.name));
     setEditTagInput("");
-  };
+  }, []);
 
   const addTag = (tagName: string, isEdit: boolean) => {
     const normalized = tagName.toLowerCase().trim();
@@ -768,8 +777,8 @@ export default function CollectionsPage() {
               <CollectionListItem
                 key={collection.id}
                 collection={collection as CollectionItem}
-                onEdit={() => openEditModal(collection as any)}
-                onDelete={() => handleDelete(collection.id)}
+                onEdit={openEditModal}
+                onDelete={handleDelete}
               />
             ))}
           </div>
@@ -779,8 +788,8 @@ export default function CollectionsPage() {
               <CollectionGridCard
                 key={collection.id}
                 collection={collection as CollectionItem}
-                onEdit={() => openEditModal(collection as any)}
-                onDelete={() => handleDelete(collection.id)}
+                onEdit={openEditModal}
+                onDelete={handleDelete}
               />
             ))}
           </div>
