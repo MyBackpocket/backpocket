@@ -15,9 +15,6 @@ export function HeroPocket() {
       {/* Subtle grain texture overlay */}
       <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noise%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%224%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E')]" />
 
-      {/* Gradient accents - simplified */}
-      <div className="absolute top-0 right-0 w-1/3 h-2/3 bg-linear-to-bl from-rust/4 to-transparent pointer-events-none" />
-
       <div className="w-full mx-auto max-w-6xl px-6 py-12 md:py-16">
         <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-center gap-10 lg:gap-16 xl:gap-20">
           {/* Left: Editorial content - tighter */}
