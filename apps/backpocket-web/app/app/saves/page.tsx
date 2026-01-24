@@ -731,9 +731,15 @@ export default function SavesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Saves</h1>
           <p className="text-muted-foreground">
-            {activeFilters.size > 0 || searchQuery || tagFilter
-              ? `Showing ${displayItems.length} saves`
-              : `${(totalCount ?? displayItems.length).toLocaleString()} saves`}
+            {activeFilters.size > 0 || searchQuery || tagFilter ? (
+              `Showing ${displayItems.length} saves`
+            ) : totalCount === undefined ? (
+              <span className="inline-flex items-center gap-1">
+                <Skeleton className="h-4 w-8 inline-block" /> saves
+              </span>
+            ) : (
+              `${totalCount.toLocaleString()} saves`
+            )}
           </p>
         </div>
         <Link href={routes.app.savesNew}>
