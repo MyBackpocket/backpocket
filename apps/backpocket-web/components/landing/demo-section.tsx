@@ -72,8 +72,8 @@ export function DemoSection() {
                 Paste any URL and get rich previews instantly
               </p>
             </div>
-            {/* Fixed height container to prevent layout shift */}
-            <div className="h-[380px] sm:h-[400px] overflow-hidden">
+            {/* Fixed height without overflow-hidden to show borders */}
+            <div className="h-[440px] sm:h-[460px]">
               {hasBeenVisible && <MultiPlatformDemo />}
             </div>
           </motion.div>
@@ -91,8 +91,8 @@ export function DemoSection() {
                 Add personal notes and organize with tags
               </p>
             </div>
-            {/* Fixed height container to prevent layout shift */}
-            <div className="h-[520px] sm:h-[540px] overflow-hidden">
+            {/* Fixed height without overflow-hidden to show borders */}
+            <div className="h-[520px] sm:h-[540px]">
               {hasBeenVisible && <NotesCurationDemo />}
             </div>
           </motion.div>

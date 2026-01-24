@@ -92,12 +92,9 @@ export function NotesCurationDemo() {
     return () => clearTimeout(resetTimeout);
   }, [phase]);
 
-  const showToolbar = phase === "formatting" || phase === "tagging" || phase === "saved";
-
   return (
     <AnimatedBrowserFrame url="backpocket.my/app/saves/naval-thread">
-      {/* Fixed height container to prevent layout shifts on mobile */}
-      <div className="space-y-4 h-[420px] sm:h-[440px] w-full overflow-hidden">
+      <div className="space-y-4 h-[420px] sm:h-[440px] w-full">
         {/* Back button */}
         <button
           type="button"
@@ -135,49 +132,38 @@ export function NotesCurationDemo() {
           </div>
 
           <div className="relative rounded-lg border border-denim/20 bg-background">
-            {/* Toolbar - fixed height container to prevent layout shift */}
-            <div className="h-[41px] overflow-hidden">
-              <AnimatePresence>
-                {showToolbar && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    className="flex items-center gap-1 border-b border-border/50 px-3 py-2"
-                >
-                  <motion.button
-                    type="button"
-                    className="rounded p-1.5 hover:bg-muted transition-colors"
-                    animate={
-                      phase === "formatting"
-                        ? {
-                            scale: [1, 1.1, 1],
-                            backgroundColor: ["transparent", "#3b507f20", "transparent"],
-                          }
-                        : {}
-                    }
-                    transition={{ duration: NOTES_DEMO.toolbarButtonDuration }}
-                  >
-                    <Bold className="h-4 w-4" />
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    className="rounded p-1.5 hover:bg-muted transition-colors"
-                    animate={
-                      phase === "formatting"
-                        ? {
-                            scale: [1, 1.1, 1],
-                            backgroundColor: ["transparent", "#3b507f20", "transparent"],
-                          }
-                        : {}
-                    }
-                    transition={{ duration: NOTES_DEMO.toolbarButtonDuration, delay: NOTES_DEMO.toolbarButtonDuration / 2 }}
-                  >
-                    <Italic className="h-4 w-4" />
-                  </motion.button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Toolbar - always visible, fixed height */}
+            <div className="flex items-center gap-1 border-b border-border/50 px-3 py-2 h-[41px]">
+              <motion.button
+                type="button"
+                className="rounded p-1.5 hover:bg-muted transition-colors"
+                animate={
+                  phase === "formatting"
+                    ? {
+                        scale: [1, 1.1, 1],
+                        backgroundColor: ["transparent", "#3b507f20", "transparent"],
+                      }
+                    : {}
+                }
+                transition={{ duration: NOTES_DEMO.toolbarButtonDuration }}
+              >
+                <Bold className="h-4 w-4" />
+              </motion.button>
+              <motion.button
+                type="button"
+                className="rounded p-1.5 hover:bg-muted transition-colors"
+                animate={
+                  phase === "formatting"
+                    ? {
+                        scale: [1, 1.1, 1],
+                        backgroundColor: ["transparent", "#3b507f20", "transparent"],
+                      }
+                    : {}
+                }
+                transition={{ duration: NOTES_DEMO.toolbarButtonDuration, delay: NOTES_DEMO.toolbarButtonDuration / 2 }}
+              >
+                <Italic className="h-4 w-4" />
+              </motion.button>
             </div>
 
             {/* Text area */}
@@ -229,8 +215,8 @@ export function NotesCurationDemo() {
           </div>
         </div>
 
-        {/* Saved indicator - fixed height container */}
-        <div className="h-[40px] overflow-hidden">
+        {/* Saved indicator - fixed height to prevent shift */}
+        <div className="h-[40px]">
           <AnimatePresence>
             {showSaved && (
               <motion.div
