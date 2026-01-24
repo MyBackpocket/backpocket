@@ -54,7 +54,7 @@ export function BrowserExtensionDemo() {
   return (
     <div ref={containerRef} className="relative max-w-lg mx-auto">
       {/* Browser Window */}
-      <div className="rounded-2xl border border-denim/25 bg-card shadow-2xl shadow-denim/10 overflow-hidden">
+      <div className="rounded-2xl border border-border/20 bg-card shadow-2xl shadow-denim/10 overflow-hidden">
         {/* Browser Chrome */}
         <div className="flex items-center gap-2 px-4 py-3 bg-linear-to-b from-muted/60 to-muted/30 border-b border-border/50">
           <div className="flex gap-2">
@@ -179,9 +179,10 @@ export function BrowserExtensionDemo() {
 
       {/* Collection Panel Below */}
       <motion.div
-        className="mt-4 rounded-xl border border-denim/30 bg-card shadow-xl overflow-hidden"
+        className="mt-4 rounded-xl border bg-card shadow-xl overflow-hidden"
+        initial={{ borderColor: "hsl(var(--border) / 0.2)" }}
         animate={{
-          borderColor: showNewCard ? "rgb(var(--rust) / 0.4)" : "rgb(var(--denim) / 0.3)",
+          borderColor: showNewCard ? "hsl(var(--rust-orange) / 0.35)" : "hsl(var(--border) / 0.2)",
         }}
         transition={{ duration: 0.3 }}
       >
@@ -200,8 +201,8 @@ export function BrowserExtensionDemo() {
             <motion.span
               className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-denim/10 text-muted-foreground"
               animate={{
-                backgroundColor: showNewCard ? "rgb(var(--mint) / 0.2)" : "rgb(var(--denim) / 0.1)",
-                color: showNewCard ? "rgb(var(--mint))" : undefined,
+                backgroundColor: showNewCard ? "hsl(var(--mint-green) / 0.2)" : "hsl(var(--denim-blue) / 0.1)",
+                color: showNewCard ? "hsl(var(--mint-green))" : undefined,
               }}
             >
               <Eye className="w-3 h-3" />
@@ -244,7 +245,7 @@ export function BrowserExtensionDemo() {
                   damping: 30,
                   layout: { type: "spring", stiffness: 400, damping: 30 }
                 }}
-                className="rounded-xl overflow-hidden border-2 border-rust bg-background shadow-xl shadow-rust/40 ring-4 ring-rust/20"
+                className="rounded-xl overflow-hidden border border-border/30 bg-background shadow-md"
               >
                 <div className="h-16 relative bg-linear-to-br from-rust/20 via-amber/10 to-denim/10">
                   <div className="absolute top-2 right-2">
@@ -297,7 +298,7 @@ export function BrowserExtensionDemo() {
                   damping: 30,
                   delay: showNewCard ? index * 0.05 : 0
                 }}
-                className="rounded-xl border border-border/60 bg-background overflow-hidden"
+                className="rounded-xl border border-border/30 bg-background overflow-hidden"
               >
                 <div className={`h-16 relative bg-linear-to-br ${card.gradient}`}>
                   <div className="absolute top-2 right-2">

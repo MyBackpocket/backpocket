@@ -15,7 +15,7 @@ export function PocketVisual() {
     <div className="relative">
       {/* Browser chrome simulation at top */}
       <div className="relative mb-3">
-        <div className="rounded-xl border border-denim/20 bg-card overflow-hidden shadow-sm">
+        <div className="rounded-xl border border-border/20 bg-card overflow-hidden shadow-sm">
           {/* Browser tab bar */}
           <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/30 border-b border-border/50">
             <div className="flex gap-1.5">

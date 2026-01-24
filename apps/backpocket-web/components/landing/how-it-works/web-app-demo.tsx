@@ -69,7 +69,7 @@ export function WebAppDemo() {
   return (
     <div ref={containerRef} className="relative max-w-lg mx-auto">
       {/* Web App Window */}
-      <div className="rounded-2xl border border-denim/25 bg-card shadow-2xl shadow-denim/10 overflow-hidden">
+      <div className="rounded-2xl border border-border/20 bg-card shadow-2xl shadow-denim/10 overflow-hidden">
         {/* Browser Chrome */}
         <div className="flex items-center gap-2 px-4 py-3 bg-linear-to-b from-muted/60 to-muted/30 border-b border-border/50">
           <div className="flex gap-2">
@@ -189,7 +189,7 @@ export function WebAppDemo() {
             ].map((save) => (
               <div
                 key={save.title}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-background"
+                className="flex items-center gap-3 p-3 rounded-xl border border-border/30 bg-background"
               >
                 <div
                   className={`w-12 h-12 rounded-lg bg-linear-to-br ${save.gradient} flex items-center justify-center shrink-0`}

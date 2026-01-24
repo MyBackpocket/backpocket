@@ -32,19 +32,20 @@ export function CollectionPanel({
 }: CollectionPanelProps) {
   return (
     <motion.div
-      className={`relative rounded-2xl overflow-hidden ${
-        minimal ? "border border-border/50" : "shadow-denim-lg border border-denim/30"
+      className={`relative rounded-2xl overflow-hidden shadow-lg ${
+        minimal ? "border border-border/30" : "border border-border/20"
       }`}
+      initial={{ borderColor: "hsl(var(--border) / 0.2)" }}
       animate={{
-        borderColor: showNewCard ? "rgb(var(--rust) / 0.4)" : minimal ? "rgb(var(--border) / 0.5)" : "rgb(var(--denim) / 0.3)",
+        borderColor: showNewCard ? "hsl(var(--rust-orange) / 0.35)" : "hsl(var(--border) / 0.2)",
       }}
       transition={{ duration: 0.3 }}
     >
       {/* Stitching borders - only show if not minimal */}
       {!minimal && (
         <>
-          <div className="absolute inset-x-0 top-2 border-t-2 border-dashed border-denim/30 pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-2 border-b-2 border-dashed border-denim/30 pointer-events-none" />
+          <div className="absolute inset-x-0 top-2 border-t-2 border-dashed border-border/20 pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-2 border-b-2 border-dashed border-border/20 pointer-events-none" />
         </>
       )}
 
@@ -63,8 +64,8 @@ export function CollectionPanel({
             <motion.span
               className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
               animate={{
-                backgroundColor: showNewCard ? "rgb(var(--mint) / 0.2)" : "rgb(var(--denim) / 0.1)",
-                color: showNewCard ? "rgb(var(--mint))" : undefined,
+                backgroundColor: showNewCard ? "hsl(var(--mint-green) / 0.2)" : "hsl(var(--denim-blue) / 0.1)",
+                color: showNewCard ? "hsl(var(--mint-green))" : undefined,
               }}
             >
               <Eye className="w-3 h-3" />
@@ -107,7 +108,7 @@ export function CollectionPanel({
                   damping: 30,
                   layout: { type: "spring", stiffness: 400, damping: 30 },
                 }}
-                className="rounded-lg overflow-hidden border-2 border-rust bg-background shadow-xl shadow-rust/40 ring-4 ring-rust/20"
+                className="rounded-lg overflow-hidden border border-border/30 bg-background shadow-md"
               >
                 <div className="h-16 relative bg-linear-to-br from-amber/30 to-rust/20">
                   <div className="absolute top-1.5 right-1.5 text-rust">
@@ -139,7 +140,7 @@ export function CollectionPanel({
                   damping: 30,
                   delay: showNewCard ? index * 0.05 : 0,
                 }}
-                className="rounded-lg border border-border/60 bg-background overflow-hidden"
+                className="rounded-lg border border-border/30 bg-background overflow-hidden"
               >
                 {/* Image area */}
                 <div
