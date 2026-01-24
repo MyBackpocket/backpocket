@@ -74,8 +74,8 @@ export function HeroMobileVisual() {
 
   return (
     <div className="relative flex items-center justify-center gap-3 md:gap-4 overflow-visible">
-      {/* iPhone Frame - Full height, pushed left to appear cut off */}
-      <div className="relative w-[280px] md:w-[300px] shrink-0 -ml-20 md:-ml-16">
+      {/* iPhone Frame - Full height, fully visible on mobile */}
+      <div className="relative w-[280px] md:w-[300px] shrink-0 -ml-4 md:-ml-16">
         <div className="relative rounded-[2.5rem] sm:rounded-[3rem] border-[10px] sm:border-[12px] border-border bg-muted shadow-2xl overflow-hidden">
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
