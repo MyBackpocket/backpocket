@@ -19,7 +19,6 @@ export function PocketSuccessorSection() {
 
       {/* Scattered decorative elements */}
       <div className="absolute top-12 right-[15%] w-24 h-24 border border-dashed border-rust/20 rounded-full opacity-40 hidden lg:block" />
-      <div className="absolute bottom-20 left-[10%] w-16 h-16 border-2 border-dashed border-denim/15 rotate-12 hidden lg:block" />
       
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Main editorial layout */}
@@ -34,12 +33,6 @@ export function PocketSuccessorSection() {
               
               {/* Main card */}
               <div className="relative bg-card border-2 border-border rounded-2xl p-6 sm:p-8 shadow-denim-lg">
-                {/* Decorative corner fold */}
-                <div className="absolute top-0 right-0 w-12 h-12 overflow-hidden rounded-tr-2xl">
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-muted via-muted to-transparent transform rotate-0 origin-top-right" />
-                  <div className="absolute top-1 right-1 w-10 h-10 border-b border-l border-border/30 transform -rotate-45 translate-x-5 -translate-y-1" />
-                </div>
-
                 {/* Obituary-style header */}
                 <div className="mb-6 pb-4 border-b-2 border-dashed border-rust/30">
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-2 font-medium">
@@ -115,51 +108,44 @@ export function PocketSuccessorSection() {
 
             {/* Feature comparison - editorial style */}
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              {/* Core features - checkmarks */}
               {[
-                { label: "Save articles & links", icon: "✓" },
-                { label: "Read without distractions", icon: "✓" },
-                { label: "Tags & collections", icon: "✓" },
-                { label: "Optional public sharing", icon: "★" },
-                { label: "Your own subdomain", icon: "★" },
-                { label: "Privacy by default", icon: "✓" },
-              ].map((feature) => (
-                <div
-                  key={feature.label}
-                  className="flex items-center gap-3 text-sm"
-                >
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    feature.icon === "★" 
-                      ? "bg-rust/15 text-rust" 
-                      : "bg-mint/15 text-mint"
-                  }`}>
-                    {feature.icon}
+                "Save articles & links",
+                "Read without distractions",
+                "Tags & collections",
+                "Privacy by default",
+              ].map((label) => (
+                <div key={label} className="flex items-center gap-3 text-sm">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-mint/15 text-[hsl(100_35%_38%)]">
+                    ✓
                   </span>
-                  <span className="text-foreground">{feature.label}</span>
+                  <span className="text-foreground">{label}</span>
+                </div>
+              ))}
+              {/* Unique features - stars */}
+              {[
+                "Your own subdomain",
+                "Optional public sharing",
+              ].map((label) => (
+                <div key={label} className="flex items-center gap-3 text-sm">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-rust/15 text-rust">
+                    ★
+                  </span>
+                  <span className="text-foreground">{label}</span>
                 </div>
               ))}
             </div>
 
             {/* CTA */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link href={routes.signUp}>
-                <Button
-                  size="lg"
-                  className="h-12 px-6 text-sm rounded-xl shadow-lg shadow-rust/15 hover:shadow-xl hover:shadow-rust/25 transition-all"
-                >
-                  Start your collection
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <a href="#features">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-6 text-sm rounded-xl border-2"
-                >
-                  See all features
-                </Button>
-              </a>
-            </div>
+            <Link href={routes.signUp}>
+              <Button
+                size="lg"
+                className="h-12 px-6 text-sm rounded-xl shadow-lg shadow-rust/15 hover:shadow-xl hover:shadow-rust/25 transition-all"
+              >
+                Start your collection
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
 
           </div>
         </div>
