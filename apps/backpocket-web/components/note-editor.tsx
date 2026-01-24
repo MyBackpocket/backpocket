@@ -4,6 +4,7 @@ import {
   Bold,
   Check,
   ChevronDown,
+  Circle,
   Code,
   Columns2,
   Eye,
@@ -21,6 +22,7 @@ import {
   Quote,
   Redo,
   RemoveFormatting,
+  Save,
   Strikethrough,
   Type,
   Undo,
@@ -203,16 +205,20 @@ interface SimpleNoteEditorProps {
   value: string;
   onChange: (value: string) => void;
   onSwitchToRich: () => void;
+  onSave: () => void;
   placeholder?: string;
-  saveStatus?: "idle" | "saving" | "saved";
+  saveStatus?: "idle" | "saving" | "saved" | "unsaved";
+  hasUnsavedChanges?: boolean;
 }
 
 function SimpleNoteEditor({
   value,
   onChange,
   onSwitchToRich,
+  onSave,
   placeholder = "Write your notes here...",
   saveStatus = "idle",
+  hasUnsavedChanges = false,
 }: SimpleNoteEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [viewMode, setViewMode] = useState<MarkdownViewMode>("edit");
@@ -224,6 +230,18 @@ function SimpleNoteEditor({
       textareaRef.current.style.height = `${Math.max(120, textareaRef.current.scrollHeight)}px`;
     }
   }, []);
+
+  // Handle Cmd+Enter keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && hasUnsavedChanges) {
+        e.preventDefault();
+        onSave();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasUnsavedChanges, onSave]);
 
   return (
     <div className="rounded-lg border bg-background shadow-sm">
@@ -250,19 +268,46 @@ function SimpleNoteEditor({
             Rich Text
           </Button>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          {/* Status indicator */}
           {saveStatus === "saving" && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Loader2 className="h-3 w-3 animate-spin" />
               Saving...
             </span>
           )}
           {saveStatus === "saved" && (
-            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+            <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
               <Check className="h-3 w-3" />
               Saved
             </span>
           )}
+          {hasUnsavedChanges && saveStatus !== "saving" && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+              <Circle className="h-2 w-2 fill-current" />
+              Unsaved
+            </span>
+          )}
+          {/* Save button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onSave}
+            disabled={!hasUnsavedChanges || saveStatus === "saving"}
+            className={cn(
+              "h-7 px-2 gap-1.5 text-xs",
+              hasUnsavedChanges && saveStatus !== "saving"
+                ? "text-foreground"
+                : "text-muted-foreground"
+            )}
+          >
+            <Save className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Save</span>
+            <kbd className="hidden sm:inline-flex h-5 items-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+              ⌘↵
+            </kbd>
+          </Button>
         </div>
       </div>
 
@@ -443,7 +488,9 @@ interface RichNoteEditorProps {
   value: string;
   onChange: (value: string) => void;
   onSwitchToSimple: () => void;
-  saveStatus?: "idle" | "saving" | "saved";
+  onSave: () => void;
+  saveStatus?: "idle" | "saving" | "saved" | "unsaved";
+  hasUnsavedChanges?: boolean;
   isFullScreen: boolean;
   onToggleFullScreen: () => void;
 }
@@ -452,7 +499,9 @@ function RichNoteEditor({
   value,
   onChange,
   onSwitchToSimple,
+  onSave,
   saveStatus = "idle",
+  hasUnsavedChanges = false,
   isFullScreen,
   onToggleFullScreen,
 }: RichNoteEditorProps) {
@@ -462,6 +511,18 @@ function RichNoteEditor({
   const hasSetInitialContent = useRef(false);
   // Force re-render to update toolbar active states
   const [, forceUpdate] = useState(0);
+
+  // Handle Cmd+Enter keyboard shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && hasUnsavedChanges) {
+        e.preventDefault();
+        onSave();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [hasUnsavedChanges, onSave]);
 
   // Handle editor creation - set initial content from markdown
   const handleCreate = useCallback(({ editor }: { editor: any }) => {
@@ -537,6 +598,7 @@ function RichNoteEditor({
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            {/* Status indicator */}
             {saveStatus === "saving" && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -549,6 +611,32 @@ function RichNoteEditor({
                 Saved
               </span>
             )}
+            {hasUnsavedChanges && saveStatus !== "saving" && (
+              <span className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                <Circle className="h-2 w-2 fill-current" />
+                Unsaved
+              </span>
+            )}
+            {/* Save button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSave}
+              disabled={!hasUnsavedChanges || saveStatus === "saving"}
+              className={cn(
+                "h-7 px-2 gap-1.5 text-xs",
+                hasUnsavedChanges && saveStatus !== "saving"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              <Save className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Save</span>
+              <kbd className="hidden sm:inline-flex h-5 items-center rounded border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                ⌘↵
+              </kbd>
+            </Button>
             <Button
               type="button"
               variant="ghost"
@@ -795,7 +883,7 @@ export function NoteEditor({
   onChange,
   onSave,
   placeholder,
-  autoSave = true,
+  autoSave = false,
   autoSaveDelay = 1000,
 }: NoteEditorProps) {
   const [isRichMode, setIsRichMode] = useState<boolean>(() => {
@@ -811,6 +899,9 @@ export function NoteEditor({
 
   // Derive display value: use local value if user has unsaved changes, otherwise use prop
   const displayValue = localValue ?? value;
+
+  // Track if there are unsaved changes
+  const hasUnsavedChanges = localValue !== null && localValue !== value;
 
   // Persist editor mode preference
   useEffect(() => {
@@ -857,9 +948,32 @@ export function NoteEditor({
   // Update ref when prop changes (external save completed)
   useEffect(() => {
     lastSavedValueRef.current = value;
-  }, [value]);
+    // Clear local value when prop updates (save was successful)
+    if (localValue !== null && value === localValue) {
+      setLocalValue(null);
+    }
+  }, [value, localValue]);
 
-  // Debounced save - only triggers after user stops typing
+  // Manual save handler
+  const handleSave = useCallback(() => {
+    if (localValue === null || localValue === lastSavedValueRef.current) {
+      return; // Nothing to save
+    }
+
+    setSaveStatus("saving");
+    onChange(localValue);
+    if (onSave) {
+      onSave();
+    }
+    lastSavedValueRef.current = localValue;
+    // Clear local override after successful save
+    setLocalValue(null);
+    // Show "saved" status briefly
+    setSaveStatus("saved");
+    setTimeout(() => setSaveStatus("idle"), 2000);
+  }, [localValue, onChange, onSave]);
+
+  // Debounced save - only triggers after user stops typing (for autoSave mode)
   const debouncedSave = useDebouncedCallback((newValue: string) => {
     // Only save if value actually changed from last saved
     if (newValue !== lastSavedValueRef.current) {
@@ -888,11 +1002,9 @@ export function NoteEditor({
           setSaveStatus("saving");
         }
         debouncedSave(newValue);
-      } else {
-        onChange(newValue);
       }
     },
-    [autoSave, debouncedSave, onChange]
+    [autoSave, debouncedSave]
   );
 
   if (isRichMode) {
@@ -901,7 +1013,9 @@ export function NoteEditor({
         value={displayValue}
         onChange={handleChange}
         onSwitchToSimple={() => setIsRichMode(false)}
+        onSave={handleSave}
         saveStatus={saveStatus}
+        hasUnsavedChanges={hasUnsavedChanges}
         isFullScreen={isFullScreen}
         onToggleFullScreen={() => setIsFullScreen(!isFullScreen)}
       />
@@ -913,8 +1027,10 @@ export function NoteEditor({
       value={displayValue}
       onChange={handleChange}
       onSwitchToRich={() => setIsRichMode(true)}
+      onSave={handleSave}
       placeholder={placeholder}
       saveStatus={saveStatus}
+      hasUnsavedChanges={hasUnsavedChanges}
     />
   );
 }

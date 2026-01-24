@@ -1223,9 +1223,9 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             <NoteEditor
               value={save.note || ""}
               onChange={(value) => handleUpdateNote(value)}
+              onSave={() => {}} // Save is handled by onChange mutation
               placeholder="Add your thoughts, annotations, or commentary..."
-              autoSave
-              autoSaveDelay={1000}
+              autoSave={false}
             />
           </TabsContent>
         </Tabs>
