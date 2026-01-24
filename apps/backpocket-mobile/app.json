@@ -40,7 +40,7 @@
             "enabled": true,
             "activationRule": {
               "supportsWebUrlWithMaxCount": 1,
-              "supportsText": 1
+              "supportsText": true
             }
           },
           "android": {
@@ -64,14 +64,7 @@
       "expo-font",
       "expo-sqlite",
       "expo-web-browser",
-      "expo-image",
-      [
-        "expo-build-properties",
-        {
-          "buildReactNativeFromSource": true,
-          "useHermesV1": true
-        }
-      ]
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
