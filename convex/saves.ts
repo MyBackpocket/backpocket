@@ -13,6 +13,20 @@ import { type ClientSource, createWideEvent, extractDomain } from "./lib/logger"
 import { normalizeUrl } from "./lib/validators";
 import { clientSourceValidator, visibilityValidator } from "./schema";
 
+// Helper function to update denormalized save count
+async function updateSaveCount(ctx: MutationCtx, spaceId: Id<"spaces">, delta: number) {
+  const existing = await ctx.db
+    .query("saveCounts")
+    .withIndex("by_spaceId", (q) => q.eq("spaceId", spaceId))
+    .unique();
+
+  if (existing) {
+    await ctx.db.patch(existing._id, { count: Math.max(0, existing.count + delta) });
+  } else if (delta > 0) {
+    await ctx.db.insert("saveCounts", { spaceId, count: delta });
+  }
+}
+
 // Helper function to get a formatted save (can be called from queries or mutations)
 async function getSaveById(
   ctx: QueryCtx | MutationCtx,
@@ -312,6 +326,23 @@ export const get = query({
   },
 });
 
+// Get total save count for the current user's space
+export const getCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireAuth(ctx);
+    const space = await getUserSpace(ctx, user.userId);
+    if (!space) return 0;
+
+    const countDoc = await ctx.db
+      .query("saveCounts")
+      .withIndex("by_spaceId", (q) => q.eq("spaceId", space._id))
+      .unique();
+
+    return countDoc?.count ?? 0;
+  },
+});
+
 // Check for duplicate URL
 export const checkDuplicate = query({
   args: { url: v.string() },
@@ -483,6 +514,9 @@ export const create = mutation({
       }
 
       const save = await ctx.db.get(saveId);
+
+      // Update denormalized save count
+      await updateSaveCount(ctx, space._id, 1);
 
       // Trigger snapshot processing for the new save
       // Pass saveId as traceId for correlation
@@ -796,6 +830,9 @@ export const remove = mutation({
       // Delete the save
       await ctx.db.delete(args.saveId);
 
+      // Update denormalized save count
+      await updateSaveCount(ctx, space._id, -1);
+
       event.success({
         save_id: args.saveId,
         url_domain: urlDomain,
@@ -872,6 +909,11 @@ export const bulkDelete = mutation({
           await ctx.db.delete(saveId);
           deletedCount++;
         }
+      }
+
+      // Update denormalized save count
+      if (deletedCount > 0) {
+        await updateSaveCount(ctx, space._id, -deletedCount);
       }
 
       event.success({

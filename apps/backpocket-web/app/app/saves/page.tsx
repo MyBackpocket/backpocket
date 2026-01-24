@@ -60,6 +60,7 @@ import { routes } from "@/lib/constants/routes";
 import {
   useBulkDeleteSaves,
   useDeleteSave,
+  useGetSaveCount,
   useListSaves,
   useListTags,
   useToggleArchive,
@@ -555,6 +556,7 @@ export default function SavesPage() {
   // Convex queries with stale-while-revalidate caching
   const rawData = useListSaves(queryOptions);
   const rawTags = useListTags();
+  const totalCount = useGetSaveCount();
 
   // Cache to eliminate loading flash on back-navigation
   const data = useCachedQuery(cacheKey("saves:list", queryOptions), rawData);
@@ -729,7 +731,9 @@ export default function SavesPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Saves</h1>
           <p className="text-muted-foreground">
-            {displayItems.length} saves in your collection{hasMore ? "+" : ""}
+            {activeFilters.size > 0 || searchQuery || tagFilter
+              ? `Showing ${displayItems.length} saves`
+              : `${(totalCount ?? displayItems.length).toLocaleString()} saves`}
           </p>
         </div>
         <Link href={routes.app.savesNew}>

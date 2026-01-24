@@ -72,6 +72,11 @@ export function useBulkDeleteSaves() {
   return useMutation(api.saves.bulkDelete);
 }
 
+export function useGetSaveCount() {
+  const isAuthenticated = useIsAuthenticated();
+  return useQuery(api.saves.getCount, isAuthenticated ? {} : "skip");
+}
+
 // ============================================================================
 // TAGS HOOKS
 // ============================================================================

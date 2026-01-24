@@ -19,6 +19,7 @@ import type * as lib_logger from "../lib/logger.js";
 import type * as lib_snapshot_processor from "../lib/snapshot_processor.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as lib_vercel from "../lib/vercel.js";
+import type * as migrations_backfill_save_counts from "../migrations/backfill_save_counts.js";
 import type * as migrations_fix_uppercase_slugs from "../migrations/fix_uppercase_slugs.js";
 import type * as public_ from "../public.js";
 import type * as saves from "../saves.js";
@@ -44,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   "lib/snapshot_processor": typeof lib_snapshot_processor;
   "lib/validators": typeof lib_validators;
   "lib/vercel": typeof lib_vercel;
+  "migrations/backfill_save_counts": typeof migrations_backfill_save_counts;
   "migrations/fix_uppercase_slugs": typeof migrations_fix_uppercase_slugs;
   public: typeof public_;
   saves: typeof saves;

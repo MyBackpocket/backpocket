@@ -196,6 +196,12 @@ export default defineSchema({
     count: v.number(),
   }).index("by_spaceId", ["spaceId"]),
 
+  // Save counts (denormalized for efficient total count queries)
+  saveCounts: defineTable({
+    spaceId: v.id("spaces"),
+    count: v.number(),
+  }).index("by_spaceId", ["spaceId"]),
+
   // Rate limiting for snapshots (replaces Redis)
   snapshotRateLimits: defineTable({
     userId: v.string(),
