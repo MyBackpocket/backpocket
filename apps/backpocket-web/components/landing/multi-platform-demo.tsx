@@ -99,7 +99,7 @@ export function MultiPlatformDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app">
-      <div className="space-y-4 h-[340px] sm:h-[360px] w-full">
+      <div className="space-y-4 h-[360px] sm:h-[380px] w-full">
         {/* Quick Add input */}
         <div className="space-y-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -117,7 +117,7 @@ export function MultiPlatformDemo() {
         </div>
 
         {/* Preview card - fixed height to prevent shift */}
-        <div className="h-[180px]">
+        <div className="h-[200px]">
           <AnimatePresence mode="wait">
             {showCard && (
               <motion.div

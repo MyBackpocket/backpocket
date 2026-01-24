@@ -937,9 +937,83 @@ html {
 }
 
 /* ========================================
-   READER MODE DARK MODE FIXES
-   Ensure prose content is legible in dark mode
+   READER MODE / PROSE STYLING
+   Ensure prose content is legible in both modes
    ======================================== */
+
+/* Light mode prose - ensure good contrast on cream background */
+:root:not(.dark) .prose,
+.light .prose {
+  --tw-prose-body: hsl(0 0% 23%);
+  --tw-prose-headings: hsl(203 28% 33%);
+  --tw-prose-lead: hsl(200 15% 35%);
+  --tw-prose-links: hsl(200 21% 45%);
+  --tw-prose-bold: hsl(203 28% 33%);
+  --tw-prose-counters: hsl(200 15% 40%);
+  --tw-prose-bullets: hsl(200 10% 50%);
+  --tw-prose-hr: hsl(38 25% 75%);
+  --tw-prose-quotes: hsl(0 0% 23%);
+  --tw-prose-quote-borders: hsl(21 58% 51% / 0.5);
+  --tw-prose-captions: hsl(200 15% 40%);
+  --tw-prose-th-borders: hsl(38 25% 70%);
+  --tw-prose-td-borders: hsl(38 25% 80%);
+}
+
+:root:not(.dark) .prose p,
+:root:not(.dark) .prose li,
+:root:not(.dark) .prose span:not([class]),
+:root:not(.dark) .prose div:not([class]),
+.light .prose p,
+.light .prose li,
+.light .prose span:not([class]),
+.light .prose div:not([class]) {
+  color: hsl(0 0% 23%);
+}
+
+:root:not(.dark) .prose h1,
+:root:not(.dark) .prose h2,
+:root:not(.dark) .prose h3,
+:root:not(.dark) .prose h4,
+:root:not(.dark) .prose h5,
+:root:not(.dark) .prose h6,
+.light .prose h1,
+.light .prose h2,
+.light .prose h3,
+.light .prose h4,
+.light .prose h5,
+.light .prose h6 {
+  color: hsl(203 28% 33%);
+}
+
+:root:not(.dark) .prose strong,
+:root:not(.dark) .prose b,
+.light .prose strong,
+.light .prose b {
+  color: hsl(203 28% 33%);
+}
+
+:root:not(.dark) .prose blockquote,
+.light .prose blockquote {
+  color: hsl(200 15% 30%);
+  border-left-color: hsl(21 58% 51% / 0.5);
+}
+
+:root:not(.dark) .prose a,
+.light .prose a {
+  color: hsl(200 21% 45%);
+}
+
+:root:not(.dark) .prose a:hover,
+.light .prose a:hover {
+  color: hsl(203 28% 33%);
+}
+
+:root:not(.dark) .prose ul,
+:root:not(.dark) .prose ol,
+.light .prose ul,
+.light .prose ol {
+  color: hsl(0 0% 23%);
+}
 
 /* Dark mode prose text colors - system preference */
 @media (prefers-color-scheme: dark) {

@@ -79,7 +79,7 @@ export function NotesCurationDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app/saves/poe2-delirium-build">
-      <div className="space-y-4 h-[360px] sm:h-[380px] w-full">
+      <div className="space-y-4 h-[380px] sm:h-[400px] w-full">
         {/* Back button */}
         <button
           type="button"
