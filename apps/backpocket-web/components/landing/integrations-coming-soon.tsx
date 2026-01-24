@@ -171,8 +171,8 @@ const MessageStack = ({
         </div>
       </motion.div>
 
-      {/* Message Stack - Fixed height with overflow hidden to clip pushed-off cards */}
-      <div className="h-[306px] overflow-hidden">
+      {/* Message Stack - Fixed height with overflow visible for peek effect */}
+      <div className="h-[260px]">
         <div className="flex flex-col gap-3">
           <AnimatePresence mode="popLayout" initial={false}>
             {messages.map((msg, index) => (
@@ -261,9 +261,6 @@ export function IntegrationsComingSoon() {
             <MessageStack messages={discordMessages} channel="discord" pulse={discordPulse} />
           </div>
         </div>
-
-        {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
       </div>
     </div>
   );
