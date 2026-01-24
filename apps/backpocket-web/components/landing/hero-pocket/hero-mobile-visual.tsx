@@ -86,7 +86,7 @@ export function HeroMobileVisual() {
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>
               <div className="flex items-center gap-1">
-                <div className="flex gap-0.5">
+                <div className="flex items-end gap-0.5">
                   <div className="w-1 h-2 bg-foreground/90 rounded-sm" />
                   <div className="w-1 h-2.5 bg-foreground/90 rounded-sm" />
                   <div className="w-1 h-3 bg-foreground/60 rounded-sm" />
