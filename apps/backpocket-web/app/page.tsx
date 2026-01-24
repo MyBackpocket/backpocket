@@ -24,7 +24,7 @@ import { routes } from "@/lib/constants/routes";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-denim">
+    <div className="min-h-screen bg-gradient-denim overflow-x-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-md overflow-hidden">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
