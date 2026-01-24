@@ -78,8 +78,8 @@ export function MobileDomainBanner() {
           )}
         />
 
-        {/* Domain display */}
-        <span className="font-mono text-sm truncate">
+        {/* Domain display with dashed underline */}
+        <span className="relative font-mono text-sm truncate">
           <span
             className={cn(
               "font-semibold transition-colors duration-700",
@@ -92,6 +92,15 @@ export function MobileDomainBanner() {
           <span className="text-muted-foreground">
             {current.text.split(".").slice(1).join(".")}
           </span>
+          {/* Dashed underline - matches desktop AnimatedLogo */}
+          <span
+            className="absolute bottom-0 left-0 w-full border-b-2 border-dashed transition-colors duration-700"
+            style={{
+              borderBottomColor: current.isCustom
+                ? "hsl(100 30% 65%)" // mint
+                : "hsl(21 58% 51%)", // rust
+            }}
+          />
         </span>
 
         {/* Badge */}
