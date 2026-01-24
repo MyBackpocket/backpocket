@@ -66,7 +66,7 @@ export function MobileDomainBanner() {
         {/* Sparkle icon */}
         <Sparkles
           className={cn(
-            "w-3.5 h-3.5 shrink-0 transition-colors duration-200",
+            "w-3.5 h-3.5 shrink-0 transition-colors duration-700",
             current.isCustom ? "text-mint" : "text-rust"
           )}
         />
@@ -75,7 +75,7 @@ export function MobileDomainBanner() {
         <span className="font-mono text-sm truncate">
           <span
             className={cn(
-              "font-semibold transition-colors duration-200",
+              "font-semibold transition-colors duration-700",
               current.isCustom ? "text-mint" : "text-rust"
             )}
           >
@@ -91,7 +91,7 @@ export function MobileDomainBanner() {
         <span
           className={cn(
             "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0",
-            "transition-colors duration-200",
+            "transition-colors duration-700",
             current.isCustom
               ? "bg-mint/15 text-mint border border-mint/30"
               : "bg-rust/15 text-rust border border-rust/30"
