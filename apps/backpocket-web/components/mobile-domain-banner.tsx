@@ -2,8 +2,13 @@
 
 import { Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { ANIMATED_LOGO } from "@/lib/constants/animations";
 import { cn } from "@/lib/utils";
+
+// Slower timing for mobile banner - users need time to read
+const MOBILE_BANNER_TIMING = {
+  initialDelay: 4000, // 3 seconds before first swap
+  cycleDelay: 6000, // 4.5 seconds between swaps
+} as const;
 
 // Only cycle through the domain examples (skip the product name)
 const CYCLE_DOMAINS = [
@@ -21,7 +26,7 @@ const CYCLE_DOMAINS = [
 
 /**
  * Mobile-only banner that appears below the navbar to showcase
- * the subdomain/custom domain feature. Syncs with AnimatedLogo timing.
+ * the subdomain/custom domain feature.
  * Banner stays fixed and opaque - only the text content swaps.
  */
 export function MobileDomainBanner() {
@@ -36,7 +41,9 @@ export function MobileDomainBanner() {
   useEffect(() => {
     // Start cycling after initial delay, then use cycle delay
     const delay =
-      currentIndex === 0 ? ANIMATED_LOGO.initialDelay : ANIMATED_LOGO.cycleDelay;
+      currentIndex === 0
+        ? MOBILE_BANNER_TIMING.initialDelay
+        : MOBILE_BANNER_TIMING.cycleDelay;
     const timeout = setTimeout(advanceToNext, delay);
     return () => clearTimeout(timeout);
   }, [currentIndex, advanceToNext]);
