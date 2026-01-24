@@ -18,7 +18,7 @@
  * - 0.8 = 20% faster
  * - 1.2 = 20% slower
  */
-export const SPEED_MULTIPLIER = 0.6;
+export const SPEED_MULTIPLIER = 1.0;
 
 /** Helper to apply speed multiplier to a duration */
 export const duration = (ms: number) => Math.round(ms * SPEED_MULTIPLIER);
