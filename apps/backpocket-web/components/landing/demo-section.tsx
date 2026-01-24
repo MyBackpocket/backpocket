@@ -96,18 +96,20 @@ export function DemoSection() {
             <div className="h-[460px] sm:h-[480px]">
               {hasBeenVisible && <NotesCurationDemo />}
             </div>
-
-            {/* Integrations Coming Soon - below notes demo */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-              transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 6 }}
-              className="mt-10 pt-6"
-            >
-              {hasBeenVisible && <IntegrationsComingSoon />}
-            </motion.div>
           </motion.div>
         </div>
+
+        {/* Integrations Coming Soon - centered below demos */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 6 }}
+          className="mt-12 flex justify-center"
+        >
+          <div className="w-full max-w-md">
+            {hasBeenVisible && <IntegrationsComingSoon />}
+          </div>
+        </motion.div>
       </div>
     </section>
   );
