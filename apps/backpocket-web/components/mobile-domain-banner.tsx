@@ -7,8 +7,16 @@ import { cn } from "@/lib/utils";
 
 // Only cycle through the domain examples (skip the product name)
 const CYCLE_DOMAINS = [
-  { text: "mario.backpocket.my", isCustom: false },
-  { text: "backpocket.mariolopez.org", isCustom: true },
+  {
+    text: "mario.backpocket.my",
+    isCustom: false,
+    href: "https://mario.backpocket.my",
+  },
+  {
+    text: "backpocket.mariolopez.org",
+    isCustom: true,
+    href: "https://backpocket.mariolopez.org",
+  },
 ] as const;
 
 /**
@@ -42,15 +50,20 @@ export function MobileDomainBanner() {
         "fixed top-16 left-0 right-0 z-40"
       )}
     >
-      <div
+      <a
+        href={current.href}
+        target="_blank"
+        rel="noopener noreferrer"
         className={cn(
-          "mx-auto flex items-center justify-center gap-2 px-4 py-2",
+          "flex items-center justify-center gap-2 px-4 py-2",
           // Opaque background with solid border
           "border-b bg-background",
+          // Hover/active states for touch feedback
+          "active:bg-muted/50 transition-colors",
           current.isCustom ? "border-mint/30" : "border-rust/30"
         )}
       >
-        {/* Sparkle icon for custom domains */}
+        {/* Sparkle icon */}
         <Sparkles
           className={cn(
             "w-3.5 h-3.5 shrink-0 transition-colors duration-200",
@@ -86,7 +99,7 @@ export function MobileDomainBanner() {
         >
           {current.isCustom ? "your domain" : "free subdomain"}
         </span>
-      </div>
+      </a>
     </div>
   );
 }
