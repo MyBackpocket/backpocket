@@ -99,9 +99,9 @@ export function MultiPlatformDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app">
-      <div className="space-y-4 h-[360px] sm:h-[380px] w-full">
+      <div className="flex flex-col justify-between h-[360px] sm:h-[380px] w-full">
         {/* Quick Add input */}
-        <div className="space-y-2">
+        <div className="space-y-2 mb-4">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Quick Add
           </span>
@@ -116,8 +116,8 @@ export function MultiPlatformDemo() {
           </div>
         </div>
 
-        {/* Preview card - fixed height to prevent shift */}
-        <div className="h-[200px]">
+        {/* Preview card - flex-1 to fill available space */}
+        <div className="flex-1 flex items-center">
           <AnimatePresence mode="wait">
             {showCard && (
               <motion.div
@@ -126,7 +126,7 @@ export function MultiPlatformDemo() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
                 transition={{ duration: MULTI_PLATFORM_DEMO.cardTransition, ease: "easeOut" }}
-                className="rounded-lg border border-border bg-card/50 p-4 shadow-sm"
+                className="rounded-lg border border-border bg-card/50 p-4 shadow-sm w-full"
               >
                 <div className="flex items-start gap-3">
                   <div
@@ -179,7 +179,7 @@ export function MultiPlatformDemo() {
         </div>
 
         {/* Platform indicators */}
-        <div className="flex justify-center gap-2 pt-2">
+        <div className="flex justify-center gap-2 mt-4">
           {demoContent.map((content, index) => (
             <motion.div
               key={content.id}

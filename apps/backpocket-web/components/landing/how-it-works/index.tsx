@@ -180,7 +180,7 @@ export function HowItWorksSection() {
             <p className="text-muted-foreground">Choose how you want to save</p>
           </div>
 
-          {/* Main platforms */}
+          {/* Main platforms - 2 cols mobile, 3 cols tablet, 5 cols desktop */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {/* Web */}
             <PlatformCard
@@ -230,14 +230,18 @@ export function HowItWorksSection() {
             />
 
             {/* Android */}
-            <PlatformCard
-              name="Android"
-              description="Phone & Tablet"
-              logo={<Image src={AndroidLogo} alt="Android" className="h-5 w-auto sm:h-6" />}
-              gradient="from-mint/25 to-teal/20"
-              status="development"
-              repoHref={externalLinks.mobileAppRepo}
-            />
+            <div className="col-span-2 sm:col-span-1 flex justify-center">
+              <div className="w-full max-w-[calc(50%-0.5rem)] sm:max-w-none">
+                <PlatformCard
+                  name="Android"
+                  description="Phone & Tablet"
+                  logo={<Image src={AndroidLogo} alt="Android" className="h-5 w-auto sm:h-6" />}
+                  gradient="from-mint/25 to-teal/20"
+                  status="development"
+                  repoHref={externalLinks.mobileAppRepo}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Integrations - centered row */}

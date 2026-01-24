@@ -63,7 +63,7 @@ export function DemoSection() {
               </p>
             </div>
             {/* Fixed height without overflow-hidden to show borders */}
-            <div className="h-[460px] sm:h-[480px]">
+            <div className="h-[440px] sm:h-[470px]">
               {hasBeenVisible && <MultiPlatformDemo />}
             </div>
           </motion.div>
@@ -82,7 +82,7 @@ export function DemoSection() {
               </p>
             </div>
             {/* Fixed height without overflow-hidden to show borders */}
-            <div className="h-[480px] sm:h-[500px]">
+            <div className="h-[500px] sm:h-[510px]">
               {hasBeenVisible && <NotesCurationDemo />}
             </div>
           </motion.div>
