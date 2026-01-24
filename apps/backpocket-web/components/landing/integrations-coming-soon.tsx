@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Hash, MessageCircle, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { duration } from "@/lib/constants/animations";
@@ -42,10 +42,8 @@ const SAVES_STREAM = [
 ];
 
 const TIMING = {
-  messageInterval: duration(3200),
+  messageInterval: duration(2200),
   maxMessages: 3,
-  cardHeight: 94,
-  gap: 20,
 };
 
 interface QueuedMessage {
@@ -56,18 +54,30 @@ interface QueuedMessage {
 const MessageCard = ({
   message,
   channel,
-  style,
+  index,
 }: {
   message: QueuedMessage;
   channel: "slack" | "discord";
-  style: React.CSSProperties;
+  index: number;
 }) => {
   const isSlack = channel === "slack";
 
   return (
-    <div
-      className="absolute left-0 right-0 transition-all duration-700 ease-out"
-      style={style}
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: -20, scale: 0.95 }}
+      animate={{ 
+        opacity: 1 - index * 0.15, 
+        y: 0, 
+        scale: 1 - index * 0.01 
+      }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{
+        layout: { type: "spring", stiffness: 500, damping: 35 },
+        opacity: { duration: 0.3 },
+        y: { type: "spring", stiffness: 500, damping: 35 },
+        scale: { duration: 0.3 },
+      }}
     >
       <div
         className={`rounded-lg border p-3 bg-muted/50 ${
@@ -99,7 +109,7 @@ const MessageCard = ({
           #{message.save.tag}
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -113,7 +123,6 @@ const MessageStack = ({
   pulse: boolean;
 }) => {
   const isSlack = channel === "slack";
-  const { cardHeight, gap } = TIMING;
 
   return (
     <div>
@@ -162,23 +171,20 @@ const MessageStack = ({
         </div>
       </motion.div>
 
-      {/* Message Stack - Fixed height with CSS transitions */}
-      <div
-        className="relative"
-        style={{ height: TIMING.maxMessages * cardHeight + (TIMING.maxMessages - 1) * gap }}
-      >
-        {messages.map((msg, index) => (
-          <MessageCard
-            key={msg.id}
-            message={msg}
-            channel={channel}
-            style={{
-              top: index * (cardHeight + gap),
-              opacity: 1 - index * 0.15,
-              transform: `scale(${1 - index * 0.01})`,
-            }}
-          />
-        ))}
+      {/* Message Stack - Fixed height with overflow hidden to clip pushed-off cards */}
+      <div className="h-[306px] overflow-hidden">
+        <div className="flex flex-col gap-3">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {messages.map((msg, index) => (
+              <MessageCard
+                key={msg.id}
+                message={msg}
+                channel={channel}
+                index={index}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
