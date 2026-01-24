@@ -7,7 +7,9 @@ import { useRef } from "react";
 import AndroidLogo from "@/assets/img/Android-Logo.svg";
 import AppleLogo from "@/assets/img/Apple-Logo.svg";
 import ChromeLogo from "@/assets/img/Chrome-Logo.svg";
+import DiscordLogo from "@/assets/img/Discord-Logo.svg";
 import FirefoxLogo from "@/assets/img/Firefox-Logo.svg";
+import SlackLogo from "@/assets/img/Slack-Logo.svg";
 import { HOW_IT_WORKS, TRANSITIONS } from "@/lib/constants/animations";
 import { externalLinks } from "@/lib/constants/links";
 import { routes } from "@/lib/constants/routes";
@@ -164,7 +166,19 @@ export function HowItWorksSection() {
             <p className="text-muted-foreground">Choose how you want to save</p>
           </div>
 
+          {/* Main platforms */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Web */}
+            <PlatformCard
+              name="Web"
+              description="Any browser"
+              logo={<Globe className="h-7 w-7 sm:h-8 sm:w-8 text-denim" />}
+              gradient="from-denim/20 to-teal/15"
+              status="available"
+              href={routes.signUp}
+              repoHref={externalLinks.webAppRepo}
+            />
+
             {/* Chrome */}
             <PlatformCard
               name="Chrome"
@@ -210,21 +224,45 @@ export function HowItWorksSection() {
               status="development"
               repoHref={externalLinks.mobileAppRepo}
             />
+          </div>
 
-            {/* Web - centered when alone on mobile */}
-            <div className="col-span-2 sm:col-span-1 flex justify-center">
-              <div className="w-[calc(50%-0.5rem)] sm:w-full">
-                <PlatformCard
-                  name="Web"
-                  description="Any browser"
-                  logo={<Globe className="h-7 w-7 sm:h-8 sm:w-8 text-denim" />}
-                  gradient="from-denim/20 to-teal/15"
-                  status="available"
-                  href={routes.signUp}
-                />
-              </div>
+          {/* Integrations - centered row */}
+          <div className="flex justify-center gap-4 mt-4">
+            <div className="w-[calc(50%-0.5rem)] sm:w-40 lg:w-44">
+              {/* Slack Bot */}
+              <PlatformCard
+                name="Slack"
+                description="Bot integration"
+                logo={<Image src={SlackLogo} alt="Slack" className="h-8 w-8 sm:h-9 sm:w-9" />}
+                gradient="from-muted/30 to-muted/20"
+                status="planning"
+              />
+            </div>
+
+            <div className="w-[calc(50%-0.5rem)] sm:w-40 lg:w-44">
+              {/* Discord Bot */}
+              <PlatformCard
+                name="Discord"
+                description="Bot integration"
+                logo={<Image src={DiscordLogo} alt="Discord" className="h-8 w-8 sm:h-9 sm:w-9" />}
+                gradient="from-muted/30 to-muted/20"
+                status="planning"
+              />
             </div>
           </div>
+
+          {/* Open source note */}
+          <p className="text-center mt-8 text-sm text-muted-foreground max-w-lg mx-auto">
+            100% open source — contributions and feature requests welcome.{" "}
+            <a
+              href={externalLinks.mainRepo}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-denim hover:text-denim-deep underline underline-offset-4 decoration-denim/30 hover:decoration-denim/60 transition-colors"
+            >
+              View on GitHub
+            </a>
+          </p>
         </motion.div>
       </div>
 

@@ -6,7 +6,7 @@ interface PlatformCardProps {
   description: string;
   logo: React.ReactNode;
   gradient: string;
-  status: "available" | "development";
+  status: "available" | "development" | "planning";
   href?: string;
   repoHref?: string;
 }
@@ -20,18 +20,30 @@ export function PlatformCard({
   href,
   repoHref,
 }: PlatformCardProps) {
+  const isPlanning = status === "planning";
+
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-dashed border-denim/30 bg-card/50 p-5 sm:p-6 text-center transition-all hover:border-denim/50 hover:bg-card">
+    <div
+      className={`group relative overflow-hidden rounded-2xl border border-dashed p-5 sm:p-6 text-center transition-all h-full flex flex-col ${
+        isPlanning
+          ? "border-muted-foreground/20 bg-muted/30 opacity-60"
+          : "border-denim/30 bg-card/50 hover:border-denim/50 hover:bg-card"
+      }`}
+    >
       <div className="absolute inset-0 bg-linear-to-br from-denim/5 via-transparent to-rust/5 opacity-0 transition-opacity group-hover:opacity-100" />
-      <div className="relative">
+      <div className="relative flex-1 flex flex-col">
         <div
-          className={`mx-auto mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-linear-to-br ${gradient}`}
+          className={`mx-auto mb-4 flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-linear-to-br ${
+            isPlanning ? "from-muted-foreground/10 to-muted-foreground/5 grayscale" : gradient
+          }`}
         >
-          {logo}
+          <span className={isPlanning ? "opacity-50 grayscale" : ""}>{logo}</span>
         </div>
-        <h3 className="mb-1 text-base sm:text-lg font-semibold">{name}</h3>
+        <h3 className={`mb-1 text-base sm:text-lg font-semibold ${isPlanning ? "text-muted-foreground" : ""}`}>
+          {name}
+        </h3>
         <p className="text-xs sm:text-sm text-muted-foreground">{description}</p>
-        <div className="mt-4 flex flex-col items-center gap-2">
+        <div className="mt-auto pt-4 flex flex-col items-center gap-2">
           {status === "available" ? (
             <Link
               href={href || "#"}
@@ -39,12 +51,16 @@ export function PlatformCard({
             >
               Available Now
             </Link>
-          ) : (
+          ) : status === "development" ? (
             <span className="inline-flex items-center rounded-full bg-denim/10 px-3 py-1 text-xs font-medium text-denim">
               In Development
             </span>
+          ) : (
+            <span className="inline-flex items-center rounded-full bg-muted-foreground/10 px-3 py-1 text-xs font-medium text-muted-foreground">
+              On the Roadmap
+            </span>
           )}
-          {repoHref && (
+          {repoHref ? (
             <a
               href={repoHref}
               target="_blank"
@@ -54,6 +70,11 @@ export function PlatformCard({
               <Github className="h-3.5 w-3.5" />
               View source
             </a>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground/50">
+              <Github className="h-3.5 w-3.5" />
+              Coming soon
+            </span>
           )}
         </div>
       </div>

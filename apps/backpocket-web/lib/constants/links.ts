@@ -16,8 +16,12 @@ const GITHUB_REPO = "https://github.com/MyBackpocket/backpocket";
 export const externalLinks = {
   /** Mozilla's Pocket shutdown announcement */
   pocketShutdown: "https://support.mozilla.org/en-US/kb/future-of-pocket",
+  /** Main monorepo */
+  mainRepo: GITHUB_REPO,
   /** Browser extension source in monorepo */
   browserExtensionRepo: `${GITHUB_REPO}/tree/main/apps/backpocket-browser-extension`,
   /** Mobile app source in monorepo */
   mobileAppRepo: `${GITHUB_REPO}/tree/main/apps/backpocket-mobile`,
+  /** Web app source in monorepo */
+  webAppRepo: `${GITHUB_REPO}/tree/main/apps/backpocket-web`,
 } as const;
