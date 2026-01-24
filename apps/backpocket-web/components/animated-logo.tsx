@@ -95,10 +95,7 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
           alt="backpocket"
           width={32}
           height={32}
-          className={cn(
-            "rounded-lg transition-all duration-300",
-            !current.isProduct && "scale-90 opacity-80"
-          )}
+          className="rounded-lg"
           priority
         />
         {/* Custom domain sparkle indicator */}
