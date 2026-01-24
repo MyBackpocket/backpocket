@@ -105,7 +105,7 @@ export function MobileAppDemo() {
 
                   {/* Author */}
                   <div className="text-rust text-base sm:text-lg font-medium italic mb-3">
-                    'Nikola Balic's Blog'
+                    Nikola Balic's Blog
                   </div>
 
                   {/* Action buttons */}
