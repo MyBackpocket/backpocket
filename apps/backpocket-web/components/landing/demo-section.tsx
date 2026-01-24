@@ -64,7 +64,7 @@ export function DemoSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 3 }}
-            className="max-w-md mx-auto lg:max-w-none"
+            className="w-full max-w-md mx-auto lg:max-w-none"
           >
             <div className="mb-4 text-center lg:text-left">
               <h3 className="text-lg font-semibold">Multi-Platform Magic</h3>
@@ -72,7 +72,9 @@ export function DemoSection() {
                 Paste any URL and get rich previews instantly
               </p>
             </div>
-            {hasBeenVisible && <MultiPlatformDemo />}
+            <div className="w-full overflow-hidden">
+              {hasBeenVisible && <MultiPlatformDemo />}
+            </div>
           </motion.div>
 
           {/* Demo 2: Notes and curation */}
@@ -80,7 +82,7 @@ export function DemoSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 4 }}
-            className="max-w-md mx-auto lg:max-w-none"
+            className="w-full max-w-md mx-auto lg:max-w-none"
           >
             <div className="mb-4 text-center lg:text-left">
               <h3 className="text-lg font-semibold">Notes & Curation</h3>
@@ -88,7 +90,9 @@ export function DemoSection() {
                 Add personal notes and organize with tags
               </p>
             </div>
-            {hasBeenVisible && <NotesCurationDemo />}
+            <div className="w-full overflow-hidden">
+              {hasBeenVisible && <NotesCurationDemo />}
+            </div>
           </motion.div>
         </div>
       </div>

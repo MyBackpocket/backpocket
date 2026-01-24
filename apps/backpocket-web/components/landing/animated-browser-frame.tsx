@@ -9,7 +9,7 @@ interface AnimatedBrowserFrameProps {
 
 export function AnimatedBrowserFrame({ url, children }: AnimatedBrowserFrameProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-denim/20 bg-card shadow-denim">
+    <div className="w-full overflow-hidden rounded-xl border border-denim/20 bg-card shadow-denim">
       {/* Browser chrome */}
       <div className="flex items-center gap-2 border-b border-border/50 bg-muted/30 px-4 py-3">
         {/* Traffic lights */}

@@ -96,7 +96,7 @@ export function NotesCurationDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app/saves/naval-thread">
-      <div className="space-y-4 min-h-[420px]">
+      <div className="space-y-4 min-h-[420px] w-full">
         {/* Back button */}
         <button
           type="button"
