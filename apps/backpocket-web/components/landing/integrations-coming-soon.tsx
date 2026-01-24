@@ -70,16 +70,16 @@ const MessageCard = ({
       style={style}
     >
       <div
-        className={`rounded-lg border backdrop-blur-sm p-3 ${
+        className={`rounded-lg border p-3 bg-muted/50 ${
           isSlack
-            ? "border-[#E01E5A]/20 bg-muted/80 dark:bg-zinc-800/80"
-            : "border-[#5865F2]/20 bg-muted/80 dark:bg-zinc-800/80"
+            ? "border-[#E01E5A]/30"
+            : "border-[#5865F2]/30"
         }`}
       >
-        <div className="text-[11px] font-medium text-foreground/90 truncate mb-0.5">
+        <div className="text-[11px] font-medium text-foreground truncate mb-0.5">
           {message.save.title}
         </div>
-        <div className="text-[9px] text-muted-foreground/60 truncate mb-1 font-mono">
+        <div className="text-[9px] text-muted-foreground/70 truncate mb-1 font-mono">
           {message.save.url}
         </div>
         <div className="text-[10px] text-muted-foreground truncate mb-1.5 italic">
@@ -125,14 +125,14 @@ const MessageStack = ({
       >
         <motion.div
           className={`absolute inset-0 rounded-lg blur-lg ${
-            isSlack ? "bg-[#E01E5A]/15 dark:bg-[#E01E5A]/20" : "bg-[#5865F2]/15 dark:bg-[#5865F2]/20"
+            isSlack ? "bg-[#E01E5A]/10" : "bg-[#5865F2]/10"
           }`}
           animate={{ opacity: pulse ? 0.5 : 0.2 }}
           transition={{ duration: 0.5 }}
         />
         <div
-          className={`relative flex items-center gap-1.5 rounded-lg border bg-card px-2.5 py-2 ${
-            isSlack ? "border-[#E01E5A]/20" : "border-[#5865F2]/20"
+          className={`relative flex items-center gap-1.5 rounded-lg border bg-muted px-2.5 py-2 ${
+            isSlack ? "border-[#E01E5A]/30" : "border-[#5865F2]/30"
           }`}
         >
           {isSlack ? (
@@ -155,7 +155,7 @@ const MessageStack = ({
             ) : (
               <MessageCircle className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
             )}
-            <span className="text-[11px] text-foreground/70 truncate">
+            <span className="text-[11px] font-semibold text-foreground/80 truncate">
               {isSlack ? "brain-mario" : "mario-bookmarks"}
             </span>
           </div>
@@ -236,7 +236,7 @@ export function IntegrationsComingSoon() {
       </motion.div>
 
       {/* Main Container */}
-      <div className="relative rounded-2xl border border-border bg-gradient-to-b from-muted/50 via-muted/30 to-muted/50 dark:from-zinc-900/80 dark:via-zinc-900/60 dark:to-zinc-950/80 backdrop-blur-xl overflow-hidden">
+      <div className="relative rounded-2xl border border-border bg-card overflow-hidden">
         {/* Content */}
         <div className="relative px-4 py-8 sm:px-6 sm:py-10">
           {/* Header */}
@@ -257,7 +257,7 @@ export function IntegrationsComingSoon() {
         </div>
 
         {/* Bottom gradient fade */}
-        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-muted/40 dark:from-zinc-950/60 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-card/80 to-transparent pointer-events-none" />
       </div>
     </div>
   );
