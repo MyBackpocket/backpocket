@@ -15,6 +15,10 @@ const DemoSection = dynamic(
   () => import("@/components/landing/demo-section").then((m) => m.DemoSection),
   { ssr: true }
 );
+const PocketSuccessorSection = dynamic(
+  () => import("@/components/landing/pocket-successor-section").then((m) => m.PocketSuccessorSection),
+  { ssr: true }
+);
 
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher, ThemeSwitcherFloating } from "@/components/theme-switcher";
@@ -155,6 +159,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Pocket Successor Section - editorial style */}
+      <PocketSuccessorSection />
 
       {/* How It Works Section */}
       <HowItWorksSection />

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
 import { HeroMobileVisual } from "./hero-mobile-visual";
-import { PocketLink } from "./pocket-link";
 import { PocketVisual } from "./pocket-visual";
 
 export function HeroPocket() {
@@ -23,24 +22,24 @@ export function HeroPocket() {
         <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-center gap-10 lg:gap-16 xl:gap-20">
           {/* Left: Editorial content - tighter */}
           <div className="w-full lg:flex-1 lg:max-w-xl">
-            {/* Main headline - slightly smaller for cleaner feel */}
+            {/* Main headline - clear and simple */}
             <h1 className="font-serif">
               <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium leading-[0.95] tracking-tight text-foreground">
-                Your finds.
+                Save it.
               </span>
               <span className="block text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-medium leading-[0.95] tracking-tight mt-1 text-foreground">
-                Your space.
+                Read it later.
               </span>
               <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-normal leading-[1.15] tracking-tight mt-3 text-rust italic">
-                Share with the world.
+                Share what you love.
               </span>
             </h1>
 
-            {/* Subhead - more concise */}
+            {/* Subhead - simple and clear */}
             <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-              A modern <PocketLink /> alternative. Save articles and links privately, or{" "}
-              <span className="text-foreground font-medium">share at your own URL</span> if you want
-              to.
+              A bookmark manager for people who find interesting things online.{" "}
+              <span className="text-foreground font-medium">Save articles and links</span> to read
+              when you have time, and share your favorites with friends.
             </p>
 
             {/* CTA buttons - tighter spacing */}

@@ -5,3 +5,4 @@ export { HeroPocket } from "./hero-pocket/index";
 export { HowItWorksSection } from "./how-it-works/index";
 export { MultiPlatformDemo } from "./multi-platform-demo";
 export { NotesCurationDemo } from "./notes-curation-demo";
+export { PocketSuccessorSection } from "./pocket-successor-section";
