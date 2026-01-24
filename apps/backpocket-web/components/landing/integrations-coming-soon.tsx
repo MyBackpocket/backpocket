@@ -156,7 +156,7 @@ const MessageStack = ({
               <MessageCircle className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
             )}
             <span className="text-[11px] text-foreground/70 truncate">
-              {isSlack ? "brain-mario" : "bookmarks"}
+              {isSlack ? "brain-mario" : "mario-bookmarks"}
             </span>
           </div>
         </div>

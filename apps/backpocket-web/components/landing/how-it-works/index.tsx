@@ -27,13 +27,27 @@ export function HowItWorksSection() {
     <section
       id="how-it-works"
       ref={sectionRef}
-      className="relative py-16 md:py-24 overflow-hidden bg-linear-to-b from-background via-card/30 to-background"
+      className="relative py-16 md:py-24 bg-linear-to-b from-background via-card/30 to-background"
     >
-      {/* Background decoration */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-rust/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-denim/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 right-0 w-64 h-64 bg-mint/5 rounded-full blur-3xl" />
+      {/* Background decoration - positioned for each sub-section */}
+      <div className="absolute inset-0 pointer-events-none overflow-visible">
+        {/* Header area - rust glow */}
+        <div className="absolute top-20 left-1/4 w-[600px] h-[600px] bg-rust/30 rounded-full blur-[150px]" />
+        
+        {/* Browser Extension section - denim */}
+        <div className="absolute top-[400px] right-0 w-[500px] h-[500px] bg-denim/35 rounded-full blur-[120px] translate-x-1/4" />
+        
+        {/* Mobile App section - mint */}
+        <div className="absolute top-[900px] left-0 w-[550px] h-[550px] bg-mint/35 rounded-full blur-[120px] -translate-x-1/4" />
+        
+        {/* Web App section - amber */}
+        <div className="absolute top-[1400px] right-0 w-[500px] h-[500px] bg-amber/30 rounded-full blur-[120px] translate-x-1/4" />
+        
+        {/* RSS Feed section - rust */}
+        <div className="absolute top-[1900px] left-0 w-[500px] h-[500px] bg-rust/30 rounded-full blur-[120px] -translate-x-1/4" />
+        
+        {/* Platforms section - denim */}
+        <div className="absolute bottom-40 right-1/4 w-[600px] h-[600px] bg-denim/25 rounded-full blur-[150px]" />
       </div>
 
 
