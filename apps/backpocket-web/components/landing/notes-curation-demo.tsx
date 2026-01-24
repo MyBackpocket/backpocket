@@ -96,7 +96,8 @@ export function NotesCurationDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app/saves/naval-thread">
-      <div className="space-y-4 min-h-[420px] w-full">
+      {/* Fixed height container to prevent layout shifts on mobile */}
+      <div className="space-y-4 h-[420px] sm:h-[440px] w-full overflow-hidden">
         {/* Back button */}
         <button
           type="button"
@@ -134,14 +135,15 @@ export function NotesCurationDemo() {
           </div>
 
           <div className="relative rounded-lg border border-denim/20 bg-background">
-            {/* Toolbar */}
-            <AnimatePresence>
-              {showToolbar && (
-                <motion.div
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="flex items-center gap-1 border-b border-border/50 px-3 py-2"
+            {/* Toolbar - fixed height container to prevent layout shift */}
+            <div className="h-[41px] overflow-hidden">
+              <AnimatePresence>
+                {showToolbar && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="flex items-center gap-1 border-b border-border/50 px-3 py-2"
                 >
                   <motion.button
                     type="button"
@@ -176,6 +178,7 @@ export function NotesCurationDemo() {
                 </motion.div>
               )}
             </AnimatePresence>
+            </div>
 
             {/* Text area */}
             <div className="min-h-[80px] p-3">
@@ -226,26 +229,28 @@ export function NotesCurationDemo() {
           </div>
         </div>
 
-        {/* Saved indicator */}
-        <AnimatePresence>
-          {showSaved && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center justify-center gap-2 rounded-lg bg-mint/15 py-2 text-sm font-medium text-mint"
-            >
+        {/* Saved indicator - fixed height container */}
+        <div className="h-[40px] overflow-hidden">
+          <AnimatePresence>
+            {showSaved && (
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center justify-center gap-2 rounded-lg bg-mint/15 py-2 text-sm font-medium text-mint"
               >
-                ✓
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                >
+                  ✓
+                </motion.div>
+                Saved
               </motion.div>
-              Saved
-            </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </AnimatedBrowserFrame>
   );

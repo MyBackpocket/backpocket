@@ -87,8 +87,8 @@ export function WebAppDemo() {
           </div>
         </div>
 
-        {/* App Content */}
-        <div className="p-6 bg-linear-to-b from-background to-card min-h-[300px]">
+        {/* App Content - fixed height to prevent layout shifts */}
+        <div className="p-6 bg-linear-to-b from-background to-card h-[340px] sm:h-[360px] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">

@@ -80,8 +80,8 @@ export function HeroMobileVisual() {
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
 
-{/* Screen Content - Full height */}
-            <div className="relative bg-background min-h-[480px] sm:min-h-[540px] overflow-hidden">
+{/* Screen Content - Fixed height to prevent layout shifts */}
+            <div className="relative bg-background h-[480px] sm:h-[540px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>

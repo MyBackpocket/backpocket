@@ -57,8 +57,8 @@ export function MobileAppDemo() {
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
 
-          {/* Screen Content */}
-          <div className="relative bg-background min-h-[460px] sm:min-h-[520px] overflow-hidden">
+          {/* Screen Content - fixed height to prevent layout shifts */}
+          <div className="relative bg-background h-[460px] sm:h-[520px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-14 sm:pt-16 pb-2 text-foreground text-xs font-medium">
               <span>15:16</span>
