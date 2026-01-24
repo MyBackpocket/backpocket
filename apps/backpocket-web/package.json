@@ -70,7 +70,7 @@
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
     "tailwindcss": "^4.1.18",
-    "turbo-ignore": "^2.7.5",
+    "turbo-ignore": "^2.7.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },

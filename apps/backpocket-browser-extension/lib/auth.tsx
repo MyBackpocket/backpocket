@@ -7,7 +7,7 @@ import {
   useClerk,
   useAuth as useClerkAuth,
 } from "@clerk/chrome-extension";
-import { type ReactNode, useCallback, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 const CLERK_SYNC_HOST = import.meta.env.VITE_CLERK_SYNC_HOST;
@@ -18,13 +18,20 @@ const CLERK_SYNC_HOST = import.meta.env.VITE_CLERK_SYNC_HOST;
 export function useAuth() {
   const clerkAuth = useClerkAuth();
 
-  // Wrap getToken to always use the "convex" template for Convex-compatible JWTs
-  return {
-    ...clerkAuth,
-    getToken: async () => {
-      return clerkAuth.getToken({ template: "convex" });
-    },
-  };
+  // Wrap getToken with useCallback to maintain stable reference
+  // This prevents infinite loops in consumers that depend on getToken
+  const getToken = useCallback(async () => {
+    return clerkAuth.getToken({ template: "convex" });
+  }, [clerkAuth.getToken]);
+
+  // Memoize the return object to prevent unnecessary re-renders
+  return useMemo(
+    () => ({
+      ...clerkAuth,
+      getToken,
+    }),
+    [clerkAuth, getToken]
+  );
 }
 
 /**

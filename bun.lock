@@ -3017,7 +3017,7 @@
 
     "turbo-darwin-arm64": ["turbo-darwin-arm64@2.7.5", "", { "os": "darwin", "cpu": "arm64" }, "sha512-wCoDHMiTf3FgLAbZHDDx/unNNonSGhsF5AbbYODbxnpYyoKDpEYacUEPjZD895vDhNvYCH0Nnk24YsP4n/cD6g=="],
 
-    "turbo-ignore": ["turbo-ignore@2.7.5", "", { "dependencies": { "json5": "2.2.3" }, "bin": { "turbo-ignore": "dist/cli.js" } }, "sha512-3u8WNoenAJIfc6uWNpFglPXyMS2e+wLtbmjIJefPBH2ttW0x4X3U04wsqv7gXvSDp5NpTcafOc9yYMlzuUZdrg=="],
+    "turbo-ignore": ["turbo-ignore@2.7.6", "", { "dependencies": { "json5": "2.2.3" }, "bin": { "turbo-ignore": "dist/cli.js" } }, "sha512-Qw+ux4/RqL3TEeXjr6JLZFav+6pkD5QrVVjZBmKKggoN5srbgXxG/3d6oy1rmYllWbnLA3/NXWWtZFPyEoHdRA=="],
 
     "turbo-linux-64": ["turbo-linux-64@2.7.5", "", { "os": "linux", "cpu": "x64" }, "sha512-KKPvhOmJMmzWj/yjeO4LywkQ85vOJyhru7AZk/+c4B6OUh/odQ++SiIJBSbTG2lm1CuV5gV5vXZnf/2AMlu3Zg=="],
 

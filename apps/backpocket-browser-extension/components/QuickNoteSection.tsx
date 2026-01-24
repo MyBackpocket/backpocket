@@ -54,6 +54,17 @@ export const QuickNoteSection = memo(function QuickNoteSection({
     }
   }, [hasUnsavedChanges, handleSaveNote]);
 
+  // Handle Cmd+Enter keyboard shortcut
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && hasUnsavedChanges) {
+        e.preventDefault();
+        handleSaveNote();
+      }
+    },
+    [hasUnsavedChanges, handleSaveNote]
+  );
+
   const hasNote = noteText.trim().length > 0;
 
   return (
@@ -84,6 +95,7 @@ export const QuickNoteSection = memo(function QuickNoteSection({
             value={noteText}
             onChange={(e) => handleNoteChange(e.target.value)}
             onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
             placeholder="Add a quick note..."
             rows={2}
             className="w-full resize-y rounded-[var(--radius-sm)] border border-[var(--border)] bg-[var(--bg-tertiary)] p-2.5 text-xs leading-relaxed text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--border-focus)]"
@@ -103,6 +115,9 @@ export const QuickNoteSection = memo(function QuickNoteSection({
                   <CheckIcon className="size-3" />
                 )}
                 Save
+                <kbd className="ml-1 rounded border border-white/20 bg-white/10 px-1 py-0.5 font-mono text-[9px] font-normal">
+                  ⌘↵
+                </kbd>
               </button>
             )}
           </div>

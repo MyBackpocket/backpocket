@@ -208,9 +208,10 @@ export const QuickSaveView = memo(function QuickSaveView() {
     initiateSave();
   }, [currentUrl, currentTitle, getToken, settings.defaultSaveVisibility]);
 
-  // Handle delete/undo
+  // Handle delete/undo - works for both savedItem and duplicateSave
   const handleDelete = useCallback(async () => {
-    if (!savedItem || isDeleting) return;
+    const itemToDelete = savedItem || duplicateSave;
+    if (!itemToDelete || isDeleting) return;
 
     setIsDeleting(true);
     try {
@@ -220,9 +221,10 @@ export const QuickSaveView = memo(function QuickSaveView() {
         return;
       }
 
-      await deleteSave(savedItem.id, token);
+      await deleteSave(itemToDelete.id, token);
       setStatus("deleted");
       setSavedItem(null);
+      setDuplicateSave(null);
 
       // Notify background script with URL for icon update
       if (currentUrl) {
@@ -232,7 +234,7 @@ export const QuickSaveView = memo(function QuickSaveView() {
       console.error("Failed to delete:", err);
       setIsDeleting(false);
     }
-  }, [savedItem, isDeleting, getToken, currentUrl]);
+  }, [savedItem, duplicateSave, isDeleting, getToken, currentUrl]);
 
   // Retry save after error or deletion
   const handleRetry = useCallback(() => {
@@ -412,6 +414,20 @@ export const QuickSaveView = memo(function QuickSaveView() {
             <ExternalLinkIcon className="size-3.5" />
             View existing save
           </a>
+          {/* Delete button */}
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius-full)] border border-[var(--border)] bg-[var(--bg-muted)] px-3 py-1.5 text-xs font-medium text-[var(--text-muted)] transition-all hover:border-[var(--error)] hover:bg-[var(--error-bg)] hover:text-[var(--error)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isDeleting ? (
+              <Loader2Icon className="size-3 animate-spin" />
+            ) : (
+              <TrashIcon className="size-3" />
+            )}
+            <span>{isDeleting ? "Deleting..." : "Delete"}</span>
+          </button>
         </div>
       )}
 
