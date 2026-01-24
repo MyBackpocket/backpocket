@@ -74,8 +74,8 @@ export function HeroMobileVisual() {
 
   return (
     <div className="relative flex items-center justify-center gap-3 md:gap-4 overflow-visible">
-      {/* iPhone Frame - Full height */}
-      <div className="relative w-[280px] md:w-[300px] shrink-0 -ml-8 md:ml-0">
+      {/* iPhone Frame - Full height, pushed left to appear cut off */}
+      <div className="relative w-[280px] md:w-[300px] shrink-0 -ml-20 md:-ml-16">
         <div className="relative rounded-[2.5rem] sm:rounded-[3rem] border-[10px] sm:border-[12px] border-border bg-muted shadow-2xl overflow-hidden">
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
@@ -337,7 +337,7 @@ export function HeroMobileVisual() {
       </div>
 
       {/* Live Site Preview - Side panel, partially cut off */}
-      <div className="relative w-[180px] md:w-[200px] -mr-8 md:mr-0">
+      <div className="relative w-[260px] md:w-[300px] -mr-24 md:-mr-20">
         <SideSitePreview showNewCard={showNewCard} isSaved={isSaved} />
       </div>
     </div>
