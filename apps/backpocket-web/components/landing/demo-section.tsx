@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { TRANSITIONS } from "@/lib/constants/animations";
 import { IntegrationsComingSoon } from "./integrations-coming-soon";
@@ -28,16 +27,6 @@ export function DemoSection() {
       <div className="mx-auto max-w-6xl px-6">
         {/* Section header */}
         <div className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-            transition={TRANSITIONS.normal}
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-mint/20 bg-mint/5 px-4 py-1.5 text-sm"
-          >
-            <Play className="h-4 w-4 text-mint" />
-            <span className="text-mint font-medium">See it in action</span>
-          </motion.div>
-
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}

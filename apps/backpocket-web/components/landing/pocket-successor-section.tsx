@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowRight, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/lib/constants/routes";
@@ -23,7 +23,7 @@ export function PocketSuccessorSection() {
       
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Main editorial layout */}
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left column - The "obituary" card */}
           <div className="lg:col-span-5">
@@ -79,12 +79,6 @@ export function PocketSuccessorSection() {
 
           {/* Right column - The successor pitch */}
           <div className="lg:col-span-7 lg:pl-4">
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1.5 rounded-full bg-mint/10 border border-mint/20">
-              <Sparkles className="w-3.5 h-3.5 text-mint" />
-              <span className="text-xs font-medium text-mint uppercase tracking-wider">The successor</span>
-            </div>
-
             {/* Main headline */}
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-medium tracking-tight leading-[1.1] mb-6">
               <span className="text-foreground">Your bookmarks</span>
