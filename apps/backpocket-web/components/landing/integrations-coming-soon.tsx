@@ -42,7 +42,7 @@ const SAVES_STREAM = [
 ];
 
 const TIMING = {
-  messageInterval: duration(4800),
+  messageInterval: duration(3200),
   maxMessages: 3,
   cardHeight: 94,
   gap: 20,
@@ -196,36 +196,28 @@ export function IntegrationsComingSoon() {
   const [slackPulse, setSlackPulse] = useState(false);
   const [discordPulse, setDiscordPulse] = useState(false);
 
-  // Add messages alternating between channels, stop when both are full
+  // Add messages alternating between channels, loops continuously
   useEffect(() => {
-    // Stop if both channels are at max
-    if (slackMessages.length >= TIMING.maxMessages && discordMessages.length >= TIMING.maxMessages) {
-      return;
-    }
-
-    const timeout = setTimeout(() => {
+    const interval = setInterval(() => {
       const save = SAVES_STREAM[messageCounter % SAVES_STREAM.length];
       const isSlack = messageCounter % 2 === 0;
       const newMessage = { id: Date.now(), save };
 
-      if (isSlack && slackMessages.length < TIMING.maxMessages) {
+      if (isSlack) {
         setSlackMessages((prev) => [newMessage, ...prev].slice(0, TIMING.maxMessages));
         setSlackPulse(true);
         setTimeout(() => setSlackPulse(false), 600);
-        setMessageCounter((c) => c + 1);
-      } else if (!isSlack && discordMessages.length < TIMING.maxMessages) {
+      } else {
         setDiscordMessages((prev) => [newMessage, ...prev].slice(0, TIMING.maxMessages));
         setDiscordPulse(true);
         setTimeout(() => setDiscordPulse(false), 600);
-        setMessageCounter((c) => c + 1);
-      } else {
-        // Channel is full, try the other one
-        setMessageCounter((c) => c + 1);
       }
+
+      setMessageCounter((c) => c + 1);
     }, TIMING.messageInterval);
 
-    return () => clearTimeout(timeout);
-  }, [messageCounter, slackMessages.length, discordMessages.length]);
+    return () => clearInterval(interval);
+  }, [messageCounter]);
 
   return (
     <div className="relative w-full">
