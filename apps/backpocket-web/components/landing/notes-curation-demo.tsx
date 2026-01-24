@@ -7,8 +7,8 @@ import { NOTES_DEMO } from "@/lib/constants/animations";
 import { AnimatedBrowserFrame } from "./animated-browser-frame";
 
 const NOTE_TEXT =
-  "This is exactly what I was thinking about for the new product strategy. Naval's mental models are so clear — save this for the team discussion next week.";
-const TAGS = ["strategy", "mental-models", "team"];
+  "This build is insane for mapping. The Delirium scaling with the new atlas passives creates ridiculous density — definitely crafting this helmet next league.";
+const TAGS = ["poe2", "builds", "endgame"];
 
 const {
   typingSpeed: TYPING_SPEED,
@@ -78,7 +78,7 @@ export function NotesCurationDemo() {
   }, [phase]);
 
   return (
-    <AnimatedBrowserFrame url="backpocket.my/app/saves/naval-thread">
+    <AnimatedBrowserFrame url="backpocket.my/app/saves/poe2-delirium-build">
       <div className="space-y-4 h-[360px] sm:h-[380px] w-full">
         {/* Back button */}
         <button
@@ -97,11 +97,11 @@ export function NotesCurationDemo() {
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">X post by @naval</span>
-                <span className="text-xs text-muted-foreground">· Jan 10</span>
+                <span className="font-medium text-sm">X post by @pathofexile</span>
+                <span className="text-xs text-muted-foreground">· Jan 18</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                How to get rich without getting lucky: Own equity in a business...
+                Patch 0.2.0 introduces the new Delirium endgame content with mirror rewards...
               </p>
             </div>
           </div>
@@ -156,9 +156,8 @@ export function NotesCurationDemo() {
               <p className="text-sm leading-relaxed">
                 {phase === "formatting" || phase === "tagging" ? (
                   <>
-                    This is exactly what I was thinking about for the new product strategy.{" "}
-                    <span className="font-semibold">Naval's mental models are so clear</span> — save
-                    this for the team discussion next week.
+                    This build is insane for mapping.{" "}
+                    <span className="font-semibold">The Delirium scaling with the new atlas passives creates ridiculous density</span> — definitely crafting this helmet next league.
                   </>
                 ) : (
                   <>

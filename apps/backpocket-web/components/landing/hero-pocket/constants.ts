@@ -2,25 +2,25 @@ import { DEFAULT_ROOT_DOMAIN } from "@/lib/config/public";
 
 export const SAVE_CARDS = [
   {
-    title: "A Complete Guide To AGENTS.md",
-    source: "aihero.dev",
+    title: "PoE2 Witch Minion Build Guide",
+    source: "maxroll.gg",
     hasImage: true,
-    imageColor: "from-slate-800 to-slate-900",
+    imageColor: "from-purple-900 to-slate-900",
   },
   {
-    title: "Design Systems at Scale",
-    source: "figma.com",
+    title: "Verstappen vs Norris: 2026 Preview",
+    source: "the-race.com",
     hasImage: false,
   },
   {
-    title: "AWS Cost Optimization",
-    source: "github.com",
+    title: "Coachella 2026: Set Times & Guide",
+    source: "coachella.com",
     hasImage: true,
-    imageColor: "from-denim/20 to-teal/10",
+    imageColor: "from-pink-500/20 to-orange-500/10",
   },
   {
-    title: "React 19 Features",
-    source: "react.dev",
+    title: "Local LLMs with Ollama",
+    source: "ollama.com",
     hasImage: true,
     imageColor: "from-sky-400/20 to-blue-500/10",
   },

@@ -146,9 +146,9 @@ export function CollectionPanel({
             </div>
             <div className="p-2">
               <p className="text-[10px] font-medium text-rust line-clamp-2 leading-tight">
-                Can AI grow corn?
+                PoE2 Mercenary Build Tier List
               </p>
-              <p className="text-[9px] text-muted-foreground mt-1">proofofcorn.com</p>
+              <p className="text-[9px] text-muted-foreground mt-1">poe2.wiki</p>
             </div>
           </div>
           {/* Existing cards - always show 3 to leave room for new card slot */}

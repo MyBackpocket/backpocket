@@ -1,22 +1,22 @@
 export const BROWSER_ARTICLE = {
-  title: "The Future of AI in Software Development",
-  url: "techcrunch.com/2026/01/future-ai-software",
-  siteName: "TechCrunch",
+  title: "Why PoE2 Early Access Already Feels Like a Masterpiece",
+  url: "reddit.com/r/pathofexile2/poe2-early-access",
+  siteName: "r/pathofexile2",
 };
 
 export const WEB_ARTICLE = {
-  title: "Understanding React Server Components",
-  url: "https://vercel.com/blog/react-server-components",
-  siteName: "Vercel Blog",
+  title: "Why San Marzano Tomatoes Are Non-Negotiable",
+  url: "https://bolognese.mariolopez.org/san-marzano",
+  siteName: "The Bolognese Blog",
 };
 
 export const RSS_ITEMS = [
-  { title: "Design Systems at Scale", source: "figma.com" },
-  { title: "AWS Cost Optimization", source: "github.com" },
-  { title: "React 19 Features", source: "react.dev" },
+  { title: "Monaco GP Tire Strategy Deep Dive", source: "the-race.com" },
+  { title: "Coachella 2026: Who's Headlining?", source: "pitchfork.com" },
+  { title: "Cursor + Claude: AI Pair Programming", source: "anthropic.com" },
 ];
 
-export const NEW_RSS_ITEM = { title: "Proof of Corn", source: "proofofcorn.com" };
+export const NEW_RSS_ITEM = { title: "PoE2 Endgame Atlas Guide", source: "maxroll.gg" };
 
 export type BrowserPhase = "browsing" | "clicking" | "saving" | "saved" | "appearing";
 export type MobilePhase = "article" | "share-sheet" | "app-opening" | "saved" | "complete";

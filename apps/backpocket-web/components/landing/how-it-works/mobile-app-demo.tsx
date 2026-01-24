@@ -113,7 +113,7 @@ export function MobileAppDemo() {
 
                   {/* Author */}
                   <div className="text-rust text-base sm:text-lg font-medium italic mb-3">
-                    Nikola Balic's Blog
+                    The Race
                   </div>
 
                   {/* Action buttons */}
@@ -135,22 +135,22 @@ export function MobileAppDemo() {
                   </div>
 
                   {/* Date */}
-                  <div className="text-muted-foreground text-xs mb-3">Published on January 15, 2026</div>
+                  <div className="text-muted-foreground text-xs mb-3">Published on January 23, 2026</div>
 
                   {/* Title */}
                   <h2 className="text-foreground text-xl sm:text-2xl font-serif font-medium leading-tight tracking-tight mb-3">
-                    The Agentic AI Handbook: Production-Ready Patterns
+                    Why Adrian Newey's Aston Martin Could Dominate 2026
                   </h2>
 
                   {/* Author byline */}
                   <div className="text-muted-foreground text-sm mb-4">
-                    by <span className="text-rust">Nikola Balić</span>
+                    by <span className="text-rust">Mark Hughes</span>
                   </div>
 
                   {/* Description */}
                   <div className="text-rust/80 text-sm italic">
                     TL;DR {">"}
-                    {">"} 113 patterns collected from public
+                    {">"} The new regulations play to Newey's
                   </div>
                 </motion.div>
               )}
@@ -214,7 +214,7 @@ export function MobileAppDemo() {
                     >
                       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted text-muted-foreground text-sm">
                         <Globe className="w-4 h-4" />
-                        nibzard.com
+                        the-race.com
                       </div>
                     </motion.div>
 
@@ -262,9 +262,9 @@ export function MobileAppDemo() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-foreground text-xs sm:text-sm font-medium truncate">
-                          The Agentic AI Handbook: Produc...
+                          Why Adrian Newey's Aston Martin...
                         </p>
-                        <p className="text-muted-foreground text-[10px] sm:text-xs">nibzard.com</p>
+                        <p className="text-muted-foreground text-[10px] sm:text-xs">the-race.com</p>
                       </div>
                     </div>
                   </div>

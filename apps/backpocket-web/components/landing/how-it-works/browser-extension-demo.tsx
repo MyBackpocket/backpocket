@@ -227,73 +227,90 @@ export function BrowserExtensionDemo() {
           </div>
         </div>
 
-        {/* Cards Grid - Fixed 4 cards, first one transitions */}
+        {/* Cards Grid - Animated card insertion */}
         <div className="px-4 pb-4 grid grid-cols-2 gap-2">
-          {/* First card - smooth transition between states */}
-          <div
-            className={`rounded-xl overflow-hidden transition-all duration-500 ease-out ${
-              showNewCard
-                ? "border-2 border-rust bg-background shadow-xl shadow-rust/40 ring-4 ring-rust/20 scale-[1.03]"
-                : "border border-border/60 bg-background"
-            }`}
-          >
-            <div
-              className={`h-16 relative transition-all duration-500 ease-out ${
-                showNewCard
-                  ? "bg-linear-to-br from-rust/20 via-amber/10 to-denim/10"
-                  : "bg-linear-to-br from-mint/15 to-emerald-500/10"
-              }`}
-            >
-              <div className="absolute top-2 right-2">
-                <Bookmark
-                  className={`w-3.5 h-3.5 transition-colors duration-500 ${showNewCard ? "text-rust fill-current" : "text-muted-foreground/50"}`}
-                />
-              </div>
-            </div>
-            <div className="p-2.5">
-              <p
-                className={`text-[11px] font-medium line-clamp-2 leading-snug transition-colors duration-500 ${showNewCard ? "text-rust" : "text-foreground"}`}
+          <AnimatePresence mode="popLayout">
+            {/* New card - slides in from top when saved */}
+            {showNewCard && (
+              <motion.div
+                key="new-card"
+                layout
+                initial={{ opacity: 0, scale: 0.8, y: -20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 500, 
+                  damping: 30,
+                  layout: { type: "spring", stiffness: 400, damping: 30 }
+                }}
+                className="rounded-xl overflow-hidden border-2 border-rust bg-background shadow-xl shadow-rust/40 ring-4 ring-rust/20"
               >
-                {showNewCard ? BROWSER_ARTICLE.title : "Building LLM Apps"}
-              </p>
-              <p className="text-[10px] text-muted-foreground mt-1 transition-opacity duration-500">
-                {showNewCard ? BROWSER_ARTICLE.siteName : "openai.com"}
-              </p>
-            </div>
-          </div>
-          {/* Remaining 3 static cards */}
-          {[
-            {
-              title: "Design Systems at Scale",
-              source: "figma.com",
-              gradient: "from-purple-500/15 to-pink-500/10",
-            },
-            {
-              title: "React 19 Features",
-              source: "react.dev",
-              gradient: "from-sky-400/15 to-blue-500/10",
-            },
-            {
-              title: "AWS Cost Optimization",
-              source: "github.com",
-              gradient: "from-denim/15 to-teal/10",
-            },
-          ].map((card) => (
-            <div
-              key={card.title}
-              className="rounded-xl border border-border/60 bg-background overflow-hidden"
-            >
-              <div className={`h-16 relative bg-linear-to-br ${card.gradient}`}>
-                <div className="absolute top-2 right-2">
-                  <Bookmark className="w-3.5 h-3.5 text-muted-foreground/50" />
+                <div className="h-16 relative bg-linear-to-br from-rust/20 via-amber/10 to-denim/10">
+                  <div className="absolute top-2 right-2">
+                    <Bookmark className="w-3.5 h-3.5 text-rust fill-current" />
+                  </div>
                 </div>
-              </div>
-              <div className="p-2.5">
-                <p className="text-[11px] font-medium line-clamp-2 leading-snug">{card.title}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">{card.source}</p>
-              </div>
-            </div>
-          ))}
+                <div className="p-2.5">
+                  <p className="text-[11px] font-medium line-clamp-2 leading-snug text-rust">
+                    {BROWSER_ARTICLE.title}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {BROWSER_ARTICLE.siteName}
+                  </p>
+                </div>
+              </motion.div>
+            )}
+            {/* Existing cards - shift positions when new card appears */}
+            {[
+              {
+                id: "cursor",
+                title: "Cursor AI Tips & Tricks",
+                source: "cursor.com",
+                gradient: "from-mint/15 to-emerald-500/10",
+              },
+              {
+                id: "coachella",
+                title: "Coachella Desert Survival Guide",
+                source: "thrillist.com",
+                gradient: "from-orange-500/15 to-pink-500/10",
+              },
+              {
+                id: "f1",
+                title: "Monaco GP Onboard Analysis",
+                source: "formula1.com",
+                gradient: "from-red-500/15 to-orange-500/10",
+              },
+              ...(!showNewCard ? [{
+                id: "poe2",
+                title: "PoE2 Currency Farming Guide",
+                source: "maxroll.gg",
+                gradient: "from-amber/15 to-yellow-500/10",
+              }] : []),
+            ].map((card, index) => (
+              <motion.div
+                key={card.id}
+                layout
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 400, 
+                  damping: 30,
+                  delay: showNewCard ? index * 0.05 : 0
+                }}
+                className="rounded-xl border border-border/60 bg-background overflow-hidden"
+              >
+                <div className={`h-16 relative bg-linear-to-br ${card.gradient}`}>
+                  <div className="absolute top-2 right-2">
+                    <Bookmark className="w-3.5 h-3.5 text-muted-foreground/50" />
+                  </div>
+                </div>
+                <div className="p-2.5">
+                  <p className="text-[11px] font-medium line-clamp-2 leading-snug">{card.title}</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">{card.source}</p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

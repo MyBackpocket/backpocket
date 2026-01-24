@@ -12,35 +12,35 @@ export function FloatingCards() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {/* Left side cards */}
       <div className="hidden md:block">
-        {/* Article card - top left */}
+        {/* PoE card - top left */}
         <div className="absolute -left-4 top-32 animate-float-slow">
           <ContentCard
             type="article"
             color="denim"
-            title="How to Build Better Products"
-            meta="paulgraham.com"
+            title="PoE2: Why Delirium Mirrors Are Perfect"
+            meta="reddit.com/r/pathofexile2"
             rotation={-12}
           />
         </div>
 
-        {/* Tweet card - mid left */}
+        {/* F1 tweet card - mid left */}
         <div className="absolute left-8 top-[55%] animate-float-medium">
           <ContentCard
             type="tweet"
             color="rust"
-            title="The best ideas come from..."
-            meta="@naval"
+            title="Verstappen's tire management is..."
+            meta="@ScuderiaFerrari"
             rotation={8}
           />
         </div>
 
-        {/* Link card - bottom left */}
+        {/* Coachella card - bottom left */}
         <div className="absolute -left-8 bottom-24 animate-float-fast hidden lg:block">
           <ContentCard
-            type="link"
+            type="video"
             color="teal"
-            title="Design Systems"
-            meta="figma.com"
+            title="Coachella 2026 Lineup Revealed"
+            meta="pitchfork.com"
             rotation={-6}
           />
         </div>
@@ -48,35 +48,35 @@ export function FloatingCards() {
 
       {/* Right side cards */}
       <div className="hidden md:block">
-        {/* Video card - top right */}
+        {/* Tech video card - top right */}
         <div className="absolute -right-4 top-40 animate-float-medium">
           <ContentCard
             type="video"
             color="amber"
-            title="Building in Public"
+            title="Local LLMs: Ollama Deep Dive"
             meta="youtube.com"
             rotation={15}
           />
         </div>
 
-        {/* Quote card - mid right */}
+        {/* Bolognese quote card - mid right */}
         <div className="absolute right-12 top-[50%] animate-float-slow">
           <ContentCard
-            type="quote"
+            type="article"
             color="mint"
-            title="Stay hungry, stay foolish"
-            meta="Steve Jobs"
+            title="The Perfect Bolognese: A 4-Hour Journey"
+            meta="bolognese.mariolopez.org"
             rotation={-10}
           />
         </div>
 
-        {/* Bookmark card - bottom right */}
+        {/* F1 bookmark card - bottom right */}
         <div className="absolute -right-6 bottom-32 animate-float-fast hidden lg:block">
           <ContentCard
             type="bookmark"
             color="denim"
-            title="React 19 Features"
-            meta="react.dev"
+            title="2026 F1 Regulation Changes"
+            meta="formula1.com"
             rotation={5}
           />
         </div>
@@ -88,8 +88,8 @@ export function FloatingCards() {
           <ContentCard
             type="article"
             color="denim"
-            title="Great Article"
-            meta="blog.com"
+            title="PoE2 Build Guide"
+            meta="poe2.wiki"
             rotation={-15}
             size="sm"
           />
@@ -98,8 +98,8 @@ export function FloatingCards() {
           <ContentCard
             type="tweet"
             color="rust"
-            title="Cool thread"
-            meta="@user"
+            title="Monaco GP thread"
+            meta="@F1"
             rotation={12}
             size="sm"
           />

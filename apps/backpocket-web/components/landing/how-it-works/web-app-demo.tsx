@@ -177,13 +177,13 @@ export function WebAppDemo() {
             {/* Existing saves */}
             {[
               {
-                title: "Building with Next.js 16",
-                source: "nextjs.org",
-                gradient: "from-zinc-500/15 to-zinc-600/10",
+                title: "The Soffritto Foundation",
+                source: "bolognese.mariolopez.org",
+                gradient: "from-orange-500/15 to-red-600/10",
               },
               {
-                title: "TypeScript Best Practices",
-                source: "typescript.org",
+                title: "Red Bull RB21 Technical Analysis",
+                source: "the-race.com",
                 gradient: "from-blue-500/15 to-sky-500/10",
               },
             ].map((save) => (
