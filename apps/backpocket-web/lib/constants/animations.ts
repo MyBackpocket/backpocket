@@ -109,8 +109,8 @@ export const HERO_POCKET = {
   savedToFading: duration(4800),
   /** Time before reset */
   fadingToReset: duration(5600),
-  /** Full loop interval */
-  loopInterval: duration(6000),
+  /** Full loop interval - needs enough gap after reset for spring animations to settle */
+  loopInterval: duration(6800),
 } as const;
 
 // =============================================================================

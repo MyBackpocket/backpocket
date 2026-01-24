@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HERO_POCKET } from "@/lib/constants/animations";
 import type { AnimationPhase } from "./constants";
 
@@ -20,25 +20,27 @@ export function useSaveAnimation(): SaveAnimationState {
   const [saveCount, setSaveCount] = useState(4);
   const [showNewCard, setShowNewCard] = useState(false);
   const [isFadingOut, setIsFadingOut] = useState(false);
+  const timeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
-    const timeoutIds: NodeJS.Timeout[] = [];
+    const clearAllTimeouts = () => {
+      timeoutIdsRef.current.forEach(clearTimeout);
+      timeoutIdsRef.current = [];
+    };
 
     const runAnimation = () => {
-      // Reset state
-      setPhase("idle");
-      setShowNewCard(false);
-      setIsFadingOut(false);
+      // Clear any existing timeouts from previous cycle
+      clearAllTimeouts();
 
       // Step 1: Click button + "Saving..." indicator
-      timeoutIds.push(
+      timeoutIdsRef.current.push(
         setTimeout(() => {
           setPhase("saving");
         }, HERO_POCKET.idleToSaving)
       );
 
       // Step 2: "Saved!" confirmation + card appears
-      timeoutIds.push(
+      timeoutIdsRef.current.push(
         setTimeout(() => {
           setPhase("saved");
           setSaveCount(5);
@@ -47,19 +49,19 @@ export function useSaveAnimation(): SaveAnimationState {
       );
 
       // Step 3: Start fade out
-      timeoutIds.push(
+      timeoutIdsRef.current.push(
         setTimeout(() => {
           setPhase("fading");
           setIsFadingOut(true);
         }, HERO_POCKET.savedToFading)
       );
 
-      // Step 4: Reset for next loop
-      timeoutIds.push(
+      // Step 4: Reset for next loop - smooth transition back to idle
+      timeoutIdsRef.current.push(
         setTimeout(() => {
-          setSaveCount(4);
           setShowNewCard(false);
           setIsFadingOut(false);
+          setSaveCount(4);
           setPhase("idle");
         }, HERO_POCKET.fadingToReset)
       );
@@ -70,7 +72,7 @@ export function useSaveAnimation(): SaveAnimationState {
 
     return () => {
       clearInterval(interval);
-      timeoutIds.forEach(clearTimeout);
+      clearAllTimeouts();
     };
   }, []);
 
