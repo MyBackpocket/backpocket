@@ -174,22 +174,7 @@ export function PocketSuccessorSection() {
               </a>
             </div>
 
-            {/* Trust note */}
-            <p className="mt-6 text-xs text-muted-foreground">
-              Free to use. No credit card required. Your data stays yours.
-            </p>
           </div>
-        </div>
-
-        {/* Bottom decorative line */}
-        <div className="mt-16 flex items-center gap-4">
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-rust/40" />
-            <div className="w-1.5 h-1.5 rounded-full bg-denim/40" />
-            <div className="w-1.5 h-1.5 rounded-full bg-mint/40" />
-          </div>
-          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
         </div>
       </div>
     </section>
