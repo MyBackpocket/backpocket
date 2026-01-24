@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ExternalLink, Heart, Sparkles } from "lucide-react";
+import { ArrowRight, ExternalLink, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/lib/constants/routes";
@@ -73,13 +73,6 @@ export function PocketSuccessorSection() {
                   <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
                 </a>
 
-                {/* Decorative stamp */}
-                <div className="absolute -bottom-3 -left-3 w-20 h-20 rounded-full border-4 border-dashed border-rust/20 flex items-center justify-center rotate-[-15deg] bg-background/80 hidden sm:flex">
-                  <div className="text-center">
-                    <Heart className="w-5 h-5 text-rust/50 mx-auto mb-0.5" />
-                    <span className="text-[9px] uppercase tracking-wider text-rust/60 font-semibold">2007–2025</span>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
