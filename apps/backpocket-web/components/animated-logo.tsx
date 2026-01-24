@@ -89,22 +89,14 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
       onMouseLeave={() => setIsPaused(paused)}
     >
       {/* Logo icon - always visible */}
-      <span className="relative shrink-0">
-        <Image
-          src={logo128}
-          alt="backpocket"
-          width={32}
-          height={32}
-          className="rounded-lg"
-          priority
-        />
-        {/* Custom domain sparkle indicator */}
-        {current.isCustom && (
-          <span className="absolute -top-1 -right-1 flex items-center justify-center">
-            <Sparkles className="w-3 h-3 text-mint animate-pulse" />
-          </span>
-        )}
-      </span>
+      <Image
+        src={logo128}
+        alt="backpocket"
+        width={32}
+        height={32}
+        className="rounded-lg shrink-0"
+        priority
+      />
 
       {/* Animated text container */}
       <span className="relative overflow-hidden min-w-0 truncate">
