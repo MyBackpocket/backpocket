@@ -3,6 +3,7 @@ export { DemoSection } from "./demo-section";
 export { FloatingCards } from "./floating-cards";
 export { HeroPocket } from "./hero-pocket/index";
 export { HowItWorksSection } from "./how-it-works/index";
+export { IntegrationsComingSoon } from "./integrations-coming-soon";
 export { MultiPlatformDemo } from "./multi-platform-demo";
 export { NotesCurationDemo } from "./notes-curation-demo";
 export { PocketSuccessorSection } from "./pocket-successor-section";

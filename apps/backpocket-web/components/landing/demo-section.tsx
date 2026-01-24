@@ -4,6 +4,7 @@ import { motion, useInView } from "framer-motion";
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { TRANSITIONS } from "@/lib/constants/animations";
+import { IntegrationsComingSoon } from "./integrations-coming-soon";
 import { MultiPlatformDemo } from "./multi-platform-demo";
 import { NotesCurationDemo } from "./notes-curation-demo";
 
@@ -92,9 +93,19 @@ export function DemoSection() {
               </p>
             </div>
             {/* Fixed height without overflow-hidden to show borders */}
-            <div className="h-[520px] sm:h-[540px]">
+            <div className="h-[460px] sm:h-[480px]">
               {hasBeenVisible && <NotesCurationDemo />}
             </div>
+
+            {/* Integrations Coming Soon - below notes demo */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 6 }}
+              className="mt-10 pt-6"
+            >
+              {hasBeenVisible && <IntegrationsComingSoon />}
+            </motion.div>
           </motion.div>
         </div>
       </div>

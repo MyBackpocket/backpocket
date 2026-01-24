@@ -17,13 +17,12 @@ const {
   loopPause: LOOP_PAUSE,
 } = NOTES_DEMO;
 
-type Phase = "typing" | "formatting" | "tagging" | "saved" | "resetting";
+type Phase = "typing" | "formatting" | "tagging" | "resetting";
 
 export function NotesCurationDemo() {
   const [typedNote, setTypedNote] = useState("");
   const [phase, setPhase] = useState<Phase>("typing");
   const [visibleTags, setVisibleTags] = useState<string[]>([]);
-  const [showSaved, setShowSaved] = useState(false);
 
   // Typing animation
   useEffect(() => {
@@ -60,23 +59,10 @@ export function NotesCurationDemo() {
       return () => clearTimeout(timeout);
     }
 
-    // All tags shown, move to saved
-    const nextPhase = setTimeout(() => setPhase("saved"), PHASE_DELAY);
+    // All tags shown, pause then reset
+    const nextPhase = setTimeout(() => setPhase("resetting"), LOOP_PAUSE);
     return () => clearTimeout(nextPhase);
   }, [visibleTags, phase]);
-
-  // Saved phase
-  useEffect(() => {
-    if (phase !== "saved") return;
-
-    setShowSaved(true);
-
-    const loopTimeout = setTimeout(() => {
-      setPhase("resetting");
-    }, LOOP_PAUSE);
-
-    return () => clearTimeout(loopTimeout);
-  }, [phase]);
 
   // Reset phase
   useEffect(() => {
@@ -85,7 +71,6 @@ export function NotesCurationDemo() {
     const resetTimeout = setTimeout(() => {
       setTypedNote("");
       setVisibleTags([]);
-      setShowSaved(false);
       setPhase("typing");
     }, NOTES_DEMO.resetDelay);
 
@@ -94,7 +79,7 @@ export function NotesCurationDemo() {
 
   return (
     <AnimatedBrowserFrame url="backpocket.my/app/saves/naval-thread">
-      <div className="space-y-4 h-[420px] sm:h-[440px] w-full">
+      <div className="space-y-4 h-[360px] sm:h-[380px] w-full">
         {/* Back button */}
         <button
           type="button"
@@ -169,7 +154,7 @@ export function NotesCurationDemo() {
             {/* Text area */}
             <div className="min-h-[80px] p-3">
               <p className="text-sm leading-relaxed">
-                {phase === "formatting" || phase === "tagging" || phase === "saved" ? (
+                {phase === "formatting" || phase === "tagging" ? (
                   <>
                     This is exactly what I was thinking about for the new product strategy.{" "}
                     <span className="font-semibold">Naval's mental models are so clear</span> — save
@@ -213,29 +198,6 @@ export function NotesCurationDemo() {
               ))}
             </AnimatePresence>
           </div>
-        </div>
-
-        {/* Saved indicator - fixed height to prevent shift */}
-        <div className="h-[40px]">
-          <AnimatePresence>
-            {showSaved && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="flex items-center justify-center gap-2 rounded-lg bg-mint/15 py-2 text-sm font-medium text-mint"
-              >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                >
-                  ✓
-                </motion.div>
-                Saved
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </AnimatedBrowserFrame>
