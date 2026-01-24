@@ -107,7 +107,7 @@ export function ThemeSwitcherFloating() {
       variant="outline"
       size="icon"
       onClick={cycleTheme}
-      className="fixed bottom-6 right-6 z-50 h-12 w-12 rounded-full shadow-lg border-2 bg-background/95 backdrop-blur-sm hover:scale-105 transition-transform sm:hidden"
+      className="fixed bottom-4 right-8 z-50 h-12 w-12 rounded-full shadow-lg border-2 bg-background/95 backdrop-blur-sm hover:scale-105 transition-transform sm:hidden"
       title={`Theme: ${theme}`}
     >
       <ThemeIcon className="h-5 w-5" />
