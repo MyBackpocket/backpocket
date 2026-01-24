@@ -80,6 +80,7 @@ import {
   useToggleFavorite,
   useUpdateSave,
 } from "@/lib/convex";
+import { invalidateCacheByPrefix } from "@/lib/hooks/use-cached-query";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
 // ============================================================================
@@ -759,6 +760,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
       setIsSaving(true);
       try {
         await updateSave({ id: saveId as any, title: title || undefined });
+        invalidateCacheByPrefix("saves:");
       } catch (error) {
         console.error("Failed to update title:", error);
       } finally {
@@ -773,6 +775,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
       setIsSaving(true);
       try {
         await updateSave({ id: saveId as any, description: description || undefined });
+        invalidateCacheByPrefix("saves:");
       } catch (error) {
         console.error("Failed to update description:", error);
       } finally {
@@ -801,6 +804,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
       setIsSaving(true);
       try {
         await updateSave({ id: saveId as any, visibility: newVisibility });
+        invalidateCacheByPrefix("saves:");
       } catch (error) {
         console.error("Failed to update visibility:", error);
       } finally {
@@ -815,6 +819,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
       setIsSaving(true);
       try {
         await updateSave({ id: saveId as any, tagNames: tags });
+        invalidateCacheByPrefix("saves:");
       } catch (error) {
         console.error("Failed to update tags:", error);
       } finally {
@@ -829,6 +834,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
       setIsSaving(true);
       try {
         await updateSave({ id: saveId as any, collectionIds: collectionIds as any[] });
+        invalidateCacheByPrefix("saves:");
       } catch (error) {
         console.error("Failed to update collections:", error);
       } finally {
@@ -856,6 +862,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     setIsDeleting(true);
     try {
       await deleteSaveMutation({ saveId: saveId as any });
+      invalidateCacheByPrefix("saves:");
       router.push(routes.app.saves);
     } catch (error) {
       console.error("Failed to delete:", error);
@@ -867,6 +874,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
   const handleToggleFavorite = useCallback(async () => {
     try {
       await toggleFavorite({ saveId: saveId as any });
+      invalidateCacheByPrefix("saves:");
     } catch (error) {
       console.error("Failed to toggle favorite:", error);
     }
@@ -875,6 +883,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
   const handleToggleArchive = useCallback(async () => {
     try {
       await toggleArchive({ saveId: saveId as any });
+      invalidateCacheByPrefix("saves:");
     } catch (error) {
       console.error("Failed to toggle archive:", error);
     }

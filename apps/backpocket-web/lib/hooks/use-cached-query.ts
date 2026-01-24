@@ -100,6 +100,41 @@ export function clearQueryCache() {
 }
 
 /**
+ * Invalidate all cache entries that start with a given prefix.
+ * This forces components to show fresh data from Convex on next render.
+ *
+ * @param prefix - The cache key prefix to invalidate (e.g., "saves:list" invalidates all saves list queries)
+ *
+ * @example
+ * ```tsx
+ * // After updating a save, invalidate all saves list cache entries
+ * await updateSave({ id, visibility: "public" });
+ * invalidateCacheByPrefix("saves:list");
+ * ```
+ */
+export function invalidateCacheByPrefix(prefix: string): void {
+  let invalidated = false;
+
+  for (const key of queryCache.keys()) {
+    if (key.startsWith(prefix)) {
+      queryCache.delete(key);
+      invalidated = true;
+    }
+  }
+
+  for (const key of paginatedCache.keys()) {
+    if (key.startsWith(prefix)) {
+      paginatedCache.delete(key);
+      invalidated = true;
+    }
+  }
+
+  if (invalidated) {
+    notifySubscribers();
+  }
+}
+
+/**
  * Get cached paginated items for a given key.
  */
 export function getPaginatedCache<T>(key: string): { items: T[]; cursor: unknown } | undefined {
