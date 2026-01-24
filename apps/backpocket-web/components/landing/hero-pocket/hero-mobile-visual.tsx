@@ -370,7 +370,7 @@ function WebSyncPanel({ showNewCard, isSaved }: WebSyncPanelProps) {
             <Globe className="w-3 h-3 text-denim" />
             <span className="text-[9px] font-medium text-foreground">Web</span>
           </div>
-          <p className="text-[8px] text-muted-foreground">backpocket.my</p>
+          <p className="text-[8px] text-muted-foreground">mario.backpocket.my</p>
         </div>
 
         {/* Sync status */}
