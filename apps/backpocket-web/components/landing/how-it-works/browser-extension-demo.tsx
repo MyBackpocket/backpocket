@@ -232,7 +232,7 @@ export function BrowserExtensionDemo() {
           <div
             className={`rounded-xl overflow-hidden transition-all duration-500 ease-out ${
               showNewCard
-                ? "border-2 border-rust bg-background shadow-lg"
+                ? "border-2 border-rust bg-background shadow-xl shadow-rust/40 ring-4 ring-rust/20 scale-[1.03]"
                 : "border border-border/60 bg-background"
             }`}
           >

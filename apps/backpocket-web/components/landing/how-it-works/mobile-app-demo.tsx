@@ -271,24 +271,39 @@ export function MobileAppDemo() {
                         </div>
                         <span className="text-[8px] sm:text-[9px] text-muted-foreground">AirDrop</span>
                       </div>
-                      {/* Backpocket - Highlighted */}
+                      {/* Backpocket - Highlighted with tap animation */}
                       <motion.div
                         className="flex flex-col items-center gap-1.5 min-w-[44px] sm:min-w-[50px]"
-                        animate={{ scale: [1, 1.1, 1] }}
-                        transition={{ duration: MOBILE_APP_DEMO.iconScaleDuration, delay: MOBILE_APP_DEMO.iconScaleDelay }}
                       >
                         <motion.div
-                          className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl overflow-hidden shadow-lg"
+                          className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl overflow-hidden shadow-lg relative"
                           animate={{
                             boxShadow: [
                               "0 0 0 0 rgba(var(--rust), 0)",
-                              "0 0 0 6px rgba(var(--rust), 0.4)",
+                              "0 0 0 0 rgba(var(--rust), 0)",
+                              "0 0 0 8px rgba(var(--rust), 0.5)",
+                              "0 0 0 4px rgba(var(--rust), 0.3)",
                               "0 0 0 0 rgba(var(--rust), 0)",
                             ],
                           }}
-                          transition={{ duration: MOBILE_APP_DEMO.glowDuration, delay: MOBILE_APP_DEMO.glowDelay }}
+                          transition={{ 
+                            duration: 0.8, 
+                            delay: MOBILE_APP_DEMO.glowDelay,
+                            times: [0, 0.3, 0.5, 0.7, 1]
+                          }}
                         >
                           <LogoIcon size="lg" className="w-full h-full" />
+                          {/* Tap highlight overlay */}
+                          <motion.div
+                            className="absolute inset-0 bg-black pointer-events-none"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: [0, 0, 0.4, 0.2, 0] }}
+                            transition={{ 
+                              duration: 0.6, 
+                              delay: MOBILE_APP_DEMO.iconScaleDelay,
+                              times: [0, 0.3, 0.5, 0.7, 1]
+                            }}
+                          />
                         </motion.div>
                         <span className="text-[8px] sm:text-[9px] text-rust font-medium">
                           Backpocket
