@@ -77,21 +77,23 @@ export function RssFeedDemo() {
               </div>
             </div>
 
-            {/* Save cards */}
-            <div className="p-2 space-y-1.5">
-              {/* New item that appears */}
-              <div
-                className={`transition-all duration-500 ease-out overflow-hidden ${
-                  showNewItem ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
-                }`}
-              >
-                <div className="flex items-center gap-2 p-2 rounded-lg bg-rust/10 border border-rust/30">
-                  <div className="w-8 h-8 rounded bg-linear-to-br from-amber/40 to-rust/30 flex items-center justify-center">
-                    <Bookmark className="w-3 h-3 text-rust" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium text-rust truncate">{NEW_RSS_ITEM.title}</p>
-                    <p className="text-[9px] text-muted-foreground">{NEW_RSS_ITEM.source}</p>
+            {/* Save cards - fixed height container to prevent layout shift */}
+            <div className="p-2 space-y-1.5 h-[180px] overflow-hidden">
+              {/* New item that appears - fixed height slot */}
+              <div className="h-[52px] overflow-hidden">
+                <div
+                  className={`transition-all duration-500 ease-out ${
+                    showNewItem ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-rust/10 border border-rust/30">
+                    <div className="w-8 h-8 rounded bg-linear-to-br from-amber/40 to-rust/30 flex items-center justify-center">
+                      <Bookmark className="w-3 h-3 text-rust" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium text-rust truncate">{NEW_RSS_ITEM.title}</p>
+                      <p className="text-[9px] text-muted-foreground">{NEW_RSS_ITEM.source}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -114,14 +116,16 @@ export function RssFeedDemo() {
             </div>
           </div>
 
-          {/* Saving indicator */}
-          <div
-            className={`mt-3 flex items-center justify-center gap-2 transition-all duration-300 ${
-              phase === "saving" ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            <div className="w-3 h-3 border-2 border-denim border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs text-denim font-medium">Saving new link...</span>
+          {/* Saving indicator - fixed height container */}
+          <div className="h-[28px] mt-3 overflow-hidden">
+            <div
+              className={`flex items-center justify-center gap-2 transition-all duration-300 ${
+                phase === "saving" ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              <div className="w-3 h-3 border-2 border-denim border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-denim font-medium">Saving new link...</span>
+            </div>
           </div>
         </div>
 
@@ -174,25 +178,27 @@ export function RssFeedDemo() {
                 <span className="text-slate-400">&lt;/title&gt;</span>
               </p>
 
-              {/* New item that slides in */}
-              <div
-                className={`transition-all duration-500 ease-out overflow-hidden ${
-                  showNewItem ? "max-h-24 opacity-100" : "max-h-0 opacity-0"
-                }`}
-              >
-                <div className="pl-4 py-0.5 bg-rust/10 rounded my-1 border-l-2 border-rust">
-                  <p className="text-slate-400">&lt;item&gt;</p>
-                  <p className="pl-4">
-                    <span className="text-slate-400">&lt;title&gt;</span>
-                    <span className="text-rust font-medium">{NEW_RSS_ITEM.title}</span>
-                    <span className="text-slate-400">&lt;/title&gt;</span>
-                  </p>
-                  <p className="pl-4">
-                    <span className="text-slate-400">&lt;link&gt;</span>
-                    <span className="text-denim">https://{NEW_RSS_ITEM.source}/</span>
-                    <span className="text-slate-400">&lt;/link&gt;</span>
-                  </p>
-                  <p className="text-slate-400">&lt;/item&gt;</p>
+              {/* New item that slides in - fixed height container */}
+              <div className="h-[72px] overflow-hidden">
+                <div
+                  className={`transition-all duration-500 ease-out ${
+                    showNewItem ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+                  }`}
+                >
+                  <div className="pl-4 py-0.5 bg-rust/10 rounded my-1 border-l-2 border-rust">
+                    <p className="text-slate-400">&lt;item&gt;</p>
+                    <p className="pl-4">
+                      <span className="text-slate-400">&lt;title&gt;</span>
+                      <span className="text-rust font-medium">{NEW_RSS_ITEM.title}</span>
+                      <span className="text-slate-400">&lt;/title&gt;</span>
+                    </p>
+                    <p className="pl-4">
+                      <span className="text-slate-400">&lt;link&gt;</span>
+                      <span className="text-denim">https://{NEW_RSS_ITEM.source}/</span>
+                      <span className="text-slate-400">&lt;/link&gt;</span>
+                    </p>
+                    <p className="text-slate-400">&lt;/item&gt;</p>
+                  </div>
                 </div>
               </div>
 
