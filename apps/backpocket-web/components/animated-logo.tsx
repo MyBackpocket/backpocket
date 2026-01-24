@@ -4,7 +4,7 @@ import { Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import logo64 from "@/assets/img/Backpocket-Logo-64.webp";
+import logo128 from "@/assets/img/Backpocket-Logo-128.webp";
 import { ANIMATED_LOGO } from "@/lib/constants/animations";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +91,7 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
       {/* Logo icon - always visible */}
       <span className="relative shrink-0">
         <Image
-          src={logo64}
+          src={logo128}
           alt="backpocket"
           width={32}
           height={32}
