@@ -26,7 +26,7 @@ export function Logo({ size = "md", className, showText = true }: LogoProps) {
     <span className={cn("inline-flex items-center gap-2", className)}>
       <Image
         src={src}
-        alt="backpocket"
+        alt={showText ? "" : "backpocket"}
         width={dimension}
         height={dimension}
         className="rounded-lg"

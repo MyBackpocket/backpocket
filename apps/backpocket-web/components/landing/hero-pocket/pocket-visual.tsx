@@ -32,6 +32,7 @@ export function PocketVisual() {
             {/* Extension icon */}
             <button
               type="button"
+              aria-label="Save to backpocket"
               className={`relative w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 ${
                 phase === "saving" || phase === "saved"
                   ? "bg-rust"

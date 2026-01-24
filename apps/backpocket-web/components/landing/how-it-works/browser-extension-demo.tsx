@@ -71,6 +71,7 @@ export function BrowserExtensionDemo() {
               {/* Extension Icon */}
               <motion.button
                 type="button"
+                aria-label="Save to backpocket"
                 className={`relative ml-2 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 shrink-0 ${
                   phase === "clicking"
                     ? "bg-rust scale-110 shadow-lg shadow-rust/40"
