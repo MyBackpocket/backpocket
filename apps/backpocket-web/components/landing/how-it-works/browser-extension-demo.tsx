@@ -180,9 +180,9 @@ export function BrowserExtensionDemo() {
       {/* Collection Panel Below */}
       <motion.div
         className="mt-4 rounded-xl border bg-card shadow-xl overflow-hidden"
-        initial={{ borderColor: "hsl(var(--border) / 0.2)" }}
+        initial={{ borderColor: "hsla(38, 20%, 70%, 0.2)" }}
         animate={{
-          borderColor: showNewCard ? "hsl(var(--rust-orange) / 0.35)" : "hsl(var(--border) / 0.2)",
+          borderColor: showNewCard ? "hsla(21, 58%, 51%, 0.35)" : "hsla(38, 20%, 70%, 0.2)",
         }}
         transition={{ duration: 0.3 }}
       >
@@ -201,8 +201,8 @@ export function BrowserExtensionDemo() {
             <motion.span
               className="flex items-center gap-1 text-[10px] px-2 py-1 rounded-full bg-denim/10 text-muted-foreground"
               animate={{
-                backgroundColor: showNewCard ? "hsl(var(--mint-green) / 0.2)" : "hsl(var(--denim-blue) / 0.1)",
-                color: showNewCard ? "hsl(var(--mint-green))" : undefined,
+                backgroundColor: showNewCard ? "hsla(100, 30%, 65%, 0.2)" : "hsla(200, 21%, 45%, 0.1)",
+                color: showNewCard ? "hsl(100, 30%, 65%)" : "hsl(200, 20%, 50%)",
               }}
             >
               <Eye className="w-3 h-3" />

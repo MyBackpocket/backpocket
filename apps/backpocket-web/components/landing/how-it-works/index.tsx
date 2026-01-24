@@ -136,7 +136,7 @@ export function HowItWorksSection() {
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 5 }}
           >
             <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber/15 text-amber-700 dark:text-amber text-sm font-medium mb-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/15 text-teal-700 dark:text-teal border border-teal-500/25 text-sm font-medium mb-4">
                 <Globe className="w-4 h-4" />
                 Web App
               </div>

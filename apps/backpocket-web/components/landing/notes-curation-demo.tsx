@@ -126,7 +126,7 @@ export function NotesCurationDemo() {
                   phase === "formatting"
                     ? {
                         scale: [1, 1.1, 1],
-                        backgroundColor: ["transparent", "#3b507f20", "transparent"],
+                        backgroundColor: ["rgba(0, 0, 0, 0)", "#3b507f20", "rgba(0, 0, 0, 0)"],
                       }
                     : {}
                 }
@@ -141,7 +141,7 @@ export function NotesCurationDemo() {
                   phase === "formatting"
                     ? {
                         scale: [1, 1.1, 1],
-                        backgroundColor: ["transparent", "#3b507f20", "transparent"],
+                        backgroundColor: ["rgba(0, 0, 0, 0)", "#3b507f20", "rgba(0, 0, 0, 0)"],
                       }
                     : {}
                 }
