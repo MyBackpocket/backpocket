@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { DM_Sans, Fraunces } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { ClerkProvider } from "@/components/clerk-provider";
 import { Providers } from "@/components/providers";
 import { WebVitals } from "@/components/web-vitals";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
@@ -57,15 +56,17 @@ export default async function RootLayout({
   const isCustomDomain = spaceSlug ? isCustomDomainSlug(spaceSlug) : false;
 
   return (
-    <ClerkProvider skipClerk={isCustomDomain}>
-      <html lang="en" suppressHydrationWarning>
-        <body className={`${dmSans.variable} ${fraunces.variable} font-sans antialiased`}>
-          <WebVitals />
-          <Analytics />
-          <SpeedInsights />
-          <Providers skipClerk={isCustomDomain}>{children}</Providers>
-        </body>
-      </html>
-    </ClerkProvider>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Disable Dark Reader - we have native dark mode support */}
+        <meta name="darkreader-lock" />
+      </head>
+      <body className={`${dmSans.variable} ${fraunces.variable} font-sans antialiased`}>
+        <WebVitals />
+        <Analytics />
+        <SpeedInsights />
+        <Providers skipClerk={isCustomDomain}>{children}</Providers>
+      </body>
+    </html>
   );
 }

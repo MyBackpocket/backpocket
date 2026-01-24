@@ -2,6 +2,7 @@
 
 import { ThemeProvider, useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { ClerkProvider } from "@/components/clerk-provider";
 import { ConvexClientProvider } from "@/components/convex-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROOT_DOMAIN } from "@/lib/config/public";
@@ -78,9 +79,11 @@ export function Providers({ children, skipClerk = false }: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <ThemeCookieSync />
-      <ConvexClientProvider skipClerk={skipClerk}>
-        <TooltipProvider>{children}</TooltipProvider>
-      </ConvexClientProvider>
+      <ClerkProvider skipClerk={skipClerk}>
+        <ConvexClientProvider skipClerk={skipClerk}>
+          <TooltipProvider>{children}</TooltipProvider>
+        </ConvexClientProvider>
+      </ClerkProvider>
     </ThemeProvider>
   );
 }

@@ -1,6 +1,8 @@
 "use client";
 
 import { ClerkProvider as BaseClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
+import { useTheme } from "next-themes";
 
 interface ClerkProviderProps {
   children: React.ReactNode;
@@ -10,6 +12,25 @@ interface ClerkProviderProps {
    * and Clerk would fail due to domain validation.
    */
   skipClerk?: boolean;
+}
+
+// Theme-aware Clerk provider that syncs with next-themes
+function ClerkProviderInner({ children }: { children: React.ReactNode }) {
+  const { resolvedTheme } = useTheme();
+
+  // Default to dark theme during SSR/hydration to avoid "flashbang" of light theme
+  // resolvedTheme is undefined until hydration completes, so we explicitly default to dark
+  const isDark = resolvedTheme === undefined || resolvedTheme === "dark";
+
+  return (
+    <BaseClerkProvider
+      appearance={{
+        baseTheme: isDark ? dark : undefined,
+      }}
+    >
+      {children}
+    </BaseClerkProvider>
+  );
 }
 
 // Conditionally wrap with Clerk based on environment and request context
@@ -22,5 +43,5 @@ export function ClerkProvider({ children, skipClerk = false }: ClerkProviderProp
     return <>{children}</>;
   }
 
-  return <BaseClerkProvider>{children}</BaseClerkProvider>;
+  return <ClerkProviderInner>{children}</ClerkProviderInner>;
 }

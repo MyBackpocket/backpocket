@@ -1,7 +1,6 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { routes } from "@/lib/constants/routes";
 
@@ -39,10 +38,6 @@ export default function SignInPage() {
         <div className="absolute top-20 left-1/4 h-72 w-72 rounded-full bg-denim/10 blur-3xl" />
         <div className="absolute bottom-20 right-1/4 h-64 w-64 rounded-full bg-rust/8 blur-3xl" />
       </div>
-
-      <Link href={routes.home} className="mb-8">
-        <Logo size="lg" />
-      </Link>
 
       {hasClerk ? (
         <ClerkSignIn />
