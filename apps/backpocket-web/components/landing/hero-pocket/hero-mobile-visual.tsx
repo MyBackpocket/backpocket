@@ -2,14 +2,11 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bookmark,
   Check,
   ChevronRight,
   Copy,
   ExternalLink,
-  Eye,
   Globe,
-  Rss,
   Share,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -73,15 +70,17 @@ export function HeroMobileVisual() {
   const isSaved = phase === "saved" || phase === "complete";
 
   return (
-    <div className="relative flex items-center justify-center gap-3 md:gap-4 overflow-visible">
-      {/* iPhone Frame - Full height, fully visible on mobile */}
-      <div className="relative w-[280px] md:w-[300px] shrink-0 -ml-4 md:-ml-16">
+    <div className="relative flex flex-col items-center gap-4 overflow-visible">
+      {/* Main row: iPhone + Web sync indicator */}
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* iPhone Frame */}
+        <div className="relative w-[220px] sm:w-[260px] shrink-0">
         <div className="relative rounded-[2.5rem] sm:rounded-[3rem] border-[10px] sm:border-[12px] border-border bg-muted shadow-2xl overflow-hidden">
           {/* Dynamic Island */}
           <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
 
 {/* Screen Content - Fixed height to prevent layout shifts */}
-            <div className="relative bg-background h-[480px] sm:h-[540px] overflow-hidden">
+            <div className="relative bg-background h-[400px] sm:h-[460px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>
@@ -336,147 +335,108 @@ export function HeroMobileVisual() {
         <div className="absolute -inset-4 bg-linear-to-b from-denim/5 to-transparent rounded-[3.5rem] -z-10 blur-xl" />
       </div>
 
-      {/* Live Site Preview - Side panel, partially cut off */}
-      <div className="relative w-[260px] md:w-[300px] -mr-24 md:-mr-20">
-        <SideSitePreview showNewCard={showNewCard} isSaved={isSaved} />
+        {/* Web sync panel - right side, fully visible */}
+        <div className="w-[140px] sm:w-[160px] shrink-0">
+          <WebSyncPanel showNewCard={showNewCard} isSaved={isSaved} />
+        </div>
       </div>
     </div>
   );
 }
 
-interface SideSitePreviewProps {
+interface WebSyncPanelProps {
   showNewCard: boolean;
   isSaved: boolean;
 }
 
 /**
- * Vertical side panel showing live site with saves appearing in real-time.
- * Designed to be partially cut off on the right edge for visual effect.
+ * Compact web sync panel showing saves syncing to the web.
+ * Fully visible on the right side of the iPhone.
  */
-function SideSitePreview({ showNewCard, isSaved }: SideSitePreviewProps) {
-  // Height of new card + gap for shift calculation
-  const CARD_SHIFT = 106; // ~90px card height + 8px gap + buffer
-
+function WebSyncPanel({ showNewCard, isSaved }: WebSyncPanelProps) {
   return (
-    <div className="relative rounded-xl border border-border/60 bg-card overflow-hidden shadow-lg">
-      {/* Browser chrome dots */}
-      <div className="flex items-center gap-1.5 px-2.5 py-2 bg-muted/50 border-b border-border/50">
-        <div className="w-2 h-2 rounded-full bg-rust/50" />
-        <div className="w-2 h-2 rounded-full bg-amber/50" />
-        <div className="w-2 h-2 rounded-full bg-mint/50" />
+    <div className="relative">
+      {/* Connection line from phone to web */}
+      <div className="absolute -left-3 top-1/2 -translate-y-1/2 flex items-center">
+        <motion.div
+          className="w-3 h-0.5 bg-gradient-to-r from-transparent to-mint"
+          animate={{ opacity: isSaved ? 1 : 0.3 }}
+        />
       </div>
 
-      {/* Header */}
-      <div className="flex items-center gap-2 px-2.5 py-2.5 border-b border-border/50">
-        <div className="w-6 h-6 rounded-full bg-linear-to-br from-denim to-denim-deep flex items-center justify-center text-white text-[9px] font-bold shrink-0">
-          M
+      <div className="rounded-xl border border-border/60 bg-card overflow-hidden shadow-lg">
+        {/* Header */}
+        <div className="px-3 py-2 bg-muted/40 border-b border-border/50">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Globe className="w-3 h-3 text-denim" />
+            <span className="text-[9px] font-medium text-foreground">Web</span>
+          </div>
+          <p className="text-[8px] text-muted-foreground">backpocket.my</p>
         </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold text-foreground truncate">My Collection</p>
-          <div className="flex items-center gap-1">
-            <span
-              className={`flex items-center gap-0.5 text-[8px] transition-all duration-300 ${
-                isSaved ? "text-mint font-bold" : "text-muted-foreground"
-              }`}
-            >
-              <Eye className="w-2.5 h-2.5" />
-              {isSaved ? 5 : 4}
+
+        {/* Sync status */}
+        <div className="px-3 py-2 border-b border-border/30">
+          <div className="flex items-center gap-1.5">
+            <motion.div
+              className={`w-2 h-2 rounded-full ${isSaved ? "bg-mint" : "bg-muted-foreground/30"}`}
+              animate={isSaved ? { scale: [1, 1.3, 1] } : {}}
+              transition={{ duration: 0.3 }}
+            />
+            <span className={`text-[9px] font-medium ${isSaved ? "text-mint" : "text-muted-foreground"}`}>
+              {isSaved ? "Synced!" : "Waiting..."}
             </span>
-            <Rss className="w-2.5 h-2.5 text-muted-foreground" />
           </div>
         </div>
+
+        {/* Saved items list */}
+        <div className="p-2 space-y-1.5">
+          {/* New save - appears when saved */}
+          <motion.div
+            initial={false}
+            animate={{
+              height: showNewCard ? "auto" : 0,
+              opacity: showNewCard ? 1 : 0,
+              marginBottom: showNewCard ? 6 : 0,
+            }}
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-rust/10 border border-rust/30">
+              <div className="w-6 h-6 rounded bg-amber/20 flex items-center justify-center shrink-0">
+                <span className="text-xs">🌽</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[8px] font-semibold text-rust truncate">AI Corn</p>
+                <p className="text-[7px] text-muted-foreground">Just now</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Existing saves */}
+          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30">
+            <div className="w-6 h-6 rounded bg-slate-800 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[8px] font-medium text-foreground truncate">AGENTS.md</p>
+              <p className="text-[7px] text-muted-foreground">2h ago</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30">
+            <div className="w-6 h-6 rounded bg-denim/20 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[8px] font-medium text-foreground truncate">AWS Tips</p>
+              <p className="text-[7px] text-muted-foreground">1d ago</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-3 py-1.5 bg-muted/20 border-t border-border/30">
+          <p className="text-[7px] text-muted-foreground text-center">
+            {isSaved ? "3 saves" : "2 saves"} synced
+          </p>
+        </div>
       </div>
-
-      {/* "Live" indicator */}
-      <div className="flex items-center gap-1 px-2.5 py-1.5 bg-muted/30 border-b border-border/30">
-        <div className={`w-1.5 h-1.5 rounded-full ${isSaved ? "bg-mint animate-pulse" : "bg-muted-foreground/40"}`} />
-        <span className="text-[8px] text-muted-foreground">live updates</span>
-      </div>
-
-      {/* Cards column - with animated shift */}
-      <div className="p-2 relative overflow-hidden">
-        {/* New card - slides in from top */}
-        <motion.div
-          initial={false}
-          animate={{
-            y: showNewCard ? 0 : -CARD_SHIFT,
-            opacity: showNewCard ? 1 : 0,
-            scale: showNewCard ? 1 : 0.9,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-          }}
-          className="rounded-lg border bg-background overflow-hidden border-rust shadow-md mb-2"
-        >
-          <div className="h-14 bg-linear-to-br from-amber/30 to-rust/20 relative flex items-center justify-center">
-            <span className="text-xl">🌽</span>
-            <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-rust fill-current" />
-          </div>
-          <div className="p-2">
-            <p className="text-[9px] font-semibold text-rust line-clamp-2 leading-tight">
-              Can AI grow corn?
-            </p>
-            <p className="text-[8px] text-muted-foreground mt-0.5">proofofcorn.com</p>
-          </div>
-        </motion.div>
-
-        {/* Existing cards container - shifts down when new card appears */}
-        <motion.div
-          initial={false}
-          animate={{
-            y: showNewCard ? 0 : -CARD_SHIFT,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-          }}
-          className="space-y-2"
-        >
-          {/* Existing card 1 */}
-          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-            <div className="h-14 bg-linear-to-br from-slate-800 to-slate-900 relative">
-              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-white/60" />
-            </div>
-            <div className="p-2">
-              <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
-                AGENTS.md Guide
-              </p>
-              <p className="text-[8px] text-muted-foreground mt-0.5">aihero.dev</p>
-            </div>
-          </div>
-
-          {/* Existing card 2 */}
-          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-            <div className="h-14 bg-linear-to-br from-denim/20 to-teal/10 relative">
-              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
-            </div>
-            <div className="p-2">
-              <p className="text-[9px] font-medium text-foreground line-clamp-2 leading-tight">
-                AWS Cost Tips
-              </p>
-              <p className="text-[8px] text-muted-foreground mt-0.5">github.com</p>
-            </div>
-          </div>
-
-          {/* Existing card 3 - partially visible at bottom */}
-          <div className="rounded-lg border border-border/60 bg-background overflow-hidden">
-            <div className="h-14 bg-muted/50 flex items-center justify-center relative">
-              <Bookmark className="w-5 h-5 text-muted-foreground/30" />
-              <Bookmark className="absolute top-1.5 right-1.5 w-3 h-3 text-muted-foreground/60" />
-            </div>
-            <div className="p-2">
-              <p className="text-[9px] font-medium text-foreground line-clamp-1">Design Systems</p>
-              <p className="text-[8px] text-muted-foreground mt-0.5">figma.com</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Gradient fade at bottom to suggest more content */}
-      <div className="absolute bottom-0 left-0 right-0 h-8 bg-linear-to-t from-card to-transparent pointer-events-none" />
     </div>
   );
 }
