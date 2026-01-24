@@ -97,10 +97,6 @@ export function HeroPocket() {
         </div>
       </div>
 
-      {/* Decorative stitching line at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-px">
-        <div className="h-full w-full border-b-2 border-dashed border-rust/20" />
-      </div>
     </section>
   );
 }

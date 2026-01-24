@@ -34,8 +34,6 @@ export function HowItWorksSection() {
         <div className="absolute top-1/2 right-0 w-64 h-64 bg-mint/5 rounded-full blur-3xl" />
       </div>
 
-      {/* Decorative stitching at top */}
-      <div className="absolute top-8 inset-x-0 border-t-2 border-dashed border-rust/15" />
 
       <div className="relative mx-auto max-w-6xl px-6">
         {/* Section Header */}
@@ -230,8 +228,6 @@ export function HowItWorksSection() {
         </motion.div>
       </div>
 
-      {/* Decorative stitching at bottom */}
-      <div className="absolute bottom-8 inset-x-0 border-b-2 border-dashed border-rust/15" />
     </section>
   );
 }

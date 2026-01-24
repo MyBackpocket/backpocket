@@ -58,21 +58,22 @@ export function DemoSection() {
         </div>
 
         {/* Demo grid */}
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
           {/* Demo 1: Multi-platform */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 3 }}
-            className="w-full max-w-md mx-auto lg:max-w-none"
+            className="w-full max-w-sm sm:max-w-md lg:max-w-none lg:flex-1"
           >
-            <div className="mb-4 text-center lg:text-left">
+            <div className="mb-4 text-center">
               <h3 className="text-lg font-semibold">Multi-Platform Magic</h3>
               <p className="text-sm text-muted-foreground">
                 Paste any URL and get rich previews instantly
               </p>
             </div>
-            <div className="w-full overflow-hidden">
+            {/* Fixed height container to prevent layout shift */}
+            <div className="h-[380px] sm:h-[400px] overflow-hidden">
               {hasBeenVisible && <MultiPlatformDemo />}
             </div>
           </motion.div>
@@ -82,15 +83,16 @@ export function DemoSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             transition={{ ...TRANSITIONS.section, delay: TRANSITIONS.staggerDelay * 4 }}
-            className="w-full max-w-md mx-auto lg:max-w-none"
+            className="w-full max-w-sm sm:max-w-md lg:max-w-none lg:flex-1"
           >
-            <div className="mb-4 text-center lg:text-left">
+            <div className="mb-4 text-center">
               <h3 className="text-lg font-semibold">Notes & Curation</h3>
               <p className="text-sm text-muted-foreground">
                 Add personal notes and organize with tags
               </p>
             </div>
-            <div className="w-full overflow-hidden">
+            {/* Fixed height container to prevent layout shift */}
+            <div className="h-[520px] sm:h-[540px] overflow-hidden">
               {hasBeenVisible && <NotesCurationDemo />}
             </div>
           </motion.div>
