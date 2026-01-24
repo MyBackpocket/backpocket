@@ -114,10 +114,10 @@ export default function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-denim/12 text-denim transition-colors group-hover:bg-denim group-hover:text-white">
                 <Globe className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Share if you want</h3>
+              <h3 className="mb-2 text-xl font-semibold">Your public backpocket</h3>
               <p className="text-muted-foreground">
-                Optionally publish select saves at your own subdomain or custom domain. Sharing is
-                always your choice — most people keep everything private.
+                Curate and share your finds at your own subdomain or custom domain. Build a public
+                reading list that reflects your taste.
               </p>
             </div>
 
@@ -126,10 +126,10 @@ export default function HomePage() {
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-amber/15 text-amber transition-colors group-hover:bg-amber group-hover:text-white">
                 <Lock className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-xl font-semibold">Privacy by default</h3>
+              <h3 className="mb-2 text-xl font-semibold">You control visibility</h3>
               <p className="text-muted-foreground">
-                Everything starts private. You choose what to share. Notes and annotations are
-                always yours alone.
+                Every save is private until you decide otherwise. Share individual saves, entire
+                collections, or keep everything to yourself.
               </p>
             </div>
 

@@ -10,8 +10,8 @@ Built as a spiritual successor to Mozilla's Pocket after its shutdown in 2025.
 
 - **Save anything** — Articles, videos, PDFs, links. We preserve metadata and thumbnails automatically.
 - **Stay organized** — Collections, tags, favorites, and archive. Powerful filtering to find what you need.
-- **Privacy by default** — Everything starts private. You choose what to share.
-- **Share via URL** — Publish your collection at `username.backpocket.my` or your own custom domain.
+- **Your public backpocket** — Build a curated reading list at `username.backpocket.my` or your own custom domain.
+- **You control visibility** — Every save starts private. Make individual saves or collections public when you're ready.
 - **RSS included** — Public saves automatically generate an RSS feed for subscribers.
 - **One honest metric** — A simple visitor counter. No cookies, no analytics, no tracking.
 

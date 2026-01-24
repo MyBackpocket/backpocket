@@ -100,36 +100,38 @@ export function PocketSuccessorSection() {
 
             {/* Description */}
             <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-8 max-w-xl">
-              Backpocket picks up where Pocket left off — with a focus on{" "}
-              <span className="text-foreground font-medium">privacy</span>,{" "}
-              <span className="text-foreground font-medium">simplicity</span>, and the option to{" "}
-              <span className="text-foreground font-medium">share your curated finds</span> at your own URL.
+              Backpocket picks up where Pocket left off — with{" "}
+              <span className="text-foreground font-medium">your own public space</span> to share
+              curated finds,{" "}
+              <span className="text-foreground font-medium">simple organization</span>, and{" "}
+              <span className="text-foreground font-medium">full control</span> over what&apos;s
+              public or private.
             </p>
 
             {/* Feature comparison - editorial style */}
             <div className="grid sm:grid-cols-2 gap-4 mb-8">
+              {/* Unique features - stars (now first!) */}
+              {[
+                "Your own subdomain",
+                "Build a public reading list",
+              ].map((label) => (
+                <div key={label} className="flex items-center gap-3 text-sm">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-rust/15 text-rust">
+                    ★
+                  </span>
+                  <span className="text-foreground">{label}</span>
+                </div>
+              ))}
               {/* Core features - checkmarks */}
               {[
                 "Save articles & links",
                 "Read without distractions",
                 "Tags & collections",
-                "Privacy by default",
+                "You control visibility",
               ].map((label) => (
                 <div key={label} className="flex items-center gap-3 text-sm">
                   <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-mint/15 text-[hsl(100_35%_38%)]">
                     ✓
-                  </span>
-                  <span className="text-foreground">{label}</span>
-                </div>
-              ))}
-              {/* Unique features - stars */}
-              {[
-                "Your own subdomain",
-                "Optional public sharing",
-              ].map((label) => (
-                <div key={label} className="flex items-center gap-3 text-sm">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-rust/15 text-rust">
-                    ★
                   </span>
                   <span className="text-foreground">{label}</span>
                 </div>
