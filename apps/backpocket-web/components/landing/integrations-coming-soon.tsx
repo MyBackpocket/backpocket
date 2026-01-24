@@ -252,8 +252,8 @@ export function IntegrationsComingSoon() {
             <h4 className="text-base sm:text-lg font-semibold text-foreground mb-1.5">
               Stream Your Saves
             </h4>
-            <p className="text-xs sm:text-sm text-muted-foreground max-w-[280px] mx-auto">
-              Subscribe to your backpocket feed and stream saves with notes to your channels
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-[300px] mx-auto">
+              Connect our official Slack and Discord bots to stream your saves with notes directly to your channels
             </p>
           </div>
 
