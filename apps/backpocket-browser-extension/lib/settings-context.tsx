@@ -14,7 +14,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { getMySpace, updateAccountSettings } from "./api";
+import { getMySpace, invalidateCache, updateAccountSettings } from "./api";
 import { useAuth } from "./auth";
 import {
   type ExtensionSettings,
@@ -64,6 +64,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         try {
           const token = await getToken();
           if (token) {
+            // Invalidate space cache to ensure we get fresh account settings
+            // This is important when user changes settings on web app
+            await invalidateCache(["space"]);
             const space = await getMySpace(token);
             if (space && localSettings.syncToAccount) {
               localSettings = mergeWithAccountSettings(localSettings, {
