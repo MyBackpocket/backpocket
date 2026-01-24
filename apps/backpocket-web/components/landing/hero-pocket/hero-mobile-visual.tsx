@@ -76,11 +76,18 @@ export function HeroMobileVisual() {
         {/* iPhone Frame */}
         <div className="relative w-[220px] sm:w-[260px] shrink-0">
         <div className="relative rounded-[2.5rem] sm:rounded-[3rem] border-[10px] sm:border-[12px] border-border bg-muted shadow-2xl overflow-hidden">
-          {/* Dynamic Island */}
-          <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-foreground rounded-full z-20" />
+          {/* Dynamic Island with camera details */}
+          <div className="absolute top-2 sm:top-3 left-1/2 -translate-x-1/2 w-20 sm:w-24 h-6 sm:h-7 bg-black rounded-full z-20 flex items-center justify-end pr-1.5 sm:pr-2 gap-1">
+            {/* Face ID sensor */}
+            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-zinc-900 ring-1 ring-zinc-800" />
+            {/* Front camera */}
+            <div className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-zinc-900 ring-1 ring-zinc-800 flex items-center justify-center">
+              <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-zinc-700" />
+            </div>
+          </div>
 
 {/* Screen Content - Fixed height to prevent layout shifts */}
-            <div className="relative bg-background h-[360px] sm:h-[420px] overflow-hidden">
+            <div className="relative bg-background h-[460px] sm:h-[540px] overflow-hidden">
             {/* Status Bar */}
             <div className="flex items-center justify-between px-5 sm:px-6 pt-12 sm:pt-14 pb-2 text-foreground text-xs font-medium">
               <span>9:41</span>
@@ -172,7 +179,7 @@ export function HeroMobileVisual() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  className="absolute inset-0 bg-background px-4 sm:px-5 pt-14 sm:pt-16 pb-4"
+                  className="absolute inset-0 bg-background px-4 sm:px-5 flex items-center justify-center"
                 >
                   <div className="bg-card rounded-2xl p-4 sm:p-5 border border-border shadow-xl">
                     {/* Header */}

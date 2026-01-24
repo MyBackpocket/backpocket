@@ -182,15 +182,15 @@ export const MOBILE_APP_DEMO = {
   /** Time before share sheet appears */
   articleToShareSheet: duration(2000),
   /** Time before app opens */
-  shareSheetToAppOpening: duration(5200),
+  shareSheetToAppOpening: duration(3400),
   /** Time before saved confirmation */
-  appOpeningToSaved: duration(6000),
+  appOpeningToSaved: duration(4000),
   /** Time before complete state */
-  savedToComplete: duration(7200),
+  savedToComplete: duration(5200),
   /** Time before reset to article */
-  completeToReset: duration(10400),
+  completeToReset: duration(8400),
   /** Full loop interval */
-  loopInterval: duration(10800),
+  loopInterval: duration(8800),
   /** Share sheet icon scale animation */
   iconScaleDuration: seconds(400),
   /** Share sheet icon scale delay */

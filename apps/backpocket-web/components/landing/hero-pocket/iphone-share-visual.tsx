@@ -30,8 +30,15 @@ export function IPhoneShareVisual() {
         <div className="relative rounded-[32px] bg-white overflow-hidden">
           {/* Status bar */}
           <div className="relative h-12 bg-[#f5f5f7] flex items-end justify-between px-6 pb-1">
-            {/* Dynamic Island */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-24 h-7 bg-black rounded-full" />
+            {/* Dynamic Island with camera details */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-2 w-24 h-7 bg-black rounded-full flex items-center justify-end pr-2 gap-1">
+              {/* Face ID sensor */}
+              <div className="w-2 h-2 rounded-full bg-zinc-900 ring-1 ring-zinc-800" />
+              {/* Front camera */}
+              <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 ring-1 ring-zinc-800 flex items-center justify-center">
+                <div className="w-1.5 h-1.5 rounded-full bg-zinc-700" />
+              </div>
+            </div>
             <span className="text-[10px] font-semibold text-black">9:41</span>
             <div className="flex items-center gap-1">
               <Wifi className="w-3 h-3 text-black" />
@@ -50,8 +57,8 @@ export function IPhoneShareVisual() {
             </div>
           </div>
 
-          {/* Article content */}
-          <div className="h-[280px] bg-white relative overflow-hidden">
+{/* Article content */}
+            <div className="h-[360px] bg-white relative overflow-hidden">
             {/* Article header image */}
             <div className="h-24 bg-linear-to-br from-amber-100 via-orange-100 to-yellow-50 relative">
               <div className="absolute inset-0 flex items-center justify-center">
