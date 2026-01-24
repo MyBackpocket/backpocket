@@ -14,6 +14,7 @@ import {
   clientSourceValidator,
   domainStatusValidator,
   publicLayoutValidator,
+  themeValidator,
   visibilityValidator,
 } from "./schema";
 
@@ -44,6 +45,7 @@ export const getMySpace = query({
       visibility: space.visibility,
       publicLayout: space.publicLayout,
       defaultSaveVisibility: space.defaultSaveVisibility,
+      theme: space.theme ?? null,
       createdAt: space._creationTime,
       updatedAt: space._creationTime,
     };
@@ -71,6 +73,7 @@ export const ensureSpace = mutation({
       visibility: space.visibility,
       publicLayout: space.publicLayout,
       defaultSaveVisibility: space.defaultSaveVisibility,
+      theme: space.theme ?? null,
       createdAt: space._creationTime,
       updatedAt: space._creationTime,
     };
@@ -86,6 +89,7 @@ export const updateSettings = mutation({
     visibility: v.optional(visibilityValidator),
     publicLayout: v.optional(publicLayoutValidator),
     defaultSaveVisibility: v.optional(visibilityValidator),
+    theme: v.optional(themeValidator),
     clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
@@ -111,6 +115,7 @@ export const updateSettings = mutation({
         visibility: "public" | "private";
         publicLayout: "list" | "grid";
         defaultSaveVisibility: "public" | "private";
+        theme: "light" | "dark" | "system";
       }> = {};
 
       if (args.name !== undefined) {
@@ -137,6 +142,10 @@ export const updateSettings = mutation({
         updates.defaultSaveVisibility = args.defaultSaveVisibility;
         fieldsUpdated.push("defaultSaveVisibility");
       }
+      if (args.theme !== undefined) {
+        updates.theme = args.theme;
+        fieldsUpdated.push("theme");
+      }
 
       await ctx.db.patch(space._id, updates);
 
@@ -157,6 +166,7 @@ export const updateSettings = mutation({
         visibility: updated!.visibility,
         publicLayout: updated!.publicLayout,
         defaultSaveVisibility: updated!.defaultSaveVisibility,
+        theme: updated!.theme ?? null,
         createdAt: updated!._creationTime,
         updatedAt: Date.now(),
       };
@@ -246,6 +256,7 @@ export const updateSlug = mutation({
         visibility: updated!.visibility,
         publicLayout: updated!.publicLayout,
         defaultSaveVisibility: updated!.defaultSaveVisibility,
+        theme: updated!.theme ?? null,
         createdAt: updated!._creationTime,
         updatedAt: Date.now(),
       };
@@ -436,6 +447,7 @@ export const exportAllData = query({
         visibility: space.visibility,
         publicLayout: space.publicLayout,
         defaultSaveVisibility: space.defaultSaveVisibility,
+        theme: space.theme ?? null,
         createdAt: space._creationTime,
       },
       tags: tags.map((tag) => ({

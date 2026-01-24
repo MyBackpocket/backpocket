@@ -42,6 +42,13 @@ export const domainStatusValidator = v.union(
   v.literal("disabled")
 );
 
+// Theme preference (light, dark, or follow system)
+export const themeValidator = v.union(
+  v.literal("light"),
+  v.literal("dark"),
+  v.literal("system")
+);
+
 // Client source for observability (tracks which app made the request)
 export const clientSourceValidator = v.union(
   v.literal("web"),
@@ -60,6 +67,7 @@ export default defineSchema({
     visibility: visibilityValidator,
     publicLayout: publicLayoutValidator,
     defaultSaveVisibility: visibilityValidator,
+    theme: v.optional(themeValidator), // Account-level theme preference
   })
     .index("by_slug", ["slug"])
     .index("by_visibility", ["visibility"]),

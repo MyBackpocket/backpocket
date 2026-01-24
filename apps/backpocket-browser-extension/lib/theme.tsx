@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 
 export type Theme = "light" | "dark" | "system";
 
@@ -11,8 +11,6 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const STORAGE_KEY = "backpocket-theme";
-
 function getSystemTheme(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
@@ -22,22 +20,32 @@ function applyTheme(theme: Theme) {
   document.documentElement.setAttribute("data-theme", resolved);
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+interface ThemeProviderProps {
+  children: ReactNode;
+  /** External theme value (from settings context) */
+  externalTheme?: Theme;
+  /** Callback when theme changes (to sync with settings) */
+  onThemeChange?: (theme: Theme) => void;
+}
+
+export function ThemeProvider({ children, externalTheme, onThemeChange }: ThemeProviderProps) {
+  const [theme, setThemeState] = useState<Theme>(externalTheme ?? "system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(getSystemTheme);
 
-  // Load saved theme on mount
+  // Sync with external theme when it changes
   useEffect(() => {
-    browser.storage.local.get(STORAGE_KEY).then((result) => {
-      const saved = result[STORAGE_KEY] as Theme | undefined;
-      if (saved && ["light", "dark", "system"].includes(saved)) {
-        setThemeState(saved);
-        applyTheme(saved);
-        setResolvedTheme(saved === "system" ? getSystemTheme() : saved);
-      } else {
-        applyTheme("system");
-      }
-    });
+    if (externalTheme !== undefined && externalTheme !== theme) {
+      setThemeState(externalTheme);
+      applyTheme(externalTheme);
+      setResolvedTheme(externalTheme === "system" ? getSystemTheme() : externalTheme);
+    }
+  }, [externalTheme, theme]);
+
+  // Apply theme on mount (only runs once)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally run only on mount
+  useEffect(() => {
+    applyTheme(theme);
+    setResolvedTheme(theme === "system" ? getSystemTheme() : theme);
   }, []);
 
   // Listen for system theme changes
@@ -60,7 +68,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(newTheme);
     applyTheme(newTheme);
     setResolvedTheme(newTheme === "system" ? getSystemTheme() : newTheme);
-    browser.storage.local.set({ [STORAGE_KEY]: newTheme });
+    // Notify parent if callback provided
+    onThemeChange?.(newTheme);
   };
 
   return (

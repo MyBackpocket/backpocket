@@ -71,10 +71,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 /**
  * Get data from cache if valid, otherwise fetch and cache it
  */
-async function getCachedOrFetch<T>(
-  cacheKey: string,
-  fetcher: () => Promise<T>
-): Promise<T> {
+async function getCachedOrFetch<T>(cacheKey: string, fetcher: () => Promise<T>): Promise<T> {
   try {
     const result = await browser.storage.local.get(cacheKey);
     const cached = result[cacheKey] as CachedData<T> | undefined;
@@ -431,6 +428,38 @@ export async function deleteSave(saveId: string, token: string): Promise<void> {
 }
 
 // =============================================================================
+// SETTINGS
+// =============================================================================
+
+/**
+ * Update account settings (syncs to Convex)
+ */
+export async function updateAccountSettings(
+  settings: {
+    defaultSaveVisibility?: "public" | "private";
+    theme?: "light" | "dark" | "system";
+  },
+  token: string
+): Promise<void> {
+  const client = getClient(token);
+
+  try {
+    await client.mutation(api.spaces.updateSettings, {
+      ...settings,
+      clientSource: "extension",
+    });
+
+    // Invalidate space cache since settings changed
+    invalidateCache(["space"]).catch(() => {});
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new ApiError(error.message, "UNKNOWN_ERROR");
+    }
+    throw new ApiError("Failed to update settings");
+  }
+}
+
+// =============================================================================
 // BACKGROUND SCRIPT HELPERS
 // =============================================================================
 
@@ -441,7 +470,7 @@ export async function deleteSave(saveId: string, token: string): Promise<void> {
  */
 export async function checkDuplicateFromBackground(url: string): Promise<boolean> {
   try {
-    const tokenData = await browser.storage.session.get("auth_token") as { auth_token?: string };
+    const tokenData = (await browser.storage.session.get("auth_token")) as { auth_token?: string };
     const token = tokenData?.auth_token;
     if (!token) {
       log("No auth token in session storage");

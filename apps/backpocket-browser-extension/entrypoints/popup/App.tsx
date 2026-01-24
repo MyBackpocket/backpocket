@@ -1,17 +1,19 @@
+import { useCallback, useEffect, useState } from "react";
 import logoImg from "@/assets/img/Backpocket-Logo-128.png";
-import { useEffect } from "react";
+import { SettingsIcon } from "../../components/Icons";
 import { QuickSaveView } from "../../components/QuickSaveView";
-import { ThemePicker } from "../../components/ThemePicker";
+import { SettingsPanel } from "../../components/SettingsPanel";
 import {
   AuthenticatedView,
   AuthLoadingView,
   AuthProvider,
+  syncTokenToStorage,
   UnauthenticatedView,
   UserButton,
-  syncTokenToStorage,
   useAuth,
   useSessionRefresh,
 } from "../../lib/auth";
+import { SettingsProvider, useSettings } from "../../lib/settings-context";
 import { ThemeProvider } from "../../lib/theme";
 
 // Web app URL for sign-in (OAuth doesn't work directly in extension popups)
@@ -70,9 +72,7 @@ function SignedOutView() {
         </h1>
       </div>
 
-      <p className="text-base text-[var(--text-secondary)]">
-        Save links to your personal library
-      </p>
+      <p className="text-base text-[var(--text-secondary)]">Save links to your personal library</p>
 
       <button
         type="button"
@@ -83,12 +83,8 @@ function SignedOutView() {
       </button>
 
       <div className="mt-2 space-y-2">
-        <p className="text-sm text-[var(--text-muted)]">
-          Opens backpocket.my to sign in
-        </p>
-        <p className="text-xs text-[var(--text-muted)]">
-          Your session will sync automatically
-        </p>
+        <p className="text-sm text-[var(--text-muted)]">Opens backpocket.my to sign in</p>
+        <p className="text-xs text-[var(--text-muted)]">Your session will sync automatically</p>
       </div>
 
       <TroubleshootingHint />
@@ -101,11 +97,10 @@ function TroubleshootingHint() {
 
   return (
     <div className="mt-4 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--bg-tertiary)] p-4">
-      <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">
-        Having trouble?
-      </p>
+      <p className="mb-2 text-xs font-medium text-[var(--text-secondary)]">Having trouble?</p>
       <p className="mb-3 text-xs leading-relaxed text-[var(--text-muted)]">
-        If you're already signed in on the web but the extension doesn't recognize you, try refreshing the session.
+        If you're already signed in on the web but the extension doesn't recognize you, try
+        refreshing the session.
       </p>
       <button
         type="button"
@@ -120,6 +115,15 @@ function TroubleshootingHint() {
 }
 
 function SignedInView() {
+  const [view, setView] = useState<"main" | "settings">("main");
+
+  const handleOpenSettings = useCallback(() => setView("settings"), []);
+  const handleCloseSettings = useCallback(() => setView("main"), []);
+
+  if (view === "settings") {
+    return <SettingsPanel onBack={handleCloseSettings} />;
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
@@ -131,7 +135,14 @@ function SignedInView() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <ThemePicker />
+          <button
+            type="button"
+            onClick={handleOpenSettings}
+            className="flex items-center justify-center rounded-[var(--radius-sm)] p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]"
+            aria-label="Settings"
+          >
+            <SettingsIcon className="size-4" />
+          </button>
           <UserButton />
         </div>
       </header>
@@ -141,24 +152,45 @@ function SignedInView() {
   );
 }
 
+/**
+ * Theme bridge component that connects settings context to theme provider.
+ * Must be rendered inside both AuthProvider and SettingsProvider.
+ */
+function ThemedContent() {
+  const { settings, updateSetting } = useSettings();
+
+  const handleThemeChange = useCallback(
+    (theme: "light" | "dark" | "system") => {
+      updateSetting("theme", theme);
+    },
+    [updateSetting]
+  );
+
+  return (
+    <ThemeProvider externalTheme={settings.theme} onThemeChange={handleThemeChange}>
+      <div className="w-[380px] p-4 bg-[var(--bg-primary)]">
+        <AuthLoadingView>
+          <LoadingView />
+        </AuthLoadingView>
+        <UnauthenticatedView>
+          <SignedOutView />
+        </UnauthenticatedView>
+        <AuthenticatedView>
+          <SignedInView />
+        </AuthenticatedView>
+      </div>
+    </ThemeProvider>
+  );
+}
+
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        {/* Sync auth token to session storage for background script */}
-        <TokenSyncer />
-        <div className="w-[380px] p-4 bg-[var(--bg-primary)]">
-          <AuthLoadingView>
-            <LoadingView />
-          </AuthLoadingView>
-          <UnauthenticatedView>
-            <SignedOutView />
-          </UnauthenticatedView>
-          <AuthenticatedView>
-            <SignedInView />
-          </AuthenticatedView>
-        </div>
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      {/* Sync auth token to session storage for background script */}
+      <TokenSyncer />
+      <SettingsProvider>
+        <ThemedContent />
+      </SettingsProvider>
+    </AuthProvider>
   );
 }

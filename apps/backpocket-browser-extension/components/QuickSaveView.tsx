@@ -5,11 +5,11 @@ import {
   createSave,
   deleteSave,
   ensureSpace,
-  getMySpace,
   listCollections,
   listTags,
 } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { useSettings } from "../lib/settings-context";
 import type { Collection, DuplicateSaveInfo, Save, SaveVisibility, Tag } from "../lib/types";
 
 /**
@@ -42,6 +42,7 @@ async function consumePrefillData(): Promise<PrefillData | null> {
   }
   return null;
 }
+
 import {
   AlertCircleIcon,
   CheckIcon,
@@ -69,6 +70,7 @@ function extractDomain(url: string): string {
 
 export const QuickSaveView = memo(function QuickSaveView() {
   const { getToken } = useAuth();
+  const { settings } = useSettings();
 
   // Tab info
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
@@ -80,8 +82,8 @@ export const QuickSaveView = memo(function QuickSaveView() {
   const [duplicateSave, setDuplicateSave] = useState<DuplicateSaveInfo | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Settings and data
-  const [visibility, setVisibility] = useState<SaveVisibility>("private");
+  // Settings and data - use settings context for default visibility
+  const [visibility, setVisibility] = useState<SaveVisibility>(settings.defaultSaveVisibility);
   const [existingTags, setExistingTags] = useState<Tag[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
 
@@ -133,9 +135,12 @@ export const QuickSaveView = memo(function QuickSaveView() {
         // Mark as initiated immediately
         saveInitiatedRef.current = true;
 
-        // Fetch user settings and check for duplicate in parallel
-        const [spaceResult, tagsResult, collectionsResult, duplicateResult] = await Promise.all([
-          getMySpace(token).catch(() => null),
+        // Use visibility from settings context (already loaded)
+        const defaultVisibility = settings.defaultSaveVisibility;
+        setVisibility(defaultVisibility);
+
+        // Fetch tags, collections, and check for duplicate in parallel
+        const [tagsResult, collectionsResult, duplicateResult] = await Promise.all([
           listTags(token).catch(() => [] as Tag[]),
           listCollections(token).catch(() => [] as Collection[]),
           checkDuplicate(currentUrl!, token).catch(() => null),
@@ -145,19 +150,8 @@ export const QuickSaveView = memo(function QuickSaveView() {
         setExistingTags(tagsResult);
         setCollections(collectionsResult);
 
-        // Get default visibility from space or ensure space exists
-        let defaultVisibility: SaveVisibility = "private";
-        if (spaceResult) {
-          defaultVisibility = spaceResult.defaultSaveVisibility;
-        } else {
-          try {
-            const newSpace = await ensureSpace(token);
-            defaultVisibility = newSpace.defaultSaveVisibility;
-          } catch {
-            // Continue with default
-          }
-        }
-        setVisibility(defaultVisibility);
+        // Ensure space exists (for new users)
+        ensureSpace(token).catch(() => {});
 
         // Check for duplicate
         if (duplicateResult) {
@@ -212,7 +206,7 @@ export const QuickSaveView = memo(function QuickSaveView() {
     }
 
     initiateSave();
-  }, [currentUrl, currentTitle, getToken]);
+  }, [currentUrl, currentTitle, getToken, settings.defaultSaveVisibility]);
 
   // Handle delete/undo
   const handleDelete = useCallback(async () => {

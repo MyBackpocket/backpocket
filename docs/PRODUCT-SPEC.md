@@ -762,6 +762,7 @@ Max 100 saves per request.
       "visibility": "public",
       "publicLayout": "grid",
       "defaultSaveVisibility": "private",
+      "theme": "system",
       "createdAt": "2024-01-01T00:00:00.000Z",
       "updatedAt": "2024-01-01T00:00:00.000Z"
     }
@@ -783,19 +784,21 @@ Max 100 saves per request.
     "avatarUrl": "https://...",
     "visibility": "public",
     "publicLayout": "grid",
-    "defaultSaveVisibility": "private"
+    "defaultSaveVisibility": "private",
+    "theme": "dark"
   }
 }
 ```
 
-| Field                   | Type                    | Description                      |
-| ----------------------- | ----------------------- | -------------------------------- |
-| `name`                  | `string`                | Display name for public space    |
-| `bio`                   | `string`                | Short description                |
-| `avatarUrl`             | `string`                | Avatar image URL                 |
-| `visibility`            | `"public" \| "private"` | Space visibility                 |
-| `publicLayout`          | `"list" \| "grid"`      | How saves are displayed publicly |
-| `defaultSaveVisibility` | `"private" \| "public"` | Default visibility for new saves |
+| Field                   | Type                              | Description                      |
+| ----------------------- | --------------------------------- | -------------------------------- |
+| `name`                  | `string`                          | Display name for public space    |
+| `bio`                   | `string`                          | Short description                |
+| `avatarUrl`             | `string`                          | Avatar image URL                 |
+| `visibility`            | `"public" \| "private"`           | Space visibility                 |
+| `publicLayout`          | `"list" \| "grid"`                | How saves are displayed publicly |
+| `defaultSaveVisibility` | `"private" \| "public"`           | Default visibility for new saves |
+| `theme`                 | `"light" \| "dark" \| "system"`   | Account-level theme preference   |
 
 ---
 
@@ -1573,6 +1576,9 @@ type CollectionVisibility = "private" | "public";
 // Public layout preference
 type PublicLayout = "list" | "grid";
 
+// Theme preference
+type Theme = "light" | "dark" | "system";
+
 // Snapshot processing status
 type SnapshotStatus = "pending" | "processing" | "ready" | "failed" | "blocked";
 
@@ -1683,6 +1689,7 @@ interface Space {
   visibility: SpaceVisibility;
   publicLayout: PublicLayout;
   defaultSaveVisibility: SaveVisibility;
+  theme: Theme | null; // Account-level theme preference
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -1811,6 +1818,7 @@ interface SpaceSettingsInput {
   visibility?: SpaceVisibility;
   publicLayout?: PublicLayout;
   defaultSaveVisibility?: SaveVisibility;
+  theme?: Theme;
 }
 
 // Create collection
@@ -2139,14 +2147,32 @@ Android: Intent filter in `app.json`:
 **Components:**
 
 - Popup UI for saving current page
+- Settings panel for preferences
 - Background service worker
 - Content script (if needed)
 
 **Manifest Permissions:**
 
 - `activeTab` — Get current tab URL
-- `storage` — Store user preferences
+- `storage` — Store user preferences and settings
 - Host permission for `backpocket.my`
+
+**Settings Panel:**
+
+The extension includes a settings panel accessible via the gear icon in the header:
+
+- **Default Save Visibility:** Choose between public or private for new saves
+- **Theme:** Light, dark, or system preference
+- **Sync to Account:** Toggle to sync settings changes to the Convex account
+
+Settings are stored locally in `browser.storage.local` and optionally synced to the account when the sync toggle is enabled. This allows settings to persist across devices when synced.
+
+**Settings Flow:**
+
+1. On popup open, settings are loaded from local storage
+2. If sync is enabled, account settings are merged (account takes precedence)
+3. Changes are saved to local storage immediately
+4. If sync is enabled, changes are also pushed to the account
 
 **Quick Save Flow:**
 
@@ -2242,6 +2268,19 @@ Each list should have meaningful empty states with:
 ---
 
 ## 9. Changelog
+
+### 2026-01-24
+
+#### Added
+
+- **Extension Settings Panel:** New settings panel in browser extension with:
+  - Default save visibility preference
+  - Theme selection (light/dark/system)
+  - Sync to account toggle
+- **Account-Level Theme:** Added `theme` field to spaces table for syncing theme preference across devices
+- **Settings Sync:** Extension settings can optionally sync to/from the Convex account
+
+---
 
 ### 2026-01-13
 

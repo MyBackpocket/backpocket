@@ -37,22 +37,24 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 function setIcon(tabId: number, isSaved: boolean) {
   // Use paths without leading slash for WXT compatibility
-  browser.action.setIcon({
-    tabId,
-    path: isSaved
-      ? {
-          16: "icon/saved/16.png",
-          32: "icon/saved/32.png",
-          48: "icon/saved/48.png",
-        }
-      : {
-          16: "icon/default/16.png",
-          32: "icon/default/32.png",
-          48: "icon/default/48.png",
-        },
-  }).catch((err) => {
-    logError("Failed to set icon:", err);
-  });
+  browser.action
+    .setIcon({
+      tabId,
+      path: isSaved
+        ? {
+            16: "icon/saved/16.png",
+            32: "icon/saved/32.png",
+            48: "icon/saved/48.png",
+          }
+        : {
+            16: "icon/default/16.png",
+            32: "icon/default/32.png",
+            48: "icon/default/48.png",
+          },
+    })
+    .catch((err) => {
+      logError("Failed to set icon:", err);
+    });
 
   // Also set a badge to make saved state more visible
   if (isSaved) {
@@ -78,7 +80,7 @@ function setDefaultIcon(tabId: number) {
  */
 async function updateIconForTab(tabId: number, url: string) {
   log("Checking icon for:", url);
-  
+
   // Normalize URL for consistent cache keys (strips tracking params, www, etc.)
   const normalizedUrl = normalizeUrl(url);
 

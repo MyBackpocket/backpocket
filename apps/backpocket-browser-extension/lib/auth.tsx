@@ -4,8 +4,8 @@ import {
   SignedOut,
   SignInButton,
   UserButton,
-  useAuth as useClerkAuth,
   useClerk,
+  useAuth as useClerkAuth,
 } from "@clerk/chrome-extension";
 import { type ReactNode, useCallback, useState } from "react";
 

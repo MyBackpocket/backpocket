@@ -91,8 +91,10 @@ Feature parity tracker across Backpocket platforms.
 | Feature | Web | Mobile | Extension | Notes |
 |---------|-----|--------|-----------|-------|
 | View profile | ✅ | ✅ | ❌ | |
-| Default save visibility | ✅ | ✅ | ✅ | Uses user's default |
-| Theme preference | ✅ | ✅ | ✅ | Follows system preference |
+| Default save visibility | ✅ | ✅ | ✅ | Configurable in extension settings |
+| Theme preference | ✅ | ✅ | ✅ | Light/dark/system selector |
+| Settings panel | ✅ | ✅ | ✅ | Extension: gear icon in header |
+| Sync settings to account | ✅ | ✅ | ✅ | Extension: toggle to sync changes |
 | Sign out | ✅ | ✅ | ✅ | |
 
 ---
@@ -119,6 +121,7 @@ Feature parity tracker across Backpocket platforms.
 | One-click save | N/A | N/A | ✅ | Auto-saves on popup open |
 | Post-save quick actions | N/A | N/A | ✅ | Tags, collections, visibility, note |
 | Popup interface | N/A | N/A | ✅ | Status-based flow (saving → success) |
+| Settings panel | N/A | N/A | ✅ | Visibility, theme, sync toggle |
 | Context menu | N/A | N/A | ✅ | Right-click to save |
 | Badge notifications | N/A | N/A | ✅ | Success/pending indicators |
 
@@ -147,7 +150,8 @@ Feature parity tracker across Backpocket platforms.
 | `space.checkDuplicate` | ✅ | Pre-save duplicate check |
 | `space.listTags` | ✅ | Tag suggestions |
 | `space.listCollections` | ✅ | Collection picker |
-| `space.getMySpace` | ✅ | Default visibility |
+| `space.getMySpace` | ✅ | Default visibility, theme |
+| `space.updateSettings` | ✅ | Sync settings to account |
 | `space.ensureSpace` | ✅ | Create space if needed |
 
 ### Mobile Priority Endpoints
