@@ -8,6 +8,7 @@ import {
   useClerk,
   useUser,
 } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -32,10 +33,19 @@ export function SignedOut({ children }: { children: React.ReactNode }) {
 /**
  * Shows children while Clerk is loading auth state.
  * Use this to display skeletons that prevent CLS.
+ * Includes a timeout fallback to hide skeletons if Clerk takes too long
+ * (e.g., network issues, ad blockers, rate limiting on hard refresh).
  */
-export function AuthLoading({ children }: { children: React.ReactNode }) {
-  if (!hasClerk) {
-    // Without Clerk, never show loading state
+export function AuthLoading({ children, timeoutMs = 3000 }: { children: React.ReactNode; timeoutMs?: number }) {
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setTimedOut(true), timeoutMs);
+    return () => clearTimeout(timer);
+  }, [timeoutMs]);
+
+  if (!hasClerk || timedOut) {
+    // Without Clerk or after timeout, don't show loading state
     return null;
   }
   return <ClerkLoading>{children}</ClerkLoading>;

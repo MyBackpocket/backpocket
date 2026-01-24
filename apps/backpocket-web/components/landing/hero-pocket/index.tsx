@@ -2,9 +2,8 @@
 
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
+import { SignedIn, SignedOut } from "@/components/auth-components";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
 import { HeroMobileVisual } from "./hero-mobile-visual";
 import { PocketVisual } from "./pocket-visual";
@@ -39,12 +38,10 @@ export function HeroPocket() {
               your favorites with friends.
             </p>
 
-            {/* CTA buttons - tighter spacing */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <AuthLoading>
-                <Skeleton className="h-12 w-[160px] rounded-xl" />
-                <Skeleton className="h-12 w-[130px] rounded-xl" />
-              </AuthLoading>
+            {/* CTA buttons - reserve height to prevent CLS when auth loads */}
+            {/* Mobile: 2 stacked buttons (48px each) + gap (12px) = 108px */}
+            {/* Desktop: single row of 48px buttons */}
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 min-h-[108px] sm:min-h-12">
               <SignedOut>
                 <Link href={routes.signUp}>
                   <Button

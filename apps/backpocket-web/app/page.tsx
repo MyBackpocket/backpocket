@@ -2,7 +2,7 @@ import { ArrowRight, Bookmark, Eye, FolderOpen, Globe, Lock, Rss } from "lucide-
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { AnimatedLogo } from "@/components/animated-logo";
-import { AuthLoading, SignedIn, SignedOut } from "@/components/auth-components";
+import { SignedIn, SignedOut } from "@/components/auth-components";
 import { HeroPocket } from "@/components/landing";
 import { MobileDomainBanner } from "@/components/mobile-domain-banner";
 
@@ -23,7 +23,6 @@ const PocketSuccessorSection = dynamic(
 import { Logo } from "@/components/logo";
 import { ThemeSwitcher, ThemeSwitcherFloating } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { routes } from "@/lib/constants/routes";
 
 export default function HomePage() {
@@ -34,13 +33,8 @@ export default function HomePage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <AnimatedLogo className="min-w-0 shrink" />
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-4 shrink-0 min-h-8">
             <ThemeSwitcher className="hidden sm:flex" />
-            {/* Skeleton while Clerk loads */}
-            <AuthLoading>
-              <Skeleton className="h-8 w-[60px] rounded-md" />
-              <Skeleton className="h-8 w-[92px] rounded-md" />
-            </AuthLoading>
             <SignedOut>
               <Link href={routes.signIn}>
                 <Button variant="ghost" size="sm">
