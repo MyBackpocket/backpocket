@@ -147,8 +147,8 @@ export function BrowserExtensionDemo() {
                 <div
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl backdrop-blur-sm border ${
                     phase === "saved" || phase === "appearing"
-                      ? "bg-mint/95 text-white border-mint/50"
-                      : "bg-card/95 border-border text-foreground"
+                      ? "bg-[hsl(100_35%_38%)] text-white border-[hsl(100_35%_38%)]/50"
+                      : "bg-card border-border text-foreground"
                   }`}
                 >
                   {phase === "saved" || phase === "appearing" ? (

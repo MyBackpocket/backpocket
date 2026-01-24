@@ -99,7 +99,7 @@ export default function HomePage() {
 
             {/* Feature 2 */}
             <div className="group rounded-2xl border bg-card p-8 shadow-denim transition-all hover:shadow-denim-lg hover:-translate-y-1">
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/15 text-mint transition-colors group-hover:bg-mint group-hover:text-white">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-mint/15 text-mint transition-colors group-hover:bg-[hsl(100_35%_38%)] group-hover:text-white">
                 <FolderOpen className="h-6 w-6" />
               </div>
               <h3 className="mb-2 text-xl font-semibold">Stay organized</h3>

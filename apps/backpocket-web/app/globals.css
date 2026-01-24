@@ -32,7 +32,7 @@
 
   /* Primary = Rust Orange for CTAs */
   --primary: var(--rust-orange);
-  --primary-foreground: 40 43% 97%;
+  --primary-foreground: 0 0% 100%; /* Pure white for AA contrast with rust orange */
 
   /* Secondary = Faded Denim */
   --secondary: 202 25% 92%;

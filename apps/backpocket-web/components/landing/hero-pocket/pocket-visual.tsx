@@ -61,7 +61,7 @@ export function PocketVisual() {
           <div
             className={`flex items-center gap-2 px-3 py-2 rounded-lg shadow-xl text-xs font-medium ${
               phase === "saved"
-                ? "bg-mint text-white"
+                ? "bg-[hsl(100_35%_38%)] text-white"
                 : "bg-card border border-border text-foreground"
             }`}
           >

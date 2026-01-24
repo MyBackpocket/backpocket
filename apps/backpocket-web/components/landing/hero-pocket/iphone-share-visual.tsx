@@ -185,7 +185,7 @@ export function IPhoneShareVisual() {
                 isSaved ? "opacity-100 scale-100" : "opacity-0 scale-95"
               }`}
             >
-              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-mint text-white shadow-lg shadow-mint/30">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-[hsl(100_35%_38%)] text-white shadow-lg shadow-mint/30">
                 <Check className="w-3.5 h-3.5" />
                 <span className="text-xs font-semibold whitespace-nowrap">Saved!</span>
               </div>
