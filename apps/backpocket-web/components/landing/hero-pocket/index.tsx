@@ -37,9 +37,9 @@ export function HeroPocket() {
 
             {/* Subhead - simple and clear */}
             <p className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed">
-              A bookmark manager for people who find interesting things online.{" "}
-              <span className="text-foreground font-medium">Save articles and links</span> to read
-              when you have time, and share your favorites with friends.
+              Collect the best of Reddit, Twitter, YouTube — or anywhere on the internet.{" "}
+              <span className="text-foreground font-medium">Read when you have time</span>, share
+              your favorites with friends.
             </p>
 
             {/* CTA buttons - tighter spacing */}
