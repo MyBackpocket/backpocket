@@ -152,13 +152,7 @@ export function BrowserExtensionDemo() {
                 >
                   {phase === "saved" || phase === "appearing" ? (
                     <>
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 20, delay: 0.1 }}
-                      >
-                        <Check className="w-5 h-5" />
-                      </motion.div>
+                      <Check className="w-5 h-5" />
                       <div className="text-sm font-medium">Saved to backpocket!</div>
                     </>
                   ) : (
