@@ -89,11 +89,11 @@ export const TRANSITIONS = {
 
 export const ANIMATED_LOGO = {
   /** How long "backpocket" shows before first cycle */
-  initialDelay: duration(2000),
+  initialDelay: duration(2500),
   /** How long each domain shows before cycling */
-  cycleDelay: duration(2800),
+  cycleDelay: duration(2000),
   /** Duration of the morph transition between domains */
-  morphDuration: duration(220),
+  morphDuration: duration(250),
 } as const;
 
 // =============================================================================

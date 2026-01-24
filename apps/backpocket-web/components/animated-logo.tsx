@@ -9,19 +9,9 @@ import { ANIMATED_LOGO } from "@/lib/constants/animations";
 import { cn } from "@/lib/utils";
 
 const CYCLE_DOMAINS = [
-  { text: "backpocket", isProduct: true, isCustom: false, href: "/" },
-  {
-    text: "mario.backpocket.my",
-    isProduct: false,
-    isCustom: false,
-    href: "https://mario.backpocket.my",
-  },
-  {
-    text: "backpocket.mariolopez.org",
-    isProduct: false,
-    isCustom: true,
-    href: "https://backpocket.mariolopez.org",
-  },
+  { text: "backpocket", isCustom: false, href: "/" },
+  { text: "mario.backpocket.my", isCustom: false, href: "https://mario.backpocket.my" },
+  { text: "backpocket.mariolopez.org", isCustom: true, href: "https://backpocket.mariolopez.org" },
 ] as const;
 
 // Tailwind lg breakpoint - matches when mobile hero visual appears
@@ -72,7 +62,7 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
     return () => clearTimeout(timeout);
   }, [currentIndex, isPaused, isMobile, advanceToNext]);
 
-  const isExternal = !current.isProduct;
+  const isExternal = currentIndex !== 0;
   const LinkComponent = isExternal ? "a" : Link;
   const linkProps = isExternal
     ? { href: current.href, target: "_blank", rel: "noopener noreferrer" }
@@ -108,20 +98,21 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
             phase === "visible" && "opacity-100 translate-y-0 blur-0"
           )}
         >
-          {current.isProduct ? (
-            // Product name styling
-            <span className="font-semibold font-sans text-lg text-foreground">backpocket</span>
-          ) : (
-            // Domain styling with visual treatment
+          <span
+            className="font-semibold transition-colors"
+            style={{
+              color:
+                currentIndex === 0
+                  ? "hsl(200 21% 45%)" // denim blue for base
+                  : current.isCustom
+                    ? "hsl(100 30% 65%)" // mint
+                    : "hsl(21 58% 51%)", // rust
+            }}
+          >
+            {current.text.split(".")[0]}
+          </span>
+          {current.text.includes(".") && (
             <>
-              <span
-                className={cn(
-                  "font-semibold transition-colors",
-                  current.isCustom ? "text-mint" : "text-rust"
-                )}
-              >
-                {current.text.split(".")[0]}
-              </span>
               <span className="font-semibold text-muted-foreground/60">.</span>
               <span className="font-semibold text-muted-foreground">
                 {current.text.split(".").slice(1).join(".")}
@@ -130,16 +121,14 @@ export function AnimatedLogo({ className, paused = false }: AnimatedLogoProps) {
           )}
         </span>
 
-        {/* Dashed underline that appears for domains - matches denim stitching aesthetic */}
+        {/* Dashed underline - only for domain URLs */}
         <span
           className="absolute bottom-0 left-0 border-b-2 border-dashed transition-all duration-500 ease-out"
           style={{
-            width: current.isProduct ? 0 : "100%",
-            borderBottomColor: current.isProduct
-              ? "transparent"
-              : current.isCustom
-                ? "hsl(100 30% 65%)" // mint
-                : "hsl(21 58% 51%)", // rust
+            width: currentIndex === 0 ? 0 : "100%",
+            borderBottomColor: current.isCustom
+              ? "hsl(100 30% 65%)" // mint
+              : "hsl(21 58% 51%)", // rust
           }}
         />
       </span>
