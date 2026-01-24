@@ -5,75 +5,64 @@ import { useCallback, useEffect, useState } from "react";
 import { ANIMATED_LOGO } from "@/lib/constants/animations";
 import { cn } from "@/lib/utils";
 
+// Only cycle through the domain examples (skip the product name)
 const CYCLE_DOMAINS = [
-  { text: "backpocket", isProduct: true, isCustom: false },
-  { text: "mario.backpocket.my", isProduct: false, isCustom: false },
-  { text: "backpocket.mariolopez.org", isProduct: false, isCustom: true },
+  { text: "mario.backpocket.my", isCustom: false },
+  { text: "backpocket.mariolopez.org", isCustom: true },
 ] as const;
 
 /**
  * Mobile-only banner that appears below the navbar to showcase
  * the subdomain/custom domain feature. Syncs with AnimatedLogo timing.
+ * Banner stays fixed and opaque - only the text content swaps.
  */
 export function MobileDomainBanner() {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState<"visible" | "morphing">("visible");
 
   const current = CYCLE_DOMAINS[currentIndex];
 
   const advanceToNext = useCallback(() => {
-    setPhase("morphing");
-    setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % CYCLE_DOMAINS.length);
-      setPhase("visible");
-    }, ANIMATED_LOGO.morphDuration);
+    setCurrentIndex((prev) => (prev + 1) % CYCLE_DOMAINS.length);
   }, []);
 
   useEffect(() => {
+    // Start cycling after initial delay, then use cycle delay
     const delay =
       currentIndex === 0 ? ANIMATED_LOGO.initialDelay : ANIMATED_LOGO.cycleDelay;
     const timeout = setTimeout(advanceToNext, delay);
     return () => clearTimeout(timeout);
   }, [currentIndex, advanceToNext]);
 
-  // Only show banner for non-product domains (subdomains and custom domains)
-  const isVisible = !current.isProduct && phase === "visible";
-
   return (
     <div
       className={cn(
-        // Mobile only - hidden on lg and above (matches when mobile hero visual appears)
+        // Mobile only - hidden on lg and above
         "lg:hidden",
         // Fixed positioning below navbar
-        "fixed top-16 left-0 right-0 z-40",
-        // Transitions
-        "transition-all duration-300 ease-out",
-        // Visibility
-        isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 -translate-y-2 pointer-events-none"
+        "fixed top-16 left-0 right-0 z-40"
       )}
     >
       <div
         className={cn(
           "mx-auto flex items-center justify-center gap-2 px-4 py-2",
-          "border-b bg-background/95 backdrop-blur-sm",
-          // Color based on domain type
-          current.isCustom
-            ? "border-mint/20 bg-mint/5"
-            : "border-rust/20 bg-rust/5"
+          // Opaque background with solid border
+          "border-b bg-background",
+          current.isCustom ? "border-mint/30" : "border-rust/30"
         )}
       >
         {/* Sparkle icon for custom domains */}
-        {current.isCustom && (
-          <Sparkles className="w-3.5 h-3.5 text-mint animate-pulse shrink-0" />
-        )}
+        <Sparkles
+          className={cn(
+            "w-3.5 h-3.5 shrink-0 transition-colors duration-200",
+            current.isCustom ? "text-mint" : "text-rust"
+          )}
+        />
 
         {/* Domain display */}
         <span className="font-mono text-sm truncate">
           <span
             className={cn(
-              "font-semibold",
+              "font-semibold transition-colors duration-200",
               current.isCustom ? "text-mint" : "text-rust"
             )}
           >
@@ -89,19 +78,13 @@ export function MobileDomainBanner() {
         <span
           className={cn(
             "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full whitespace-nowrap shrink-0",
+            "transition-colors duration-200",
             current.isCustom
               ? "bg-mint/15 text-mint border border-mint/30"
               : "bg-rust/15 text-rust border border-rust/30"
           )}
         >
-          {current.isCustom ? (
-            <>
-              <Sparkles className="w-2.5 h-2.5" />
-              your domain
-            </>
-          ) : (
-            "free subdomain"
-          )}
+          {current.isCustom ? "your domain" : "free subdomain"}
         </span>
       </div>
     </div>
