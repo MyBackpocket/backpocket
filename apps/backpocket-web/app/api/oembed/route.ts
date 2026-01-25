@@ -32,7 +32,7 @@ export async function GET(request: Request) {
 
   try {
     // Resolve space
-    let space: { id: string; slug: string; name: string } | null;
+    let space: { id: string; slug: string; name: string } | null = null;
     if (spaceSlug) {
       space = await fetchQuery(api.public.resolveSpaceBySlug, {
         slug: spaceSlug,

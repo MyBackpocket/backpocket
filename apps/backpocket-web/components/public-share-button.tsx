@@ -112,7 +112,7 @@ export function PublicShareButton({ title, url }: PublicShareButtonProps) {
         </DropdownMenuItem>
 
         <DropdownMenuItem
-          onClick={() => openInNewTab(socialShareUrls.linkedin(shareUrl, title))}
+          onClick={() => openInNewTab(socialShareUrls.linkedin(shareUrl))}
           className="gap-2"
         >
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
