@@ -7,3 +7,9 @@ export {
   type TwitterUrlInfo,
 } from "./twitter";
 export { extractDomain, normalizeUrl, urlsMatch } from "./url";
+export {
+  getDisplayDomain,
+  getShareUrl,
+  socialShareUrls,
+  type ShareUrlOptions,
+} from "./share";

@@ -68,6 +68,8 @@ export default defineSchema({
     publicLayout: publicLayoutValidator,
     defaultSaveVisibility: visibilityValidator,
     theme: v.optional(themeValidator), // Account-level theme preference
+    // Default domain for share URLs: null = subdomain, "custom:domain.com" = custom domain
+    defaultDomain: v.optional(v.string()),
   })
     .index("by_slug", ["slug"])
     .index("by_visibility", ["visibility"]),

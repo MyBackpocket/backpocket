@@ -1,3 +1,4 @@
+import { getShareUrl } from "@backpocket/utils";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ApiError,
@@ -5,6 +6,7 @@ import {
   createSave,
   deleteSave,
   ensureSpace,
+  getMySpace,
   listCollections,
   listTags,
 } from "../lib/api";
@@ -48,6 +50,7 @@ import {
   CheckIcon,
   ClockIcon,
   ExternalLinkIcon,
+  LinkIcon,
   Loader2Icon,
   RotateCcwIcon,
   TrashIcon,
@@ -89,6 +92,11 @@ export const QuickSaveView = memo(function QuickSaveView() {
 
   // Delete state
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Copy link state
+  const [spaceSlug, setSpaceSlug] = useState<string | null>(null);
+  const [defaultDomain, setDefaultDomain] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Prevent double saves
   const saveInitiatedRef = useRef(false);
@@ -139,16 +147,23 @@ export const QuickSaveView = memo(function QuickSaveView() {
         const defaultVisibility = settings.defaultSaveVisibility;
         setVisibility(defaultVisibility);
 
-        // Fetch tags, collections, and check for duplicate in parallel
-        const [tagsResult, collectionsResult, duplicateResult] = await Promise.all([
+        // Fetch tags, collections, space, and check for duplicate in parallel
+        const [tagsResult, collectionsResult, duplicateResult, spaceResult] = await Promise.all([
           listTags(token).catch(() => [] as Tag[]),
           listCollections(token).catch(() => [] as Collection[]),
           checkDuplicate(currentUrl!, token).catch(() => null),
+          getMySpace(token).catch(() => null),
         ]);
 
         // Store fetched data
         setExistingTags(tagsResult);
         setCollections(collectionsResult);
+
+        // Store space info for share URL generation
+        if (spaceResult) {
+          setSpaceSlug(spaceResult.slug);
+          setDefaultDomain((spaceResult as { defaultDomain?: string | null }).defaultDomain ?? null);
+        }
 
         // Ensure space exists (for new users)
         ensureSpace(token).catch(() => {});
@@ -288,6 +303,29 @@ export const QuickSaveView = memo(function QuickSaveView() {
   const domain = useMemo(() => (currentUrl ? extractDomain(currentUrl) : null), [currentUrl]);
   const webAppUrl = import.meta.env.VITE_WEB_APP_URL || "https://backpocket.my";
 
+  // Generate share URL for the saved item
+  const shareUrl = useMemo(() => {
+    if (!savedItem || !spaceSlug) return null;
+    return getShareUrl({
+      saveId: savedItem.id,
+      spaceSlug,
+      defaultDomain,
+    });
+  }, [savedItem, spaceSlug, defaultDomain]);
+
+  // Handle copy link to clipboard
+  const handleCopyLink = useCallback(async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      console.error("Failed to copy to clipboard");
+    }
+  }, [shareUrl]);
+
   return (
     <div className="flex flex-col items-center gap-2.5">
       {/* Loading State */}
@@ -345,7 +383,32 @@ export const QuickSaveView = memo(function QuickSaveView() {
           </div>
 
           {/* Bottom actions */}
-          <div className="mt-2 flex items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+            {/* Copy link button - only show when public */}
+            {visibility === "public" && shareUrl && (
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                className={`inline-flex items-center gap-1.5 rounded-[var(--radius-full)] border px-3 py-1.5 text-xs font-medium transition-all ${
+                  copied
+                    ? "border-[var(--success)] bg-[var(--success-bg)] text-[var(--success)]"
+                    : "border-[var(--border)] bg-[var(--bg-muted)] text-[var(--text-muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <CheckIcon className="size-3" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="size-3" />
+                    <span>Copy link</span>
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Delete/Undo button */}
             <button
               type="button"

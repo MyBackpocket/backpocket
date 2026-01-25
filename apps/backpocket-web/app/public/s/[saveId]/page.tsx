@@ -11,11 +11,13 @@ import {
   Rss,
   User,
 } from "lucide-react";
+import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
 import { LogoIcon } from "@/components/logo";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { PublicShareButton } from "@/components/public-share-button";
 import { ScrollNavigator } from "@/components/scroll-navigator";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +81,99 @@ async function getSaveData(spaceSlug: string, saveId: string) {
     console.error("Error fetching save data:", error);
     return { space: null, save: null, snapshot: null as SnapshotData | null };
   }
+}
+
+// Helper to strip markdown for clean preview text
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/[#*_~`>\[\]()!]/g, "") // Remove markdown syntax
+    .replace(/\n+/g, " ") // Collapse newlines to spaces
+    .trim();
+}
+
+// Helper to truncate text
+function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength - 3)}...`;
+}
+
+/**
+ * Generate dynamic metadata for public save pages.
+ * Includes OG tags, Twitter cards, and oEmbed discovery for rich link previews.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ saveId: string }>;
+}): Promise<Metadata> {
+  const { saveId } = await params;
+  const headersList = await headers();
+  const spaceSlug = headersList.get(SPACE_SLUG_HEADER);
+
+  if (!spaceSlug) {
+    return { title: "Not Found" };
+  }
+
+  const { space, save } = await getSaveData(spaceSlug, saveId);
+
+  if (!save || !space) {
+    return { title: "Not Found" };
+  }
+
+  const title = save.title || "Untitled Save";
+
+  // Prioritize user's note over scraped description
+  // Notes add personal context that makes shares more meaningful
+  const description = save.note
+    ? truncateText(stripMarkdown(save.note), 200)
+    : save.description || `Saved from ${getDomainFromUrl(save.url)}`;
+
+  // Build canonical URL - determine domain based on custom domain or subdomain
+  const isCustomDomain = spaceSlug.startsWith("custom:");
+  const domain = isCustomDomain
+    ? spaceSlug.replace("custom:", "")
+    : `${spaceSlug}.backpocket.my`;
+  const canonicalUrl = `https://${domain}/s/${saveId}`;
+
+  // OG image URL (generated dynamically)
+  const ogImageUrl = `https://${domain}/api/og/save/${saveId}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      type: "article",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      siteName: `${space.name}'s Backpocket`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImageUrl],
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      types: {
+        // oEmbed discovery for Slack, Discord, and other platforms
+        "application/json+oembed": `/api/oembed?url=${encodeURIComponent(canonicalUrl)}`,
+      },
+    },
+    other: {
+      // Theme color for Discord embed sidebar
+      "theme-color": "#3B82F6",
+    },
+  };
 }
 
 export default async function PublicSavePermalinkPage({
@@ -146,7 +241,8 @@ export default async function PublicSavePermalinkPage({
               <ArrowLeft className="h-4 w-4" />
               <span>Back to {space?.name || "space"}</span>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <PublicShareButton title={save?.title || "Shared link"} />
               <Link
                 href="/rss.xml"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

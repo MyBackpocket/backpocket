@@ -3,9 +3,9 @@
  * Shows a single save with all its details and actions
  */
 
+import { getShareUrl } from "@backpocket/utils";
 import * as Haptics from "expo-haptics";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import * as Sharing from "expo-sharing";
 import {
   Archive,
   ArrowUp,
@@ -20,9 +20,11 @@ import {
   Eye,
   EyeOff,
   FolderOpen,
+  Lock,
   Pencil,
   Plus,
   RefreshCw,
+  Share2,
   Sparkles,
   Star,
   Tag,
@@ -30,6 +32,7 @@ import {
   User,
   X,
 } from "lucide-react-native";
+import { Share } from "react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -61,7 +64,7 @@ import { Input } from "@/components/ui/input";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { brandColors, radii } from "@/constants/theme";
 import { useThemeColors } from "@/hooks/use-theme-color";
-import { useCreateCollection, useRequestSaveSnapshot } from "@/lib/convex/hooks";
+import { useCreateCollection, useGetMySpace, useRequestSaveSnapshot, useUpdateSave as useUpdateSaveMutation } from "@/lib/convex/hooks";
 import {
   useDeleteSave,
   useGetSave,
@@ -1109,6 +1112,10 @@ export default function SaveDetailScreen() {
   const { width } = useWindowDimensions();
   const { settings } = useSettings();
 
+  // Get space info for share URL
+  const mySpace = useGetMySpace();
+  const updateSaveForShare = useUpdateSaveMutation();
+
   // Offline support
   const offlineEnabled = settings.offline.enabled;
 
@@ -1191,17 +1198,63 @@ export default function SaveDetailScreen() {
     openUrl(save.url);
   }, [save, openUrl]);
 
-  const _handleShare = useCallback(async () => {
-    if (!save) return;
-    try {
-      if (await Sharing.isAvailableAsync()) {
-        // Note: Sharing.shareAsync is for files, use native share for URLs
-        await Sharing.shareAsync(save.url);
-      }
-    } catch (_error) {
-      console.error("Share failed:", _error);
+  // Generate share URL if space is available
+  const shareUrl = useMemo(() => {
+    if (!save || !mySpace) return null;
+    return getShareUrl({
+      saveId: save.id,
+      spaceSlug: mySpace.slug,
+      defaultDomain: mySpace.defaultDomain,
+    });
+  }, [save, mySpace]);
+
+  const handleShare = useCallback(async () => {
+    if (!save || !shareUrl) return;
+
+    // Check if save is private - prompt to make public
+    if (save.visibility === "private") {
+      const hasNote = !!save.note;
+      const message = hasNote
+        ? "Make it public to share? Your note will also be visible in the link preview."
+        : "Make it public to share with others?";
+
+      Alert.alert("This save is private", message, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Make Public & Share",
+          onPress: async () => {
+            try {
+              await updateSaveForShare({
+                id: save.id as any,
+                visibility: "public",
+              });
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // Now share
+              await Share.share({
+                message: save.title || "Check this out",
+                url: shareUrl,
+              });
+            } catch {
+              Alert.alert("Error", "Failed to make save public");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            }
+          },
+        },
+      ]);
+      return;
     }
-  }, [save]);
+
+    // Save is already public - share directly
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await Share.share({
+        message: save.title || "Check this out",
+        url: shareUrl,
+      });
+    } catch (error) {
+      console.error("Share failed:", error);
+    }
+  }, [save, shareUrl, updateSaveForShare]);
 
   const handleDelete = useCallback(() => {
     if (!save) return;
@@ -1443,12 +1496,27 @@ export default function SaveDetailScreen() {
             onPress={handleToggleFavorite}
           >
             <Star
-              size={24}
+              size={22}
               color={save.isFavorite ? brandColors.amber : colors.mutedForeground}
               fill={save.isFavorite ? brandColors.amber : "transparent"}
             />
             <Text style={[styles.quickActionText, { color: colors.text }]}>
               {save.isFavorite ? "Favorited" : "Favorite"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.quickAction, { backgroundColor: colors.card }]}
+            onPress={handleShare}
+            disabled={!mySpace}
+          >
+            {save.visibility === "private" ? (
+              <Lock size={22} color={colors.mutedForeground} />
+            ) : (
+              <Share2 size={22} color={colors.mutedForeground} />
+            )}
+            <Text style={[styles.quickActionText, { color: colors.text }]}>
+              Share
             </Text>
           </TouchableOpacity>
 
@@ -1467,7 +1535,7 @@ export default function SaveDetailScreen() {
             disabled={isRefreshing}
           >
             <RefreshCw
-              size={24}
+              size={22}
               color={isRefreshing ? brandColors.amber : colors.mutedForeground}
               style={isRefreshing ? { opacity: 0.7 } : undefined}
             />
@@ -1477,7 +1545,7 @@ export default function SaveDetailScreen() {
                 { color: isRefreshing ? brandColors.amber : colors.text },
               ]}
             >
-              {isRefreshing ? "Refreshing..." : "Refresh"}
+              Refresh
             </Text>
           </TouchableOpacity>
 
@@ -1485,7 +1553,7 @@ export default function SaveDetailScreen() {
             style={[styles.quickAction, { backgroundColor: colors.card }]}
             onPress={handleOpenUrl}
           >
-            <ExternalLink size={24} color={colors.mutedForeground} />
+            <ExternalLink size={22} color={colors.mutedForeground} />
             <Text style={[styles.quickActionText, { color: colors.text }]}>Open</Text>
           </TouchableOpacity>
         </View>

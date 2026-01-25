@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy
           </h1>
           <p className="text-lg text-muted-foreground">
-            Last updated: January 23, 2026
+            Last updated: January 24, 2026
           </p>
 
           <hr className="my-8" />
@@ -202,7 +202,7 @@ export default function PrivacyPolicyPage() {
           </section>
 
           <section>
-            <h2>Public Spaces</h2>
+            <h2>Public Spaces and Sharing</h2>
             <p>
               If you choose to make your space or individual saves public, that
               content becomes visible to anyone with the URL. Public content
@@ -214,9 +214,28 @@ export default function PrivacyPolicyPage() {
               <li>Public collections and their contents</li>
               <li>A visitor counter showing total views</li>
             </ul>
+
+            <h3>Link Previews and Social Sharing</h3>
             <p>
-              Private saves, notes, and private collections are{" "}
-              <strong>never</strong> publicly visible.
+              When you share a public save, social media platforms and messaging
+              apps may display a rich link preview. These previews can include:
+            </p>
+            <ul>
+              <li>The save's title and description</li>
+              <li>A preview image</li>
+              <li>
+                <strong>Your note</strong> — If you've added a personal note to
+                a public save, it may appear in the link preview
+              </li>
+            </ul>
+            <p>
+              Before making a save public, review any notes you've added to ensure
+              you're comfortable with them being visible in link previews.
+            </p>
+
+            <p>
+              Private saves, notes on private saves, and private collections are{" "}
+              <strong>never</strong> publicly visible or included in link previews.
             </p>
           </section>
 

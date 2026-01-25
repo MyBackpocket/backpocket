@@ -77,6 +77,7 @@ export default function SettingsPage() {
   const [visibility, setVisibility] = useState<SpaceVisibility>("private");
   const [publicLayout, setPublicLayout] = useState<PublicLayout>("grid");
   const [defaultSaveVisibility, setDefaultSaveVisibility] = useState<SaveVisibility>("private");
+  const [defaultDomain, setDefaultDomain] = useState<string | null>(null);
 
   // Auto-save status
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
@@ -112,6 +113,7 @@ export default function SettingsPage() {
       setVisibility(space.visibility as SpaceVisibility);
       setPublicLayout(space.publicLayout as PublicLayout);
       setDefaultSaveVisibility(space.defaultSaveVisibility as SaveVisibility);
+      setDefaultDomain((space as { defaultDomain?: string | null }).defaultDomain ?? null);
       setSlug(space.slug);
       setSlugInput(space.slug);
       // Mark initial load as complete after a short delay to avoid triggering auto-save
@@ -216,6 +218,18 @@ export default function SettingsPage() {
       setDefaultSaveVisibility(newVisibility);
       if (initialLoadDone.current) {
         saveSettings({ defaultSaveVisibility: newVisibility });
+      }
+    },
+    [saveSettings]
+  );
+
+  const handleDefaultDomainChange = useCallback(
+    (value: string) => {
+      // "subdomain" means null (use subdomain), otherwise it's "custom:domain.com"
+      const newDomain = value === "subdomain" ? null : value;
+      setDefaultDomain(newDomain);
+      if (initialLoadDone.current) {
+        saveSettings({ defaultDomain: newDomain } as any);
       }
     },
     [saveSettings]
@@ -473,6 +487,13 @@ export default function SettingsPage() {
 
           {/* Custom Domains */}
           <CustomDomainsCard />
+
+          {/* Share URL Domain */}
+          <ShareUrlDomainCard
+            slug={slug}
+            defaultDomain={defaultDomain}
+            onDefaultDomainChange={handleDefaultDomainChange}
+          />
 
           {/* Space Visibility */}
           <Card>
@@ -1214,6 +1235,98 @@ function CustomDomainsCard() {
             <Plus className="mr-2 h-4 w-4" />
             Add Custom Domain
           </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Share URL Domain card component
+function ShareUrlDomainCard({
+  slug,
+  defaultDomain,
+  onDefaultDomainChange,
+}: {
+  slug: string;
+  defaultDomain: string | null;
+  onDefaultDomainChange: (value: string) => void;
+}) {
+  const domains = useListDomains();
+  const activeDomains = domains?.filter((d) => d.status === "active") ?? [];
+  const hasCustomDomains = activeDomains.length > 0;
+
+  // Get the currently selected domain for display
+  const getSelectedValue = () => {
+    if (!defaultDomain) return "subdomain";
+    return defaultDomain;
+  };
+
+  // Get preview URL based on selection
+  const getPreviewUrl = () => {
+    if (!defaultDomain) {
+      return `${slug}.${ROOT_DOMAIN}/s/...`;
+    }
+    // Extract domain from "custom:domain.com" format
+    const customDomain = defaultDomain.startsWith("custom:")
+      ? defaultDomain.slice(7)
+      : defaultDomain;
+    return `${customDomain}/s/...`;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <LinkIcon className="h-5 w-5" />
+          Share URL Domain
+        </CardTitle>
+        <CardDescription>Choose which domain to use when sharing links</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasCustomDomains ? (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="shareUrlDomain" className="block pb-2">
+                Default domain for share links
+              </Label>
+              <Select value={getSelectedValue()} onValueChange={onDefaultDomainChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="subdomain">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-4 w-4 text-muted-foreground" />
+                      {slug}.{ROOT_DOMAIN}
+                    </div>
+                  </SelectItem>
+                  {activeDomains.map((domain) => (
+                    <SelectItem key={domain.id} value={`custom:${domain.domain}`}>
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4 text-denim" />
+                        {domain.domain}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <p className="text-xs text-muted-foreground">
+                Share links will use: <span className="font-medium text-foreground">{getPreviewUrl()}</span>
+              </p>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg border bg-muted/30 p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-1">
+              Using your subdomain for share links
+            </p>
+            <p className="text-sm font-medium">{slug}.{ROOT_DOMAIN}/s/...</p>
+            <p className="text-xs text-muted-foreground mt-3">
+              Add a custom domain above to use it for share links
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>

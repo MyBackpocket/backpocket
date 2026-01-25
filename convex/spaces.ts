@@ -46,6 +46,7 @@ export const getMySpace = query({
       publicLayout: space.publicLayout,
       defaultSaveVisibility: space.defaultSaveVisibility,
       theme: space.theme ?? null,
+      defaultDomain: space.defaultDomain ?? null,
       createdAt: space._creationTime,
       updatedAt: space._creationTime,
     };
@@ -74,6 +75,7 @@ export const ensureSpace = mutation({
       publicLayout: space.publicLayout,
       defaultSaveVisibility: space.defaultSaveVisibility,
       theme: space.theme ?? null,
+      defaultDomain: space.defaultDomain ?? null,
       createdAt: space._creationTime,
       updatedAt: space._creationTime,
     };
@@ -90,6 +92,7 @@ export const updateSettings = mutation({
     publicLayout: v.optional(publicLayoutValidator),
     defaultSaveVisibility: v.optional(visibilityValidator),
     theme: v.optional(themeValidator),
+    defaultDomain: v.optional(v.string()),
     clientSource: v.optional(clientSourceValidator),
   },
   handler: async (ctx, args) => {
@@ -116,6 +119,7 @@ export const updateSettings = mutation({
         publicLayout: "list" | "grid";
         defaultSaveVisibility: "public" | "private";
         theme: "light" | "dark" | "system";
+        defaultDomain: string;
       }> = {};
 
       if (args.name !== undefined) {
@@ -146,6 +150,10 @@ export const updateSettings = mutation({
         updates.theme = args.theme;
         fieldsUpdated.push("theme");
       }
+      if (args.defaultDomain !== undefined) {
+        updates.defaultDomain = args.defaultDomain;
+        fieldsUpdated.push("defaultDomain");
+      }
 
       await ctx.db.patch(space._id, updates);
 
@@ -167,6 +175,7 @@ export const updateSettings = mutation({
         publicLayout: updated!.publicLayout,
         defaultSaveVisibility: updated!.defaultSaveVisibility,
         theme: updated!.theme ?? null,
+        defaultDomain: updated!.defaultDomain ?? null,
         createdAt: updated!._creationTime,
         updatedAt: Date.now(),
       };
@@ -257,6 +266,7 @@ export const updateSlug = mutation({
         publicLayout: updated!.publicLayout,
         defaultSaveVisibility: updated!.defaultSaveVisibility,
         theme: updated!.theme ?? null,
+        defaultDomain: updated!.defaultDomain ?? null,
         createdAt: updated!._creationTime,
         updatedAt: Date.now(),
       };

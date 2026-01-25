@@ -26,6 +26,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { PrefetchLink } from "@/components/prefetch-link";
+import { ShareButton } from "@/components/share-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -60,11 +61,13 @@ import { routes } from "@/lib/constants/routes";
 import {
   useBulkDeleteSaves,
   useDeleteSave,
+  useGetMySpace,
   useGetSaveCount,
   useListSaves,
   useListTags,
   useToggleArchive,
   useToggleFavorite,
+  useUpdateSave,
 } from "@/lib/convex";
 import {
   cacheKey,
@@ -104,24 +107,34 @@ interface SaveItem {
   tags?: Array<{ id: string; name: string }>;
 }
 
+// Space info for share button
+interface SpaceInfo {
+  slug: string;
+  defaultDomain: string | null;
+}
+
 // Memoized list item component - use saveId-based callbacks to maintain stable references
 const SaveListItem = memo(function SaveListItem({
   save,
+  space,
   isSelected,
   isSelectionMode,
   onSelect,
   onToggleFavorite,
   onToggleArchive,
   onDelete,
+  onMakePublic,
   onPrefetch,
 }: {
   save: SaveItem;
+  space: SpaceInfo | null;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onToggleArchive: (id: string) => void;
   onDelete: (save: SaveItem) => void;
+  onMakePublic?: (saveId: string) => Promise<boolean>;
   onPrefetch?: (id: string) => void;
 }) {
   const visibilityConfig = {
@@ -242,6 +255,22 @@ const SaveListItem = memo(function SaveListItem({
 
       {/* Actions */}
       <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+        {/* Share button */}
+        {space && (
+          <ShareButton
+            save={{
+              id: save.id,
+              title: save.title,
+              visibility: save.visibility,
+              note: undefined, // Note is on detail page
+            }}
+            space={space}
+            onMakePublic={onMakePublic}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-lg"
+          />
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -307,17 +336,21 @@ const SaveListItem = memo(function SaveListItem({
 // Memoized grid card component
 const SaveGridCard = memo(function SaveGridCard({
   save,
+  space,
   isSelected,
   isSelectionMode,
   onSelect,
   onToggleFavorite,
+  onMakePublic,
   onPrefetch,
 }: {
   save: SaveItem;
+  space: SpaceInfo | null;
   isSelected: boolean;
   isSelectionMode: boolean;
   onSelect: (id: string) => void;
   onToggleFavorite: (id: string) => void;
+  onMakePublic?: (saveId: string) => Promise<boolean>;
   onPrefetch?: (id: string) => void;
 }) {
   const visibilityConfig = {
@@ -359,21 +392,47 @@ const SaveGridCard = memo(function SaveGridCard({
         />
       </div>
 
-      {/* Favorite button overlay */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.preventDefault();
-          handleToggleFavorite();
-        }}
-        className={cn(
-          "absolute right-3 top-3 z-10 h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm transition-all duration-200",
-          save.isFavorite ? "opacity-100 text-amber" : "opacity-0 group-hover:opacity-100"
+      {/* Action buttons overlay */}
+      <div className="absolute right-3 top-3 z-10 flex gap-1.5">
+        {/* Share button */}
+        {space && (
+          <div
+            className={cn(
+              "transition-all duration-200",
+              "opacity-0 group-hover:opacity-100"
+            )}
+          >
+            <ShareButton
+              save={{
+                id: save.id,
+                title: save.title,
+                visibility: save.visibility,
+                note: undefined,
+              }}
+              space={space}
+              onMakePublic={onMakePublic}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm"
+            />
+          </div>
         )}
-      >
-        <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
-      </Button>
+        {/* Favorite button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={(e) => {
+            e.preventDefault();
+            handleToggleFavorite();
+          }}
+          className={cn(
+            "h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm transition-all duration-200",
+            save.isFavorite ? "opacity-100 text-amber" : "opacity-0 group-hover:opacity-100"
+          )}
+        >
+          <Star className={cn("h-4 w-4", save.isFavorite && "fill-current")} />
+        </Button>
+      </div>
 
       <a
         href={save.url}
@@ -489,6 +548,15 @@ export default function SavesPage() {
 
   // Prefetch hook for warming up save detail data on hover
   const prefetch = usePrefetchTargets();
+
+  // Get space info for share button
+  const mySpace = useGetMySpace();
+  const spaceInfo: SpaceInfo | null = mySpace
+    ? { slug: mySpace.slug, defaultDomain: mySpace.defaultDomain }
+    : null;
+
+  // Update save mutation (for making saves public)
+  const updateSave = useUpdateSave();
 
   // Debounce search to avoid firing on every keystroke (300ms delay)
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -723,6 +791,20 @@ export default function SavesPage() {
   const handlePrefetch = useCallback((saveId: string) => {
     prefetch.save(saveId);
   }, [prefetch]);
+
+  // Make a save public (for share button flow)
+  const handleMakePublic = useCallback(
+    async (saveId: string): Promise<boolean> => {
+      try {
+        await updateSave({ id: saveId as any, visibility: "public" });
+        return true;
+      } catch (error) {
+        console.error("Failed to make save public:", error);
+        return false;
+      }
+    },
+    [updateSave]
+  );
 
   return (
     <div className="p-6 lg:p-8">
@@ -962,12 +1044,14 @@ export default function SavesPage() {
                 <SaveListItem
                   key={save.id}
                   save={save}
+                  space={spaceInfo}
                   isSelected={selectedIds.has(save.id)}
                   isSelectionMode={isSelectionMode}
                   onSelect={handleToggleSelect}
                   onToggleFavorite={handleToggleFavorite}
                   onToggleArchive={handleToggleArchive}
                   onDelete={handleSingleDelete}
+                  onMakePublic={handleMakePublic}
                   onPrefetch={handlePrefetch}
                 />
               ))}
@@ -978,10 +1062,12 @@ export default function SavesPage() {
                 <SaveGridCard
                   key={save.id}
                   save={save}
+                  space={spaceInfo}
                   isSelected={selectedIds.has(save.id)}
                   isSelectionMode={isSelectionMode}
                   onSelect={handleToggleSelect}
                   onToggleFavorite={handleToggleFavorite}
+                  onMakePublic={handleMakePublic}
                   onPrefetch={handlePrefetch}
                 />
               ))}
