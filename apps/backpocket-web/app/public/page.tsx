@@ -17,6 +17,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LogoIcon } from "@/components/logo";
+import { PublicShareButton } from "@/components/public-share-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -273,8 +274,9 @@ function PublicSpaceContent() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 shrink-0">
               <VisitorCounter spaceId={space.id} initialCount={space.visitCount ?? 0} />
+              <PublicShareButton />
               <Link
                 href="/rss.xml"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-rust transition-colors"
