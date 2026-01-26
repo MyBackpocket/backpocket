@@ -3,9 +3,11 @@
 import {
   Bookmark,
   Calendar,
+  Check,
   ChevronUp,
   ExternalLink,
   FolderOpen,
+  Link2,
   Rss,
   Search,
   SlidersHorizontal,
@@ -584,14 +586,54 @@ function FilterSidebar({
   );
 }
 
+// Inline copy button for save cards
+function CardCopyButton({ saveId }: { saveId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = `${window.location.origin}/s/${saveId}`;
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    },
+    [saveId]
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className={cn(
+        "absolute top-2 right-2 z-10 rounded-full p-1.5 transition-all",
+        "bg-background/80 backdrop-blur-sm border border-border/50",
+        "opacity-0 group-hover:opacity-100",
+        "hover:bg-background hover:border-denim/30",
+        copied && "opacity-100 bg-green-500/10 border-green-500/30"
+      )}
+      title={copied ? "Copied!" : "Copy link"}
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-green-600" />
+      ) : (
+        <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+      )}
+    </button>
+  );
+}
+
 // Save card components
 function SaveCardGrid({ save, index }: { save: PublicSave; index: number }) {
   return (
     <Link href={`/s/${save.id}`} className="group block">
       <article
-        className="rounded-xl border border-denim/15 bg-card overflow-hidden shadow-denim transition-all hover:shadow-denim-lg hover:-translate-y-1 animate-slide-up"
+        className="relative rounded-xl border border-denim/15 bg-card overflow-hidden shadow-denim transition-all hover:shadow-denim-lg hover:-translate-y-1 animate-slide-up"
         style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}
       >
+        <CardCopyButton saveId={save.id} />
         {save.imageUrl ? (
           <div className="relative aspect-video w-full overflow-hidden">
             <Image
@@ -640,9 +682,10 @@ function SaveCardList({ save, index }: { save: PublicSave; index: number }) {
   return (
     <Link href={`/s/${save.id}`} className="group block">
       <article
-        className="flex gap-4 rounded-lg border border-denim/15 bg-card p-4 shadow-denim transition-all hover:shadow-denim-lg hover:-translate-y-0.5 animate-slide-up"
+        className="relative flex gap-4 rounded-lg border border-denim/15 bg-card p-4 shadow-denim transition-all hover:shadow-denim-lg hover:-translate-y-0.5 animate-slide-up"
         style={{ animationDelay: `${Math.min(index, 10) * 50}ms` }}
       >
+        <CardCopyButton saveId={save.id} />
         {save.imageUrl && (
           <div className="relative h-20 w-28 shrink-0">
             <Image src={save.imageUrl} alt="" fill className="rounded-md object-cover" />
