@@ -20,17 +20,18 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  // Determine base URL and resolve space
-  let baseUrl: string;
+  // Determine base URL
+  const baseUrl = isCustomDomainSlug(spaceSlug)
+    ? `https://${extractCustomDomain(spaceSlug)}`
+    : `https://${spaceSlug}.${ROOT_DOMAIN}`;
+
+  // Resolve space data
   let space: { name: string; bio?: string | null; slug: string; visitCount?: number } | null = null;
 
   try {
     if (isCustomDomainSlug(spaceSlug)) {
-      const customDomain = extractCustomDomain(spaceSlug);
-      baseUrl = `https://${customDomain}`;
-      space = await fetchQuery(api.public.resolveSpaceByDomain, { domain: customDomain });
+      space = await fetchQuery(api.public.resolveSpaceByDomain, { domain: extractCustomDomain(spaceSlug) });
     } else {
-      baseUrl = `https://${spaceSlug}.${ROOT_DOMAIN}`;
       space = await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
     }
   } catch {
