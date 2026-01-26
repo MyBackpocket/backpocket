@@ -377,7 +377,7 @@ const SaveGridCard = memo(function SaveGridCard({
       onClick={handleCardClick}
       onMouseEnter={handlePrefetch}
       className={cn(
-        "group overflow-hidden transition-all duration-200 card-hover relative cursor-pointer",
+        "group flex flex-col overflow-hidden transition-all duration-200 card-hover relative cursor-pointer",
         // Add content-visibility for rendering performance on long lists
         "content-visibility-auto contain-intrinsic-size-[auto_280px]",
         isSelected && "ring-2 ring-primary shadow-denim-lg"
@@ -471,16 +471,18 @@ const SaveGridCard = memo(function SaveGridCard({
         )}
       </a>
 
-      <div className="p-4">
-        <span
-          className="block font-medium leading-snug text-foreground transition-colors group-hover:text-primary line-clamp-2"
-        >
-          {save.title || save.url}
-        </span>
+      <div className="flex flex-1 flex-col p-4">
+        <div className="flex-1">
+          <span
+            className="block font-medium leading-snug text-foreground transition-colors group-hover:text-primary line-clamp-2"
+          >
+            {save.title || save.url}
+          </span>
 
-        {save.description && (
-          <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
-        )}
+          {save.description && (
+            <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
+          )}
+        </div>
 
         <div className="mt-3 flex items-center justify-between">
           <span className="flex items-center text-xs text-muted-foreground">
