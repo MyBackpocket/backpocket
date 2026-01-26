@@ -79,13 +79,167 @@ export async function GET(
 
     const title = truncate(save.title || "Untitled", 80);
     const siteName = save.siteName || getDomain(save.url);
+    const hasNote = !!save.note;
     const notePreview = save.note
-      ? truncate(stripMarkdown(save.note), 120)
+      ? truncate(stripMarkdown(save.note), 200)
       : null;
 
-    // Generate the OG image
+    // Generate the OG image - different designs based on whether there's a note
     const response = new ImageResponse(
-      (
+      hasNote ? (
+        // QUOTE CARD DESIGN - when user has added a note (like a tweet)
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 60,
+            background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+          }}
+        >
+          {/* Quote card container */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+              maxWidth: 1000,
+              background: "#1e293b",
+              borderRadius: 24,
+              border: "1px solid #334155",
+              padding: 48,
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            {/* The note/quote - prominent and large */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                marginBottom: 32,
+              }}
+            >
+              <span
+                style={{
+                  color: "#3b82f6",
+                  fontSize: 48,
+                  fontWeight: 300,
+                  lineHeight: 0.8,
+                  marginBottom: 8,
+                }}
+              >
+                "
+              </span>
+              <div
+                style={{
+                  color: "#f1f5f9",
+                  fontSize: 32,
+                  fontWeight: 500,
+                  lineHeight: 1.4,
+                  paddingLeft: 24,
+                }}
+              >
+                {notePreview}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div
+              style={{
+                width: "100%",
+                height: 1,
+                background: "#334155",
+                marginBottom: 24,
+              }}
+            />
+
+            {/* Source info - like a link preview within the card */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              {/* Small thumbnail if available */}
+              {save.imageUrl && (
+                // biome-ignore lint/performance/noImgElement: ImageResponse requires img element
+                <img
+                  src={save.imageUrl}
+                  alt=""
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 12,
+                    objectFit: "cover",
+                    border: "1px solid #334155",
+                  }}
+                />
+              )}
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  flex: 1,
+                  minWidth: 0,
+                }}
+              >
+                <div
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: 18,
+                    marginBottom: 4,
+                  }}
+                >
+                  {siteName}
+                </div>
+                <div
+                  style={{
+                    color: "#e2e8f0",
+                    fontSize: 22,
+                    fontWeight: 500,
+                  }}
+                >
+                  {truncate(title, 60)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Curator attribution - bottom */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginTop: 32,
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <span style={{ color: "#ffffff", fontSize: 18, fontWeight: 700 }}>
+                B
+              </span>
+            </div>
+            <span style={{ color: "#64748b", fontSize: 20 }}>
+              Saved by {space.name} on backpocket
+            </span>
+          </div>
+        </div>
+      ) : (
+        // STANDARD DESIGN - when there's no note (original design)
         <div
           style={{
             width: "100%",
@@ -94,18 +248,18 @@ export async function GET(
             flexDirection: "column",
             justifyContent: "flex-end",
             padding: 60,
-            // Dark gradient background, or with image if available
             background: save.imageUrl
               ? `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%)`
               : "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
             position: "relative",
           }}
         >
-          {/* Background image if available - using img is required for ImageResponse */}
+          {/* Background image if available */}
           {save.imageUrl && (
-            // biome-ignore lint/a11y/useAltText: ImageResponse requires img element
+            // biome-ignore lint/performance/noImgElement: ImageResponse requires img element
             <img
               src={save.imageUrl}
+              alt=""
               style={{
                 position: "absolute",
                 top: 0,
@@ -134,46 +288,15 @@ export async function GET(
           <div
             style={{
               color: "#ffffff",
-              fontSize: notePreview ? 40 : 48,
+              fontSize: 48,
               fontWeight: 600,
               lineHeight: 1.2,
               maxWidth: "90%",
-              marginBottom: notePreview ? 16 : 0,
               display: "flex",
             }}
           >
             {title}
           </div>
-
-          {/* User's note - shown if exists */}
-          {notePreview && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 12,
-                marginTop: 8,
-              }}
-            >
-              <span
-                style={{ color: "#6b7280", fontSize: 28, display: "flex" }}
-              >
-                "
-              </span>
-              <div
-                style={{
-                  color: "#d1d5db",
-                  fontSize: 24,
-                  fontStyle: "italic",
-                  lineHeight: 1.4,
-                  maxWidth: "85%",
-                  display: "flex",
-                }}
-              >
-                {notePreview}
-              </div>
-            </div>
-          )}
 
           {/* Backpocket branding - bottom right */}
           <div
@@ -186,7 +309,6 @@ export async function GET(
               gap: 8,
             }}
           >
-            {/* Simple text logo instead of image to avoid CORS issues */}
             <div
               style={{
                 width: 24,
@@ -198,9 +320,7 @@ export async function GET(
                 justifyContent: "center",
               }}
             >
-              <span
-                style={{ color: "#ffffff", fontSize: 14, fontWeight: 700 }}
-              >
+              <span style={{ color: "#ffffff", fontSize: 14, fontWeight: 700 }}>
                 B
               </span>
             </div>
