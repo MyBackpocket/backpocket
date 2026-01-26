@@ -52,7 +52,7 @@ export async function GET(
     }
 
     // Resolve space
-    let space: { id: string; slug: string; name: string } | null;
+    let space: { id: string; slug: string; name: string } | null = null;
     if (isCustomDomainSlug(spaceSlug)) {
       space = await fetchQuery(api.public.resolveSpaceByDomain, {
         domain: extractCustomDomain(spaceSlug),
