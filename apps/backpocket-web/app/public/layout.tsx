@@ -1,5 +1,7 @@
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { api } from "@convex/_generated/api";
 import { ROOT_DOMAIN } from "@/lib/config/public";
 import { SPACE_SLUG_HEADER } from "@/lib/constants/headers";
 import { extractCustomDomain, isCustomDomainSlug } from "@/lib/constants/public-space";
@@ -18,32 +20,50 @@ export async function generateMetadata(): Promise<Metadata> {
     };
   }
 
-  // For metadata, we use a simple fallback since we can't easily fetch from Convex server-side
-  // The actual space info will be loaded client-side
-  const displaySlug = isCustomDomainSlug(spaceSlug) ? extractCustomDomain(spaceSlug) : spaceSlug;
-
-  // Determine base URL - use custom domain if present, otherwise subdomain
+  // Determine base URL and resolve space
   let baseUrl: string;
-  if (isCustomDomainSlug(spaceSlug)) {
-    const customDomain = extractCustomDomain(spaceSlug);
-    baseUrl = `https://${customDomain}`;
-  } else {
-    baseUrl = `https://${spaceSlug}.${ROOT_DOMAIN}`;
+  let space: { name: string; bio?: string | null; slug: string; visitCount?: number } | null = null;
+
+  try {
+    if (isCustomDomainSlug(spaceSlug)) {
+      const customDomain = extractCustomDomain(spaceSlug);
+      baseUrl = `https://${customDomain}`;
+      space = await fetchQuery(api.public.resolveSpaceByDomain, { domain: customDomain });
+    } else {
+      baseUrl = `https://${spaceSlug}.${ROOT_DOMAIN}`;
+      space = await fetchQuery(api.public.resolveSpaceBySlug, { slug: spaceSlug });
+    }
+  } catch {
+    // Fallback if fetch fails
   }
 
+  const displayName = space?.name || spaceSlug;
+  const description = space?.bio || `${displayName}'s curated collection of links on backpocket`;
+  const ogImageUrl = `${baseUrl}/api/og/space`;
+
   return {
-    title: `${displaySlug} | backpocket`,
-    description: "A public collection",
+    title: `${displayName}'s Backpocket`,
+    description,
     openGraph: {
-      title: displaySlug,
-      description: "A public collection",
+      title: `${displayName}'s Backpocket`,
+      description,
       type: "website",
       url: baseUrl,
+      siteName: "backpocket",
+      images: [
+        {
+          url: ogImageUrl,
+          width: 1200,
+          height: 630,
+          alt: `${displayName}'s Backpocket`,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
-      title: displaySlug,
-      description: "A public collection",
+      title: `${displayName}'s Backpocket`,
+      description,
+      images: [ogImageUrl],
     },
     alternates: {
       types: {
