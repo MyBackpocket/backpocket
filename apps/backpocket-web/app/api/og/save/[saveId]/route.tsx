@@ -164,21 +164,21 @@ export async function GET(
                 gap: 16,
               }}
             >
-              {/* Small thumbnail if available */}
-              {save.imageUrl && (
-                // biome-ignore lint/performance/noImgElement: ImageResponse requires img element
-                <img
-                  src={save.imageUrl}
-                  alt=""
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 12,
-                    objectFit: "cover",
-                    border: "1px solid #334155",
-                  }}
-                />
-              )}
+              {/* Site icon placeholder - external images can timeout on edge */}
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 10,
+                  background: "linear-gradient(135deg, #475569 0%, #334155 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: "1px solid #475569",
+                }}
+              >
+                <span style={{ color: "#94a3b8", fontSize: 20 }}>🔗</span>
+              </div>
               <div
                 style={{
                   display: "flex",
@@ -239,7 +239,8 @@ export async function GET(
           </div>
         </div>
       ) : (
-        // STANDARD DESIGN - when there's no note (original design)
+        // STANDARD DESIGN - when there's no note
+        // Note: We don't fetch external images to avoid timeout issues on edge
         <div
           style={{
             width: "100%",
@@ -248,84 +249,89 @@ export async function GET(
             flexDirection: "column",
             justifyContent: "flex-end",
             padding: 60,
-            background: save.imageUrl
-              ? `linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.4) 100%)`
-              : "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+            background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)",
             position: "relative",
           }}
         >
-          {/* Background image if available */}
-          {save.imageUrl && (
-            // biome-ignore lint/performance/noImgElement: ImageResponse requires img element
-            <img
-              src={save.imageUrl}
-              alt=""
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-                zIndex: -1,
-              }}
-            />
-          )}
+          {/* Decorative elements */}
+          <div
+            style={{
+              position: "absolute",
+              top: 40,
+              right: 60,
+              width: 120,
+              height: 120,
+              borderRadius: "50%",
+              background: "rgba(59, 130, 246, 0.1)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              top: 100,
+              right: 140,
+              width: 60,
+              height: 60,
+              borderRadius: "50%",
+              background: "rgba(59, 130, 246, 0.15)",
+            }}
+          />
 
           {/* Site name / source */}
           <div
             style={{
-              color: "#a0a0a0",
+              color: "#94a3b8",
               fontSize: 24,
-              marginBottom: 12,
+              marginBottom: 16,
               display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
+            <span style={{ fontSize: 20 }}>🔗</span>
             {siteName}
           </div>
 
           {/* Title */}
           <div
             style={{
-              color: "#ffffff",
-              fontSize: 48,
+              color: "#f1f5f9",
+              fontSize: 52,
               fontWeight: 600,
               lineHeight: 1.2,
-              maxWidth: "90%",
+              maxWidth: "85%",
               display: "flex",
             }}
           >
             {title}
           </div>
 
-          {/* Backpocket branding - bottom right */}
+          {/* Curator info */}
           <div
             style={{
-              position: "absolute",
-              bottom: 30,
-              right: 40,
+              marginTop: 32,
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 12,
             }}
           >
             <div
               style={{
-                width: 24,
-                height: 24,
-                borderRadius: 6,
+                width: 32,
+                height: 32,
+                borderRadius: 8,
                 background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <span style={{ color: "#ffffff", fontSize: 14, fontWeight: 700 }}>
+              <span style={{ color: "#ffffff", fontSize: 18, fontWeight: 700 }}>
                 B
               </span>
             </div>
-            <span style={{ color: "#888888", fontSize: 16, display: "flex" }}>
-              backpocket
+            <span style={{ color: "#64748b", fontSize: 20 }}>
+              Saved by {space.name} on backpocket
             </span>
           </div>
         </div>
