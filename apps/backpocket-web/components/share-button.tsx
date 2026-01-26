@@ -34,6 +34,8 @@ interface ShareButtonProps {
   variant?: "default" | "ghost" | "outline";
   /** Button size */
   size?: "default" | "sm" | "icon";
+  /** Show text label (hidden on small screens) */
+  showLabel?: boolean;
   /** Additional class names */
   className?: string;
 }
@@ -48,6 +50,7 @@ export function ShareButton({
   onMakePublic,
   variant = "ghost",
   size = "icon",
+  showLabel = false,
   className,
 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
@@ -95,12 +98,14 @@ export function ShareButton({
 
   const isPrivate = save.visibility === "private";
 
+  const label = isPrivate ? "Share" : copied ? "Copied!" : "Share";
+
   return (
     <>
       <Button
         variant={variant}
         size={size}
-        className={className}
+        className={showLabel ? `gap-2 ${className ?? ""}` : className}
         onClick={handleClick}
         title={isPrivate ? "Make public to share" : copied ? "Copied!" : "Copy link"}
       >
@@ -111,6 +116,7 @@ export function ShareButton({
         ) : (
           <Link2 className="h-4 w-4" />
         )}
+        {showLabel && <span className="hidden sm:inline">{label}</span>}
       </Button>
 
       {/* Make Public Dialog */}

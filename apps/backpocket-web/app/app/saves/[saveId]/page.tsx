@@ -72,6 +72,7 @@ import { routes } from "@/lib/constants/routes";
 import {
   useCreateCollection,
   useDeleteSave,
+  useGetMySpace,
   useGetSave,
   useGetSaveSnapshot,
   useListCollections,
@@ -80,6 +81,7 @@ import {
   useToggleFavorite,
   useUpdateSave,
 } from "@/lib/convex";
+import { ShareButton } from "@/components/share-button";
 import { invalidateCacheByPrefix } from "@/lib/hooks/use-cached-query";
 import { cn, formatDate, getDomainFromUrl } from "@/lib/utils";
 
@@ -732,6 +734,7 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
 
   // Convex queries
   const save = useGetSave(saveId as any);
+  const space = useGetMySpace();
   const allCollections = useListCollections({});
   const snapshotData = useGetSaveSnapshot(saveId as any, true);
 
@@ -940,6 +943,17 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
     await Promise.all([handleRefreshMetadata(), handleRefreshContent()]);
   }, [handleRefreshMetadata, handleRefreshContent]);
 
+  const handleMakePublic = useCallback(async (id: string) => {
+    try {
+      await updateSave({ id: id as any, visibility: "public" });
+      invalidateCacheByPrefix("saves:");
+      return true;
+    } catch (error) {
+      console.error("Failed to make public:", error);
+      return false;
+    }
+  }, [updateSave]);
+
   // Memoize derived arrays to prevent breaking child component memoization
   const tagNames = useMemo(() => save?.tags?.map((t) => t.name) ?? [], [save?.tags]);
   const selectedCollectionIds = useMemo(
@@ -1104,6 +1118,24 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
 
         {/* Action toolbar */}
         <div className="flex flex-wrap items-center gap-2 mb-6">
+          {space && (
+            <ShareButton
+              save={{
+                id: save.id,
+                title: save.title,
+                visibility: save.visibility,
+                note: save.note,
+              }}
+              space={{
+                slug: space.slug,
+                defaultDomain: space.defaultDomain ?? null,
+              }}
+              onMakePublic={handleMakePublic}
+              variant="outline"
+              size="sm"
+              showLabel
+            />
+          )}
           <Button
             variant="outline"
             size="sm"
