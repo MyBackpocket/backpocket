@@ -19,11 +19,6 @@ Planned features and improvements for Backpocket.
 
 - [ ] Moderation system for user-generated content
 
-### App Icon & Branding
-
-- [ ] Finalize app icons for all platforms
-  - See: [Stack Overflow reference](https://stackoverflow.com/a/76992849)
-
 ---
 
 ## Platform Integrations (Domain-Specific Extractors)
