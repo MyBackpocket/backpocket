@@ -1,26 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Check,
-  Copy,
-  Facebook,
-  Globe,
-  Linkedin,
-  Lock,
-  Mail,
-  Share2,
-  Twitter,
-} from "lucide-react";
-import { getShareUrl, socialShareUrls } from "@backpocket/utils";
+import { Check, Link2, Lock } from "lucide-react";
+import { getShareUrl } from "@backpocket/utils";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -56,13 +39,8 @@ interface ShareButtonProps {
 }
 
 /**
- * Share button with dropdown for copying link and sharing to social platforms.
+ * Simple copy link button.
  * Shows a confirmation dialog when trying to share a private save.
- *
- * Following React best practices:
- * - Uses useCallback for stable callbacks
- * - Uses functional setState for stable updates
- * - Defers state reads to usage point (no unnecessary subscriptions)
  */
 export function ShareButton({
   save,
@@ -92,7 +70,7 @@ export function ShareButton({
     }
   }, [shareUrl]);
 
-  const handleShare = useCallback(() => {
+  const handleClick = useCallback(() => {
     if (save.visibility === "private") {
       setShowMakePublicDialog(true);
       return;
@@ -115,105 +93,25 @@ export function ShareButton({
     }
   }, [onMakePublic, save.id, copyToClipboard]);
 
-  const openInNewTab = useCallback((url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer,width=600,height=400");
-  }, []);
-
-  // For private saves, show a simpler share icon with lock indicator
   const isPrivate = save.visibility === "private";
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant={variant}
-            size={size}
-            className={className}
-            title={isPrivate ? "Make public to share" : "Share"}
-          >
-            {isPrivate ? (
-              <Lock className="h-4 w-4" />
-            ) : copied ? (
-              <Check className="h-4 w-4 text-green-600" />
-            ) : (
-              <Share2 className="h-4 w-4" />
-            )}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          {isPrivate ? (
-            <>
-              <DropdownMenuItem
-                onClick={handleShare}
-                className="text-muted-foreground"
-              >
-                <Lock className="mr-2 h-4 w-4" />
-                Make public to share
-              </DropdownMenuItem>
-            </>
-          ) : (
-            <>
-              <DropdownMenuItem onClick={handleShare}>
-                <Copy className="mr-2 h-4 w-4" />
-                {copied ? "Copied!" : "Copy link"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() =>
-                  openInNewTab(
-                    socialShareUrls.twitter(shareUrl, save.title || undefined)
-                  )
-                }
-              >
-                <Twitter className="mr-2 h-4 w-4" />
-                Share on X
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => openInNewTab(socialShareUrls.facebook(shareUrl))}
-              >
-                <Facebook className="mr-2 h-4 w-4" />
-                Share on Facebook
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => openInNewTab(socialShareUrls.linkedin(shareUrl))}
-              >
-                <Linkedin className="mr-2 h-4 w-4" />
-                Share on LinkedIn
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  window.location.href = socialShareUrls.email(
-                    shareUrl,
-                    save.title || "Check this out",
-                    undefined
-                  );
-                }}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Email
-              </DropdownMenuItem>
-              {typeof navigator !== "undefined" && "share" in navigator && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => {
-                      navigator.share({
-                        title: save.title || "Check this out",
-                        url: shareUrl,
-                      });
-                    }}
-                  >
-                    <Globe className="mr-2 h-4 w-4" />
-                    More options...
-                  </DropdownMenuItem>
-                </>
-              )}
-            </>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <Button
+        variant={variant}
+        size={size}
+        className={className}
+        onClick={handleClick}
+        title={isPrivate ? "Make public to share" : copied ? "Copied!" : "Copy link"}
+      >
+        {isPrivate ? (
+          <Lock className="h-4 w-4" />
+        ) : copied ? (
+          <Check className="h-4 w-4 text-green-600" />
+        ) : (
+          <Link2 className="h-4 w-4" />
+        )}
+      </Button>
 
       {/* Make Public Dialog */}
       <Dialog open={showMakePublicDialog} onOpenChange={setShowMakePublicDialog}>
@@ -247,7 +145,7 @@ export function ShareButton({
 }
 
 /**
- * Simple copy link button (no dropdown) for inline use.
+ * Simple copy link button (no dialog) for inline use.
  * Shows checkmark feedback after copying.
  */
 export function CopyLinkButton({
@@ -290,7 +188,7 @@ export function CopyLinkButton({
       {copied ? (
         <Check className="h-4 w-4 text-green-600" />
       ) : (
-        <Copy className="h-4 w-4" />
+        <Link2 className="h-4 w-4" />
       )}
     </Button>
   );

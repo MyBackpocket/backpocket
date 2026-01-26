@@ -242,7 +242,7 @@ export default async function PublicSavePermalinkPage({
               <span>Back to {space?.name || "space"}</span>
             </Link>
             <div className="flex items-center gap-2">
-              <PublicShareButton title={save?.title || "Shared link"} />
+              <PublicShareButton />
               <Link
                 href="/rss.xml"
                 className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
