@@ -1020,8 +1020,8 @@ export default function SaveDetailPage({ params }: { params: Promise<{ saveId: s
             className="group/image relative mb-6 block aspect-video overflow-hidden rounded-xl border transition-all hover:shadow-lg"
           >
             <Image src={save.imageUrl} alt="" fill className="object-cover" />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/image:bg-black/10">
-              <ExternalLink className="h-8 w-8 text-white opacity-0 drop-shadow-lg transition-opacity group-hover/image:opacity-100" />
+            <div className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm transition-colors group-hover/image:bg-black/60">
+              <ExternalLink className="h-4 w-4 text-white" />
             </div>
           </a>
         )}

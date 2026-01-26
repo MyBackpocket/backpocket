@@ -24,8 +24,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
-import { PrefetchLink } from "@/components/prefetch-link";
 import { ShareButton } from "@/components/share-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -125,6 +125,7 @@ const SaveListItem = memo(function SaveListItem({
   onDelete,
   onMakePublic,
   onPrefetch,
+  onNavigate,
 }: {
   save: SaveItem;
   space: SpaceInfo | null;
@@ -136,6 +137,7 @@ const SaveListItem = memo(function SaveListItem({
   onDelete: (save: SaveItem) => void;
   onMakePublic?: (saveId: string) => Promise<boolean>;
   onPrefetch?: (id: string) => void;
+  onNavigate: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -151,11 +153,14 @@ const SaveListItem = memo(function SaveListItem({
   const handleToggleArchive = useCallback(() => onToggleArchive(save.id), [onToggleArchive, save.id]);
   const handleDelete = useCallback(() => onDelete(save), [onDelete, save]);
   const handlePrefetch = useCallback(() => onPrefetch?.(save.id), [onPrefetch, save.id]);
+  const handleCardClick = useCallback(() => onNavigate(save.id), [onNavigate, save.id]);
 
   return (
     <div
+      onClick={handleCardClick}
+      onMouseEnter={handlePrefetch}
       className={cn(
-        "group relative flex gap-4 rounded-xl border bg-card/50 p-4 transition-all duration-200",
+        "group relative flex gap-4 rounded-xl border bg-card/50 p-4 transition-all duration-200 cursor-pointer",
         "hover:bg-card hover:shadow-denim",
         // Add content-visibility for rendering performance on long lists
         "content-visibility-auto contain-intrinsic-size-[auto_100px]",
@@ -191,13 +196,16 @@ const SaveListItem = memo(function SaveListItem({
           {save.imageUrl ? (
             <div className="relative h-20 w-32 overflow-hidden rounded-lg bg-muted">
               <Image src={save.imageUrl} alt="" fill className="object-cover" />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/thumb:bg-black/20">
-                <ExternalLink className="h-5 w-5 text-white opacity-0 drop-shadow-lg transition-opacity group-hover/thumb:opacity-100" />
+              <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
+                <ExternalLink className="h-3 w-3 text-white" />
               </div>
             </div>
           ) : (
-            <div className="flex h-20 w-32 items-center justify-center rounded-lg bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted">
+            <div className="relative flex h-20 w-32 items-center justify-center rounded-lg bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted">
               <Bookmark className="h-8 w-8 text-muted-foreground/40" />
+              <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-muted-foreground/20">
+                <ExternalLink className="h-3 w-3 text-muted-foreground" />
+              </div>
             </div>
           )}
         </a>
@@ -211,13 +219,11 @@ const SaveListItem = memo(function SaveListItem({
               <VisIcon className="h-3 w-3" />
               {vis.label}
             </Badge>
-            <PrefetchLink
-              href={`/app/saves/${save.id}`}
-              onPrefetch={handlePrefetch}
-              className="font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-1"
+            <span
+              className="font-medium leading-snug text-foreground transition-colors group-hover:text-primary line-clamp-1"
             >
               {save.title || save.url}
-            </PrefetchLink>
+            </span>
           </div>
 
           {save.description && (
@@ -254,7 +260,10 @@ const SaveListItem = memo(function SaveListItem({
       </div>
 
       {/* Actions */}
-      <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+      <div
+        className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Share button */}
         {space && (
           <ShareButton
@@ -274,10 +283,7 @@ const SaveListItem = memo(function SaveListItem({
         <Button
           variant="ghost"
           size="icon"
-          onClick={(e) => {
-            e.preventDefault();
-            handleToggleFavorite();
-          }}
+          onClick={handleToggleFavorite}
           className={cn(
             "h-8 w-8 rounded-lg",
             save.isFavorite && "bg-amber/10 text-amber opacity-100"
@@ -288,10 +294,7 @@ const SaveListItem = memo(function SaveListItem({
         <Button
           variant="ghost"
           size="icon"
-          onClick={(e) => {
-            e.preventDefault();
-            handleToggleArchive();
-          }}
+          onClick={handleToggleArchive}
           className={cn(
             "h-8 w-8 rounded-lg",
             save.isArchived && "bg-denim/10 text-denim opacity-100"
@@ -343,6 +346,7 @@ const SaveGridCard = memo(function SaveGridCard({
   onToggleFavorite,
   onMakePublic,
   onPrefetch,
+  onNavigate,
 }: {
   save: SaveItem;
   space: SpaceInfo | null;
@@ -352,6 +356,7 @@ const SaveGridCard = memo(function SaveGridCard({
   onToggleFavorite: (id: string) => void;
   onMakePublic?: (saveId: string) => Promise<boolean>;
   onPrefetch?: (id: string) => void;
+  onNavigate: (id: string) => void;
 }) {
   const visibilityConfig = {
     public: { icon: Eye, label: "Public", class: "tag-mint" },
@@ -365,11 +370,14 @@ const SaveGridCard = memo(function SaveGridCard({
   const handleSelect = useCallback(() => onSelect(save.id), [onSelect, save.id]);
   const handleToggleFavorite = useCallback(() => onToggleFavorite(save.id), [onToggleFavorite, save.id]);
   const handlePrefetch = useCallback(() => onPrefetch?.(save.id), [onPrefetch, save.id]);
+  const handleCardClick = useCallback(() => onNavigate(save.id), [onNavigate, save.id]);
 
   return (
     <Card
+      onClick={handleCardClick}
+      onMouseEnter={handlePrefetch}
       className={cn(
-        "group overflow-hidden transition-all duration-200 card-hover relative",
+        "group overflow-hidden transition-all duration-200 card-hover relative cursor-pointer",
         // Add content-visibility for rendering performance on long lists
         "content-visibility-auto contain-intrinsic-size-[auto_280px]",
         isSelected && "ring-2 ring-primary shadow-denim-lg"
@@ -393,7 +401,10 @@ const SaveGridCard = memo(function SaveGridCard({
       </div>
 
       {/* Action buttons overlay */}
-      <div className="absolute right-3 top-3 z-10 flex gap-1.5">
+      <div
+        className="absolute right-3 top-3 z-10 flex gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Share button */}
         {space && (
           <div
@@ -421,10 +432,7 @@ const SaveGridCard = memo(function SaveGridCard({
         <Button
           variant="ghost"
           size="icon"
-          onClick={(e) => {
-            e.preventDefault();
-            handleToggleFavorite();
-          }}
+          onClick={handleToggleFavorite}
           className={cn(
             "h-8 w-8 rounded-full bg-background/90 backdrop-blur-sm shadow-sm transition-all duration-200",
             save.isFavorite ? "opacity-100 text-amber" : "opacity-0 group-hover:opacity-100"
@@ -447,27 +455,28 @@ const SaveGridCard = memo(function SaveGridCard({
               src={save.imageUrl}
               alt=""
               fill
-              className="object-cover transition-transform duration-300 group-hover/thumb:scale-105"
+              className="object-cover"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover/thumb:bg-black/20">
-              <ExternalLink className="h-8 w-8 text-white opacity-0 drop-shadow-lg transition-opacity group-hover/thumb:opacity-100" />
+            <div className="absolute left-3 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 backdrop-blur-sm">
+              <ExternalLink className="h-3.5 w-3.5 text-white" />
             </div>
           </div>
         ) : (
-          <div className="flex aspect-video w-full items-center justify-center bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted/70">
+          <div className="relative flex aspect-video w-full items-center justify-center bg-linear-to-br from-muted to-muted/50 transition-colors group-hover/thumb:bg-muted/70">
             <Bookmark className="h-10 w-10 text-muted-foreground/30" />
+            <div className="absolute left-3 bottom-3 flex h-6 w-6 items-center justify-center rounded-full bg-muted-foreground/20">
+              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
           </div>
         )}
       </a>
 
       <div className="p-4">
-        <PrefetchLink
-          href={`/app/saves/${save.id}`}
-          onPrefetch={handlePrefetch}
-          className="block font-medium leading-snug text-foreground transition-colors hover:text-primary line-clamp-2"
+        <span
+          className="block font-medium leading-snug text-foreground transition-colors group-hover:text-primary line-clamp-2"
         >
           {save.title || save.url}
-        </PrefetchLink>
+        </span>
 
         {save.description && (
           <p className="mt-1.5 text-sm text-muted-foreground line-clamp-2">{save.description}</p>
@@ -525,8 +534,14 @@ function SavesSkeleton({ viewMode }: { viewMode: ViewMode }) {
   );
 }
 
+const VIEW_MODE_STORAGE_KEY = "backpocket-saves-view-mode";
+
 export default function SavesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === "undefined") return "list";
+    const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    return saved === "grid" ? "grid" : "list";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<FilterOption>>(new Set());
   const [filterComboboxOpen, setFilterComboboxOpen] = useState(false);
@@ -548,6 +563,9 @@ export default function SavesPage() {
 
   // Prefetch hook for warming up save detail data on hover
   const prefetch = usePrefetchTargets();
+
+  // Router for navigation
+  const router = useRouter();
 
   // Get space info for share button
   const mySpace = useGetMySpace();
@@ -594,6 +612,11 @@ export default function SavesPage() {
       prevFilterKey.current = filterKey;
     }
   }, [filterKey]);
+
+  // Persist view mode preference
+  useEffect(() => {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode);
+  }, [viewMode]);
 
   // Toggle a filter option
   const toggleFilter = (option: FilterOption) => {
@@ -791,6 +814,11 @@ export default function SavesPage() {
   const handlePrefetch = useCallback((saveId: string) => {
     prefetch.save(saveId);
   }, [prefetch]);
+
+  // Stable callback for navigation - accepts id
+  const handleNavigate = useCallback((saveId: string) => {
+    router.push(`/app/saves/${saveId}`);
+  }, [router]);
 
   // Make a save public (for share button flow)
   const handleMakePublic = useCallback(
@@ -1053,6 +1081,7 @@ export default function SavesPage() {
                   onDelete={handleSingleDelete}
                   onMakePublic={handleMakePublic}
                   onPrefetch={handlePrefetch}
+                  onNavigate={handleNavigate}
                 />
               ))}
             </div>
@@ -1069,6 +1098,7 @@ export default function SavesPage() {
                   onToggleFavorite={handleToggleFavorite}
                   onMakePublic={handleMakePublic}
                   onPrefetch={handlePrefetch}
+                  onNavigate={handleNavigate}
                 />
               ))}
             </div>
